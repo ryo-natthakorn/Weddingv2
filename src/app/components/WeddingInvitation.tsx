@@ -19,7 +19,7 @@ import {
   PaperTexture,
   WatercolorFlower,
 } from "./wedding/shared";
-import heroIllustration from "../../imports/6.png";
+import heroIllustration from "../../imports/Hero.jpg";
 import pnLogo from "../../imports/Logo.svg";
 import ringImg from "../../imports/Ring.svg";
 
@@ -203,7 +203,7 @@ function InvitationContent() {
         style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", overflow: "hidden", background: "linear-gradient(180deg, #EAC898 0%, #EDD8A8 40%, #F3E8CC 75%, #F8F1E6 100%)" }}
       >
         <motion.div style={{ position: "absolute", inset: "-5% 0", y: springY, zIndex: 0 }}>
-          <img src={heroIllustration} alt="Pantika & Natthakorn" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+          <img src={heroIllustration} alt="Pantika & Natthakorn" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "bottom center", display: "block" }} />
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "20%", background: "linear-gradient(to bottom, transparent, #F8F1E6)" }} />
         </motion.div>
 
