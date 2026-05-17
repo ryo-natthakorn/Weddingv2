@@ -1,25 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { transparentImg } from "./shared";
-import ringImg from "../../../imports/Ring.png";
-import pnLogo from "../../../imports/2712.png";
+import ringImg from "../../../imports/Ring.svg";
+import pnLogo from "../../../imports/Logo.svg";
 
 interface Props {
   onComplete: () => void;
 }
 
-/* Floating petal particle */
 function Petal({ x, delay, size }: { x: number; delay: number; size: number }) {
   return (
     <motion.div
       animate={{ y: ["0vh", "105vh"], rotate: [0, 280], opacity: [0, 0.5, 0.5, 0] }}
       transition={{ duration: 9 + Math.random() * 4, delay, repeat: Infinity, ease: "linear" }}
       style={{
-        position: "absolute",
-        left: `${x}%`,
-        top: "-4%",
-        width: size,
-        height: size * 1.5,
+        position: "absolute", left: `${x}%`, top: "-4%",
+        width: size, height: size * 1.5,
         borderRadius: "50% 50% 50% 0",
         background: "rgba(138,112,48,0.28)",
         pointerEvents: "none",
@@ -70,15 +65,11 @@ export function IntroAnimation({ onComplete }: Props) {
 
   const handlePointerUp = () => {
     setIsDragging(false);
-    if (!unlocked && pos < 88) {
-      setPos(0);
-    }
+    if (!unlocked && pos < 88) setPos(0);
   };
 
   const petals = [8, 18, 32, 47, 60, 74, 88].map((x, i) => ({
-    x,
-    delay: i * 1.1,
-    size: 5 + (i % 3) * 2,
+    x, delay: i * 1.1, size: 5 + (i % 3) * 2,
   }));
 
   return (
@@ -90,35 +81,15 @@ export function IntroAnimation({ onComplete }: Props) {
           exit={{ opacity: 0, scale: 1.04 }}
           transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background:
-              "linear-gradient(175deg, #EAC898 0%, #EDD8A8 30%, #F3E8CC 60%, #F8F1E6 100%)",
-            overflow: "hidden",
-            userSelect: "none",
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "linear-gradient(175deg, #EAC898 0%, #EDD8A8 30%, #F3E8CC 60%, #F8F1E6 100%)",
+            overflow: "hidden", userSelect: "none",
           }}
         >
-          {petals.map((p, i) => (
-            <Petal key={i} {...p} />
-          ))}
+          {petals.map((p, i) => <Petal key={i} {...p} />)}
 
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%,-50%)",
-              width: "min(500px,90vw)",
-              height: "min(500px,90vw)",
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(232,192,154,0.18) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(500px,90vw)", height: "min(500px,90vw)", borderRadius: "50%", background: "radial-gradient(circle, rgba(232,192,154,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-          {/* Corner botanical lines */}
           {[
             { style: { top: 0, left: 0 }, rotate: "0deg" },
             { style: { top: 0, right: 0 }, rotate: "90deg" },
@@ -130,50 +101,20 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 + i * 0.08, duration: 1 }}
-              style={{
-                position: "absolute",
-                width: 100,
-                height: 100,
-                ...corner.style,
-                pointerEvents: "none",
-              }}
+              style={{ position: "absolute", width: 100, height: 100, ...corner.style, pointerEvents: "none" }}
             >
-              <svg
-                viewBox="0 0 100 100"
-                fill="none"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  transform: `rotate(${corner.rotate})`,
-                }}
-              >
+              <svg viewBox="0 0 100 100" fill="none" style={{ width: "100%", height: "100%", transform: `rotate(${corner.rotate})` }}>
                 <path d="M5 5 Q20 30 15 55 Q30 40 28 25Z" fill="#7A8A5A" fillOpacity="0.22" />
                 <path d="M15 55 Q5 42 10 30 Q22 44 15 55Z" fill="#6B8A5A" fillOpacity="0.18" />
-                <path
-                  d="M5 5 Q25 8 38 20"
-                  stroke="#7A8A5A"
-                  strokeWidth="0.8"
-                  strokeOpacity="0.3"
-                  fill="none"
-                  strokeLinecap="round"
-                />
+                <path d="M5 5 Q25 8 38 20" stroke="#7A8A5A" strokeWidth="0.8" strokeOpacity="0.3" fill="none" strokeLinecap="round" />
                 <circle cx="38" cy="20" r="2" fill="#8A7030" fillOpacity="0.25" />
               </svg>
             </motion.div>
           ))}
 
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "40px 32px",
-            }}
-          >
-            {/* PN monogram — with mix-blend to remove white background */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
+
+            {/* PN Monogram — SVG โปร่งใสอยู่แล้ว ไม่ต้อง mix-blend */}
             <motion.div
               initial={{ opacity: 0, y: -20, scale: 0.85 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -183,12 +124,7 @@ export function IntroAnimation({ onComplete }: Props) {
               <img
                 src={pnLogo}
                 alt="PN"
-                style={{
-                  width: "min(110px,28vw)",
-                  height: "auto",
-                  display: "block",
-                  ...transparentImg,
-                }}
+                style={{ width: "min(110px,28vw)", height: "auto", display: "block" }}
               />
             </motion.div>
 
@@ -196,13 +132,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "clamp(1.1rem, 3.5vw, 1.6rem)",
-                letterSpacing: "0.25em",
-                color: "#8A7030",
-                marginBottom: 6,
-              }}
+              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.1rem, 3.5vw, 1.6rem)", letterSpacing: "0.25em", color: "#8A7030", marginBottom: 6 }}
             >
               22 · 11 · 26
             </motion.p>
@@ -211,14 +141,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1, duration: 0.9 }}
-              style={{
-                fontFamily: "'Jost', sans-serif",
-                fontSize: "0.62rem",
-                letterSpacing: "0.2em",
-                color: "rgba(27,74,92,0.5)",
-                textTransform: "uppercase",
-                marginBottom: 0,
-              }}
+              style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.62rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.5)", textTransform: "uppercase", marginBottom: 0 }}
             >
               SailomSangdad · Bangkok
             </motion.p>
@@ -227,12 +150,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 1.3, duration: 0.8 }}
-              style={{
-                width: 80,
-                height: 1,
-                background: "rgba(138,112,48,0.35)",
-                margin: "24px 0 32px",
-              }}
+              style={{ width: 80, height: 1, background: "rgba(138,112,48,0.35)", margin: "24px 0 32px" }}
             />
 
             <AnimatePresence>
@@ -241,14 +159,7 @@ export function IntroAnimation({ onComplete }: Props) {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7 }}
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
-                    fontStyle: "italic",
-                    color: "rgba(27,74,92,0.6)",
-                    marginBottom: 20,
-                    letterSpacing: "0.05em",
-                  }}
+                  style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.6)", marginBottom: 20, letterSpacing: "0.05em" }}
                 >
                   Slide to open
                 </motion.p>
@@ -264,99 +175,53 @@ export function IntroAnimation({ onComplete }: Props) {
               <div
                 ref={trackRef}
                 style={{
-                  position: "relative",
-                  height: 72,
-                  background: "rgba(255,255,255,0.55)",
-                  borderRadius: 100,
-                  border: "1px solid rgba(138,112,48,0.25)",
-                  backdropFilter: "blur(8px)",
-                  boxShadow: "inset 0 2px 8px rgba(27,74,92,0.08)",
-                  overflow: "hidden",
+                  position: "relative", height: 72,
+                  background: "rgba(255,255,255,0.55)", borderRadius: 100,
+                  border: "1px solid rgba(138,112,48,0.25)", backdropFilter: "blur(8px)",
+                  boxShadow: "inset 0 2px 8px rgba(27,74,92,0.08)", overflow: "hidden",
                 }}
               >
                 <motion.div
                   style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
+                    position: "absolute", left: 0, top: 0, bottom: 0,
                     width: `${pos}%`,
-                    background:
-                      "linear-gradient(to right, rgba(138,112,48,0.12), rgba(138,112,48,0.06))",
+                    background: "linear-gradient(to right, rgba(138,112,48,0.12), rgba(138,112,48,0.06))",
                     borderRadius: 100,
                     transition: unlocked ? "width 0.4s ease" : undefined,
                   }}
                 />
 
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 18,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    display: "flex",
-                    gap: 3,
-                    opacity: Math.max(0, 1 - pos / 50),
-                  }}
-                >
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ opacity: [0.3, 0.8, 0.3] }}
-                      transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.18 }}
-                    >
+                <div style={{ position: "absolute", right: 18, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 3, opacity: Math.max(0, 1 - pos / 50) }}>
+                  {[0, 1, 2].map(i => (
+                    <motion.div key={i} animate={{ opacity: [0.3, 0.8, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.18 }}>
                       <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
-                        <path
-                          d="M2 2L8 7L2 12"
-                          stroke="#8A7030"
-                          strokeWidth="1.3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
+                        <path d="M2 2L8 7L2 12" stroke="#8A7030" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </motion.div>
                   ))}
                 </div>
 
-                {/* Ring — with mix-blend to remove white background */}
+                {/* Ring — SVG โปร่งใสอยู่แล้ว */}
                 <motion.div
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
-                  animate={
-                    unlocked
-                      ? { y: -80, opacity: 0, scale: 0.7 }
-                      : { y: 0, opacity: 1, scale: 1 }
-                  }
-                  transition={
-                    unlocked ? { duration: 0.6, ease: [0.22, 1, 0.36, 1] } : undefined
-                  }
+                  animate={unlocked ? { y: -80, opacity: 0, scale: 0.7 } : { y: 0, opacity: 1, scale: 1 }}
+                  transition={unlocked ? { duration: 0.6, ease: [0.22, 1, 0.36, 1] } : undefined}
                   style={{
                     position: "absolute",
                     left: `calc(${pos}% * (1 - 72 / 300))`,
-                    top: 0,
-                    bottom: 0,
-                    width: 72,
-                    height: 72,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: isDragging ? "grabbing" : "grab",
-                    touchAction: "none",
-                    zIndex: 2,
+                    top: 0, bottom: 0, width: 72, height: 72,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: isDragging ? "grabbing" : "grab", touchAction: "none", zIndex: 2,
                   }}
                 >
                   {!unlocked && (
                     <motion.div
                       animate={{ scale: [1, 1.18, 1], opacity: [0.4, 0, 0.4] }}
                       transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-                      style={{
-                        position: "absolute",
-                        inset: -6,
-                        borderRadius: "50%",
-                        border: "1.5px solid rgba(138,112,48,0.5)",
-                      }}
+                      style={{ position: "absolute", inset: -6, borderRadius: "50%", border: "1.5px solid rgba(138,112,48,0.5)" }}
                     />
                   )}
                   <img
@@ -364,12 +229,9 @@ export function IntroAnimation({ onComplete }: Props) {
                     alt="Ring"
                     draggable={false}
                     style={{
-                      width: 56,
-                      height: 56,
-                      objectFit: "contain",
+                      width: 56, height: 56, objectFit: "contain",
                       filter: "drop-shadow(0 4px 12px rgba(27,74,92,0.25))",
                       pointerEvents: "none",
-                      ...transparentImg,
                     }}
                   />
                 </motion.div>
@@ -382,23 +244,9 @@ export function IntroAnimation({ onComplete }: Props) {
                       <motion.div
                         key={i}
                         initial={{ opacity: 1, scale: 0, x: 150, y: 36 }}
-                        animate={{
-                          opacity: 0,
-                          scale: 1.5,
-                          x: 150 + Math.cos((i * 60 * Math.PI) / 180) * 80,
-                          y: 36 + Math.sin((i * 60 * Math.PI) / 180) * 60,
-                        }}
+                        animate={{ opacity: 0, scale: 1.5, x: 150 + Math.cos(i * 60 * Math.PI / 180) * 80, y: 36 + Math.sin(i * 60 * Math.PI / 180) * 60 }}
                         transition={{ duration: 0.7, ease: "easeOut" }}
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: "#8A7030",
-                          pointerEvents: "none",
-                        }}
+                        style={{ position: "absolute", top: 0, left: 0, width: 8, height: 8, borderRadius: "50%", background: "#8A7030", pointerEvents: "none" }}
                       />
                     ))}
                   </>
