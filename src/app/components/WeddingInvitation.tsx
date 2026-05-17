@@ -9,7 +9,17 @@ import { RSVPSection } from "./wedding/RSVPSection";
 import { IntroAnimation } from "./wedding/IntroAnimation";
 import { NameIntroSection } from "./wedding/NameIntroSection";
 import { HashtagSection } from "./wedding/HashtagSection";
-import { useReveal, Divider, BotanicalBorder, LeafSvg, COLORS } from "./wedding/shared";
+import {
+  useReveal,
+  Divider,
+  BotanicalBorder,
+  LeafSvg,
+  COLORS,
+  WatercolorWash,
+  PaperTexture,
+  WatercolorFlower,
+  transparentImg,
+} from "./wedding/shared";
 import heroIllustration from "../../imports/6.png";
 import pnLogo from "../../imports/2712.png";
 import ringImg from "../../imports/Ring.png";
@@ -40,7 +50,6 @@ function Particles() {
 
 /* ── Countdown ── */
 function CountdownTimer() {
-  const { t } = useLang();
   const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   useEffect(() => {
     const target = new Date("2026-11-22T16:09:00");
@@ -77,47 +86,188 @@ function CountdownTimer() {
   );
 }
 
-/* ── Timeline icon SVGs matching the physical card ── */
+/* ═══════════════════════════════════════════════════════════════
+   WATERCOLOR TIMELINE ICONS — hand-painted illustrations
+═══════════════════════════════════════════════════════════════ */
+
+/* Engagement: Couple exchanging rings with watercolor wash */
 function EngagementIcon() {
   return (
-    <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-      <circle cx="26" cy="26" r="24" stroke={COLORS.navy} strokeWidth="1.2" strokeOpacity="0.2" fill="none"/>
-      {/* Two rings interlinked */}
-      <circle cx="20" cy="26" r="9" stroke={COLORS.navy} strokeWidth="1.5" fill="none" strokeOpacity="0.7"/>
-      <circle cx="32" cy="26" r="9" stroke={COLORS.navy} strokeWidth="1.5" fill="none" strokeOpacity="0.7"/>
-      <circle cx="26" cy="26" r="2" fill="#8A7030" fillOpacity="0.7"/>
+    <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+      <defs>
+        <filter id="eng-blur">
+          <feGaussianBlur stdDeviation="0.5" />
+        </filter>
+        <radialGradient id="eng-bg" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#E8C09A" stopOpacity="0.55" />
+          <stop offset="0.7" stopColor="#E8C09A" stopOpacity="0.2" />
+          <stop offset="1" stopColor="#E8C09A" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* Watercolor wash background */}
+      <circle cx="34" cy="34" r="32" fill="url(#eng-bg)" />
+
+      <g filter="url(#eng-blur)">
+        {/* Two abstract figures (heads + bodies) */}
+        {/* Left figure (bride) */}
+        <circle cx="22" cy="22" r="6" fill="#E8C09A" stroke="#7A5A38" strokeWidth="1.2" />
+        <path
+          d="M14 44 Q14 32 22 30 Q30 32 30 44 Q30 50 22 50 Q14 50 14 44Z"
+          fill="#7A8A5A"
+          fillOpacity="0.65"
+          stroke="#5A6B40"
+          strokeWidth="1"
+        />
+
+        {/* Right figure (groom) */}
+        <circle cx="46" cy="22" r="6" fill="#E8C09A" stroke="#7A5A38" strokeWidth="1.2" />
+        <path
+          d="M38 44 Q38 32 46 30 Q54 32 54 44 Q54 50 46 50 Q38 50 38 44Z"
+          fill="#1B4A5C"
+          fillOpacity="0.75"
+          stroke="#0F3040"
+          strokeWidth="1"
+        />
+
+        {/* Ring being exchanged in the center */}
+        <circle cx="34" cy="36" r="5" stroke="#8A7030" strokeWidth="2" fill="none" />
+        <circle cx="34" cy="33" r="1.5" fill="#1B4A5C" />
+
+        {/* Small heart above */}
+        <path
+          d="M34 12 C32 10 28 11 28 14 C28 17 34 20 34 20 C34 20 40 17 40 14 C40 11 36 10 34 12Z"
+          fill="#C0392B"
+          fillOpacity="0.55"
+        />
+      </g>
+
+      {/* Watercolor splashes */}
+      <ellipse cx="12" cy="56" rx="6" ry="4" fill="#8A7030" opacity="0.18" />
+      <ellipse cx="56" cy="12" rx="5" ry="3" fill="#7A8A5A" opacity="0.22" />
     </svg>
   );
 }
 
+/* Welcome Photos: Polaroid camera + photos with watercolor */
 function CameraIcon() {
   return (
-    <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-      <circle cx="26" cy="26" r="24" stroke={COLORS.navy} strokeWidth="1.2" strokeOpacity="0.2" fill="none"/>
-      <rect x="12" y="18" width="28" height="20" rx="3" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7" fill="none"/>
-      <circle cx="26" cy="27" r="6" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7" fill="none"/>
-      <circle cx="26" cy="27" r="2.5" fill={COLORS.navy} fillOpacity="0.4"/>
-      <path d="M20 18V16C20 14.9 20.9 14 22 14H30C31.1 14 32 14.9 32 16V18" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7" fill="none"/>
-      <circle cx="36" cy="22" r="1.5" fill={COLORS.navy} fillOpacity="0.5"/>
+    <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+      <defs>
+        <filter id="cam2-blur">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
+        <radialGradient id="cam-bg" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#D4A574" stopOpacity="0.55" />
+          <stop offset="0.7" stopColor="#D4A574" stopOpacity="0.18" />
+          <stop offset="1" stopColor="#D4A574" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      <circle cx="34" cy="34" r="32" fill="url(#cam-bg)" />
+
+      <g filter="url(#cam2-blur)">
+        {/* Small polaroid photos behind */}
+        <rect x="10" y="42" width="14" height="16" rx="1" fill="#FDFAF5" stroke="#7A5A38" strokeWidth="0.8" transform="rotate(-12 17 50)" />
+        <rect x="44" y="42" width="14" height="16" rx="1" fill="#FDFAF5" stroke="#7A5A38" strokeWidth="0.8" transform="rotate(14 51 50)" />
+
+        {/* Camera body */}
+        <rect x="16" y="18" width="36" height="28" rx="3" fill="#E8C09A" stroke="#7A5A38" strokeWidth="1.4" />
+        <rect x="16" y="18" width="36" height="8" rx="3" fill="#C4A574" opacity="0.6" />
+
+        {/* Lens */}
+        <circle cx="34" cy="33" r="9" fill="#3A2C18" stroke="#7A5A38" strokeWidth="1.3" />
+        <circle cx="34" cy="33" r="6" fill="#1B4A5C" />
+        <circle cx="34" cy="33" r="3.5" fill="#0F1820" />
+        <ellipse cx="31" cy="30" rx="1.5" ry="1" fill="#FFFFFF" opacity="0.5" />
+
+        {/* Flash */}
+        <circle cx="46" cy="22" r="2.4" fill="#FFF8F0" stroke="#8A7030" strokeWidth="0.8" />
+        <circle cx="46" cy="22" r="1.2" fill="#FFE9A8" />
+
+        {/* Viewfinder */}
+        <rect x="20" y="20" width="6" height="3.5" rx="0.5" fill="#3A2C18" opacity="0.8" />
+
+        {/* Strap */}
+        <path d="M16 22 Q12 18 14 14" stroke="#5A3E25" strokeWidth="1.2" strokeOpacity="0.6" fill="none" />
+        <path d="M52 22 Q56 18 54 14" stroke="#5A3E25" strokeWidth="1.2" strokeOpacity="0.6" fill="none" />
+      </g>
+
+      {/* Watercolor splashes */}
+      <ellipse cx="56" cy="14" rx="4" ry="3" fill="#C0392B" opacity="0.18" />
+      <ellipse cx="10" cy="20" rx="5" ry="3" fill="#7A8A5A" opacity="0.2" />
     </svg>
   );
 }
 
+/* Celebration: Champagne glasses + confetti with watercolor */
 function CelebrationIcon() {
   return (
-    <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-      <circle cx="26" cy="26" r="24" stroke={COLORS.navy} strokeWidth="1.2" strokeOpacity="0.2" fill="none"/>
-      {/* Champagne glasses */}
-      <path d="M19 14L16 26H22L19 14Z" stroke={COLORS.navy} strokeWidth="1.5" strokeLinejoin="round" strokeOpacity="0.7" fill="none"/>
-      <path d="M16 26H22" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7"/>
-      <line x1="19" y1="26" x2="19" y2="34" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7"/>
-      <path d="M15 34H23" stroke={COLORS.navy} strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.7"/>
-      <path d="M33 14L30 26H36L33 14Z" stroke={COLORS.navy} strokeWidth="1.5" strokeLinejoin="round" strokeOpacity="0.7" fill="none"/>
-      <path d="M30 26H36" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7"/>
-      <line x1="33" y1="26" x2="33" y2="34" stroke={COLORS.navy} strokeWidth="1.5" strokeOpacity="0.7"/>
-      <path d="M29 34H37" stroke={COLORS.navy} strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.7"/>
-      {/* Clink lines */}
-      <path d="M22 18L24 16M26 14L28 16M28 18L30 16" stroke="#8A7030" strokeWidth="1" strokeLinecap="round" strokeOpacity="0.6"/>
+    <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+      <defs>
+        <filter id="cel-blur">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
+        <radialGradient id="cel-bg" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#C4A840" stopOpacity="0.45" />
+          <stop offset="0.7" stopColor="#C4A840" stopOpacity="0.15" />
+          <stop offset="1" stopColor="#C4A840" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      <circle cx="34" cy="34" r="32" fill="url(#cel-bg)" />
+
+      <g filter="url(#cel-blur)">
+        {/* Confetti dots */}
+        <circle cx="14" cy="14" r="1.6" fill="#C0392B" opacity="0.65" />
+        <circle cx="54" cy="12" r="1.4" fill="#7A8A5A" opacity="0.7" />
+        <circle cx="20" cy="56" r="1.8" fill="#C4A840" opacity="0.7" />
+        <circle cx="50" cy="58" r="1.5" fill="#1B4A5C" opacity="0.6" />
+        <circle cx="58" cy="40" r="1.3" fill="#E8C09A" opacity="0.75" />
+        <rect x="10" y="38" width="2.5" height="2.5" fill="#8A7030" opacity="0.55" transform="rotate(20 11 39)" />
+        <rect x="56" y="26" width="2.5" height="2.5" fill="#C0392B" opacity="0.5" transform="rotate(-15 57 27)" />
+
+        {/* Left glass */}
+        <path
+          d="M20 18 L17 32 Q17 36 22 36 Q27 36 27 32 L24 18Z"
+          fill="#C4A840"
+          fillOpacity="0.25"
+          stroke="#7A5A38"
+          strokeWidth="1.2"
+        />
+        {/* Bubbles in glass */}
+        <circle cx="20" cy="28" r="0.8" fill="#FFF8F0" opacity="0.7" />
+        <circle cx="23" cy="30" r="0.6" fill="#FFF8F0" opacity="0.6" />
+        <circle cx="21" cy="32" r="0.5" fill="#FFF8F0" opacity="0.5" />
+        {/* Stem */}
+        <line x1="22" y1="36" x2="22" y2="48" stroke="#7A5A38" strokeWidth="1.2" />
+        <path d="M16 50 L28 50" stroke="#7A5A38" strokeWidth="1.4" strokeLinecap="round" />
+
+        {/* Right glass */}
+        <path
+          d="M44 18 L41 32 Q41 36 46 36 Q51 36 51 32 L48 18Z"
+          fill="#C4A840"
+          fillOpacity="0.25"
+          stroke="#7A5A38"
+          strokeWidth="1.2"
+        />
+        <circle cx="44" cy="28" r="0.8" fill="#FFF8F0" opacity="0.7" />
+        <circle cx="47" cy="30" r="0.6" fill="#FFF8F0" opacity="0.6" />
+        <circle cx="45" cy="32" r="0.5" fill="#FFF8F0" opacity="0.5" />
+        <line x1="46" y1="36" x2="46" y2="48" stroke="#7A5A38" strokeWidth="1.2" />
+        <path d="M40 50 L52 50" stroke="#7A5A38" strokeWidth="1.4" strokeLinecap="round" />
+
+        {/* Clink lines (sparkle between glasses) */}
+        <path d="M28 22 L32 18" stroke="#C4A840" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M40 22 L36 18" stroke="#C4A840" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M30 26 L38 26" stroke="#C4A840" strokeWidth="0.8" strokeLinecap="round" opacity="0.6" />
+        {/* Star sparkle */}
+        <path
+          d="M34 14 L35 19 L34 17 L33 19 Z M34 14 L36 16 L34 15 L32 16 Z"
+          fill="#C4A840"
+          opacity="0.85"
+        />
+      </g>
     </svg>
   );
 }
@@ -172,21 +322,17 @@ function InvitationContent() {
         ref={heroRef}
         style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", overflow: "hidden", background: "linear-gradient(180deg, #EAC898 0%, #EDD8A8 40%, #F3E8CC 75%, #F8F1E6 100%)" }}
       >
-        {/* Illustration as full-bleed bg with parallax */}
         <motion.div style={{ position: "absolute", inset: "-5% 0", y: springY, zIndex: 0 }}>
           <img
             src={heroIllustration}
             alt="Pantika & Natthakorn"
             style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }}
           />
-          {/* Subtle fade at very bottom only */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "20%", background: "linear-gradient(to bottom, transparent, #F8F1E6)" }} />
         </motion.div>
 
-        {/* Floating particles */}
         <Particles />
 
-        {/* Floating leaf edges */}
         <div style={{ position: "absolute", top: "15%", left: -20, opacity: 0.35, zIndex: 1, pointerEvents: "none" }}>
           <LeafSvg style={{ transform: "rotate(-20deg) scale(2.2)" }} />
         </div>
@@ -194,17 +340,39 @@ function InvitationContent() {
           <LeafSvg style={{ transform: "rotate(200deg) scale(2.2)" }} />
         </div>
 
-        {/* PN Monogram — floats at top center in the sky area */}
+        {/* PN Monogram + date */}
         <motion.div
-          style={{ position: "absolute", top: 28, left: "50%", transform: "translateX(-50%)", zIndex: 3, opacity: heroOpacity }}
+          style={{ position: "absolute", top: 28, left: "50%", transform: "translateX(-50%)", zIndex: 3, opacity: heroOpacity, textAlign: "center" }}
           initial={{ opacity: 0, y: -20, scale: 0.85 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ delay: 0.4, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         >
-          <img src={pnLogo} alt="PN" style={{ width: "min(80px,20vw)", height: "auto", display: "block", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))" }} />
+          <img
+            src={pnLogo}
+            alt="PN"
+            style={{
+              width: "min(80px,20vw)",
+              height: "auto",
+              display: "block",
+              filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))",
+              margin: "0 auto",
+              ...transparentImg,
+            }}
+          />
+          <p
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(0.85rem, 2.4vw, 1.1rem)",
+              letterSpacing: "0.32em",
+              color: "#8A7030",
+              marginTop: 8,
+              fontWeight: 500,
+            }}
+          >
+            22 · 11 · 26
+          </p>
         </motion.div>
 
-        {/* Scroll cue at bottom */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -232,7 +400,7 @@ function InvitationContent() {
       <NameIntroSection />
 
       {/* ═══ DATE CARD ═══ */}
-      <section ref={dateSec.ref} style={{ padding: "0 24px 80px", maxWidth: 860, margin: "0 auto" }}>
+      <section ref={dateSec.ref} style={{ padding: "0 24px 80px", maxWidth: 860, margin: "0 auto", position: "relative" }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={dateSec.inView ? { opacity: 1, scale: 1 } : {}}
@@ -252,73 +420,98 @@ function InvitationContent() {
               boxShadow: "0 8px 40px rgba(27,74,92,0.08)",
             }}
           >
-            {/* Gold top stripe */}
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(to right, transparent, ${COLORS.gold}, transparent)`, opacity: 0.6 }} />
+            {/* Watercolor texture layers inside card */}
+            <WatercolorWash variant="warm" intensity={0.5} />
+            <PaperTexture opacity={0.25} />
 
-            <div style={{ position: "absolute", top: -20, left: -20, opacity: 0.3 }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(to right, transparent, ${COLORS.gold}, transparent)`, opacity: 0.6, zIndex: 2 }} />
+
+            <div style={{ position: "absolute", top: -20, left: -20, opacity: 0.3, zIndex: 2 }}>
               <LeafSvg style={{ transform: "rotate(25deg) scale(1.6)" }} />
             </div>
-            <div style={{ position: "absolute", bottom: -20, right: -20, opacity: 0.3 }}>
+            <div style={{ position: "absolute", bottom: -20, right: -20, opacity: 0.3, zIndex: 2 }}>
               <LeafSvg style={{ transform: "rotate(205deg) scale(1.6)" }} />
             </div>
 
-            <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.65rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 16, position: "relative" }}>
-              {t.save_the_date}
-            </p>
+            {/* Small flowers */}
+            <WatercolorFlower
+              size={28}
+              style={{ position: "absolute", top: 30, right: 36, opacity: 0.55, zIndex: 2 }}
+            />
+            <WatercolorFlower
+              size={24}
+              color="#A8B080"
+              centerColor="#7A8A5A"
+              style={{ position: "absolute", bottom: 36, left: 40, opacity: 0.55, zIndex: 2 }}
+            />
 
-            {/* Ring ornament */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={dateSec.inView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}
-            >
-              <img src={ringImg} alt="" style={{ width: 42, height: 42, objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(27,74,92,0.2))" }} />
-            </motion.div>
+            <div style={{ position: "relative", zIndex: 3 }}>
+              <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.65rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 16 }}>
+                {t.save_the_date}
+              </p>
 
-            <motion.h2
-              initial={{ opacity: 0, scale: 0.75 }}
-              animate={dateSec.inView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: 0.2, duration: 0.8 }}
-              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(3rem, 9vw, 5.5rem)", fontWeight: 500, color: COLORS.navy, lineHeight: 1, marginBottom: 4, position: "relative" }}
-            >22</motion.h2>
-            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.2rem, 3vw, 1.8rem)", color: COLORS.navy, letterSpacing: "0.08em", marginBottom: 4, opacity: 0.85 }}>
-              November 2026
-            </p>
-            <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.22em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 40 }}>
-              {t.sunday}
-            </p>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={dateSec.inView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ delay: 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}
+              >
+                <img
+                  src={ringImg}
+                  alt=""
+                  style={{
+                    width: 42,
+                    height: 42,
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 2px 6px rgba(27,74,92,0.2))",
+                    ...transparentImg,
+                  }}
+                />
+              </motion.div>
 
-            {/* Timeline icons — matching physical card */}
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: 0, flexWrap: "wrap", position: "relative" }}>
-              {[
-                { label: t.ceremony, time: "16:09", Icon: EngagementIcon },
-                { label: t.reception, time: "17:00", Icon: CameraIcon },
-                { label: t.celebration, time: "17:30", Icon: CelebrationIcon },
-              ].map(({ label, time, Icon }, i) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={dateSec.inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.3 + i * 0.15, duration: 0.7 }}
-                  whileHover={{ y: -4 }}
-                  style={{ textAlign: "center", flex: "1 1 100px", padding: "0 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, position: "relative" }}
-                >
-                  <Icon />
-                  {/* Dotted connector */}
-                  {i < 2 && (
-                    <div style={{ position: "absolute", left: "60%", top: 26, width: "80%", height: 1, borderTop: "1.5px dotted rgba(27,74,92,0.25)", pointerEvents: "none" }}>
-                      <div style={{ position: "absolute", right: -4, top: -4, width: 7, height: 7, borderTop: "1.5px solid rgba(27,74,92,0.35)", borderRight: "1.5px solid rgba(27,74,92,0.35)", transform: "rotate(45deg)" }} />
-                    </div>
-                  )}
-                  <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.2rem, 3vw, 1.6rem)", fontWeight: 500, color: COLORS.navy, lineHeight: 1 }}>
-                    {time}
-                  </p>
-                  <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.62rem", letterSpacing: "0.15em", color: COLORS.lightBrown, textTransform: "uppercase" }}>
-                    {label}
-                  </p>
-                </motion.div>
-              ))}
+              <motion.h2
+                initial={{ opacity: 0, scale: 0.75 }}
+                animate={dateSec.inView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ delay: 0.2, duration: 0.8 }}
+                style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(3rem, 9vw, 5.5rem)", fontWeight: 500, color: COLORS.navy, lineHeight: 1, marginBottom: 4 }}
+              >22</motion.h2>
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.2rem, 3vw, 1.8rem)", color: COLORS.navy, letterSpacing: "0.08em", marginBottom: 4, opacity: 0.85 }}>
+                November 2026
+              </p>
+              <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.22em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 40 }}>
+                {t.sunday}
+              </p>
+
+              {/* Timeline icons — watercolor illustrations */}
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: 0, flexWrap: "wrap", position: "relative" }}>
+                {[
+                  { label: t.ceremony, time: "16:09", Icon: EngagementIcon },
+                  { label: t.reception, time: "17:00", Icon: CameraIcon },
+                  { label: t.celebration, time: "17:30", Icon: CelebrationIcon },
+                ].map(({ label, time, Icon }, i) => (
+                  <motion.div
+                    key={label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={dateSec.inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ delay: 0.3 + i * 0.15, duration: 0.7 }}
+                    whileHover={{ y: -4 }}
+                    style={{ textAlign: "center", flex: "1 1 100px", padding: "0 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, position: "relative" }}
+                  >
+                    <Icon />
+                    {i < 2 && (
+                      <div style={{ position: "absolute", left: "62%", top: 32, width: "76%", height: 1, borderTop: "1.5px dotted rgba(27,74,92,0.25)", pointerEvents: "none" }}>
+                        <div style={{ position: "absolute", right: -4, top: -4, width: 7, height: 7, borderTop: "1.5px solid rgba(27,74,92,0.35)", borderRight: "1.5px solid rgba(27,74,92,0.35)", transform: "rotate(45deg)" }} />
+                      </div>
+                    )}
+                    <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.2rem, 3vw, 1.6rem)", fontWeight: 500, color: COLORS.navy, lineHeight: 1 }}>
+                      {time}
+                    </p>
+                    <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.62rem", letterSpacing: "0.15em", color: COLORS.lightBrown, textTransform: "uppercase" }}>
+                      {label}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -339,15 +532,19 @@ function InvitationContent() {
                 <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: COLORS.white, textTransform: "uppercase" }}>{t.venue_label}</span>
               </div>
             </motion.div>
-            <div style={{ background: "linear-gradient(135deg, #F2E8D2, #EBDDc4)", padding: "52px 44px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ width: 3, height: 44, background: COLORS.gold, opacity: 0.7, borderRadius: 2, marginBottom: 20 }} />
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 600, color: COLORS.navy, lineHeight: 1.1, marginBottom: 4 }}>{t.venue_name_line1}</h2>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 300, fontStyle: "italic", color: COLORS.navy, lineHeight: 1.1, marginBottom: 24, opacity: 0.75 }}>{t.venue_name_line2}</h2>
-              <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 28 }}>{t.venue_desc}</p>
-              <motion.a href="#map" whileHover={{ gap: 14 }} style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", textTransform: "uppercase", color: COLORS.navy, textDecoration: "none", borderBottom: `1px solid rgba(27,74,92,0.3)`, paddingBottom: 3, width: "fit-content" }}>
-                {t.directions}
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5H11M11 6.5L7.5 3M11 6.5L7.5 10" stroke={COLORS.navy} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </motion.a>
+            <div style={{ background: "linear-gradient(135deg, #F2E8D2, #EBDDc4)", padding: "52px 44px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+              <WatercolorWash variant="soft" intensity={0.5} />
+              <PaperTexture opacity={0.25} />
+              <div style={{ position: "relative", zIndex: 2 }}>
+                <div style={{ width: 3, height: 44, background: COLORS.gold, opacity: 0.7, borderRadius: 2, marginBottom: 20 }} />
+                <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 600, color: COLORS.navy, lineHeight: 1.1, marginBottom: 4 }}>{t.venue_name_line1}</h2>
+                <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 300, fontStyle: "italic", color: COLORS.navy, lineHeight: 1.1, marginBottom: 24, opacity: 0.75 }}>{t.venue_name_line2}</h2>
+                <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 28 }}>{t.venue_desc}</p>
+                <motion.a href="#map" whileHover={{ gap: 14 }} style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", textTransform: "uppercase", color: COLORS.navy, textDecoration: "none", borderBottom: `1px solid rgba(27,74,92,0.3)`, paddingBottom: 3, width: "fit-content" }}>
+                  {t.directions}
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5H11M11 6.5L7.5 3M11 6.5L7.5 10" stroke={COLORS.navy} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </motion.a>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -360,9 +557,18 @@ function InvitationContent() {
       <HashtagSection />
 
       {/* ═══ PROGRAM ═══ */}
-      <section ref={programSec.ref} style={{ padding: "96px 24px", background: COLORS.cream, maxWidth: 660, margin: "0 auto", textAlign: "center", position: "relative" }}>
+      <section ref={programSec.ref} style={{ padding: "96px 24px", background: COLORS.cream, maxWidth: 660, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <WatercolorWash variant="warm" intensity={0.5} />
+        <PaperTexture opacity={0.3} />
         <BotanicalBorder />
-        <div style={{ paddingTop: 20 }}>
+
+        <WatercolorFlower
+          size={30}
+          color="#D4A574"
+          style={{ position: "absolute", top: 100, right: 30, opacity: 0.55, zIndex: 2 }}
+        />
+
+        <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={programSec.inView ? { opacity: 1, y: 0 } : {}}
@@ -423,10 +629,25 @@ function InvitationContent() {
       {/* ═══ MAP ═══ */}
       <div id="map"><MapSection /></div>
 
-      {/* ═══ DRESS CODE — 9 arch swatches ═══ */}
-      <section ref={dressSec.ref} style={{ padding: "96px 24px", textAlign: "center", maxWidth: 600, margin: "0 auto", position: "relative" }}>
+      {/* ═══ DRESS CODE ═══ */}
+      <section ref={dressSec.ref} style={{ padding: "96px 24px", textAlign: "center", maxWidth: 600, margin: "0 auto", position: "relative", overflow: "hidden" }}>
+        <WatercolorWash variant="soft" intensity={0.5} />
+        <PaperTexture opacity={0.3} />
         <BotanicalBorder />
-        <div style={{ paddingTop: 24 }}>
+
+        <WatercolorFlower
+          size={26}
+          color="#D4A574"
+          style={{ position: "absolute", top: 110, left: 30, opacity: 0.55, zIndex: 2 }}
+        />
+        <WatercolorFlower
+          size={24}
+          color="#A8B080"
+          centerColor="#7A8A5A"
+          style={{ position: "absolute", top: 130, right: 28, opacity: 0.5, zIndex: 2 }}
+        />
+
+        <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           <motion.div
             initial={{ opacity: 0, y: 28 }}
             animate={dressSec.inView ? { opacity: 1, y: 0 } : {}}
@@ -437,7 +658,6 @@ function InvitationContent() {
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
             <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 44 }}>{t.dress_desc}</p>
 
-            {/* 3×3 arch grid — rows: brown, gold, green */}
             {[
               [
                 { color: "#3A2C18", label: "Dark\nBrown" },
@@ -473,20 +693,42 @@ function InvitationContent() {
         ref={footerSec.ref}
         style={{ background: "linear-gradient(180deg, #EBDDc4 0%, #E3D2B0 100%)", padding: "80px 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}
       >
+        <WatercolorWash variant="soft" intensity={0.6} />
+        <PaperTexture opacity={0.3} />
         <BotanicalBorder />
+
+        <WatercolorFlower
+          size={32}
+          color="#D4A574"
+          style={{ position: "absolute", top: 100, left: 36, opacity: 0.55, zIndex: 2 }}
+        />
+        <WatercolorFlower
+          size={28}
+          color="#A8B080"
+          centerColor="#7A8A5A"
+          style={{ position: "absolute", top: 130, right: 40, opacity: 0.5, zIndex: 2 }}
+        />
+
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={footerSec.inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 1 }}
-          style={{ maxWidth: 520, margin: "60px auto 0" }}
+          style={{ maxWidth: 520, margin: "60px auto 0", position: "relative", zIndex: 3 }}
         >
           <Divider className="mb-10" />
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote}</p>
           <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 44 }}>{t.quote_author}</p>
 
-          {/* PN logo in footer */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <img src={pnLogo} alt="PN" style={{ width: 64, height: "auto" }} />
+            <img
+              src={pnLogo}
+              alt="PN"
+              style={{
+                width: 64,
+                height: "auto",
+                ...transparentImg,
+              }}
+            />
           </div>
 
           <div style={{ width: 48, height: 1.5, background: COLORS.gold, opacity: 0.5, borderRadius: 1, margin: "12px auto 16px" }} />
