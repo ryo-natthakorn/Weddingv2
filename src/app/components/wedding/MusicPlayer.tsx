@@ -22,8 +22,6 @@ export function MusicPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [bars, setBars] = useState<number[]>(Array(20).fill(4));
-  const animRef = useRef<number>();
 
   /* ── Init YouTube IFrame API ── */
   const initPlayer = useCallback(() => {
@@ -44,7 +42,6 @@ export function MusicPlayer() {
       events: {
         onReady: () => setReady(true),
         onStateChange: (e: any) => {
-          // 1 = PLAYING, 2 = PAUSED, 0 = ENDED
           setPlaying(e.data === 1);
           if (e.data === 0) {
             setPlaying(false);
@@ -95,22 +92,7 @@ export function MusicPlayer() {
     return () => clearInterval(interval);
   }, [playing]);
 
-  /* ── Equalizer bar animation ── */
-  useEffect(() => {
-    const animateBars = () => {
-      setBars((prev) => prev.map(() => playing ? Math.random() * 28 + 4 : 4));
-      animRef.current = requestAnimationFrame(animateBars);
-    };
-    if (playing) {
-      animRef.current = requestAnimationFrame(animateBars);
-    } else {
-      setBars(Array(20).fill(4));
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-    }
-    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [playing]);
-
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (!ready || !playerRef.current) return;
     try {
       if (playing) {
@@ -119,7 +101,7 @@ export function MusicPlayer() {
         playerRef.current.playVideo();
       }
     } catch {}
-  };
+  }, [ready, playing]);
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!playerRef.current) return;
@@ -146,8 +128,13 @@ export function MusicPlayer() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  const isReady = ready;
-  const accent = "#7B8C58";
+  /* Earth-tone palette to match watercolor theme */
+  const ACCENT = "#8A7030";       // olive gold
+  const ACCENT_DARK = "#6B5520";  // deeper gold
+  const SURFACE = "rgba(253,250,245,0.92)";
+  const TEXT_PRIMARY = "#3A2C18";
+  const TEXT_MUTED = "rgba(58,44,24,0.55)";
+  const TEXT_DIM = "rgba(58,44,24,0.4)";
 
   return (
     <>
@@ -158,7 +145,7 @@ export function MusicPlayer() {
         <div ref={playerDivRef} />
       </div>
 
-      {/* ── Floating player shell — full-width outer for safe centering on mobile ── */}
+      {/* Floating player shell */}
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -179,76 +166,84 @@ export function MusicPlayer() {
           layout
           style={{
             pointerEvents: "auto",
-            width: expanded ? "min(400px, 100%)" : "auto",
+            width: expanded ? "min(360px, 100%)" : "auto",
             maxWidth: "calc(100vw - 32px)",
-            background: "#1E2814",
-            borderRadius: 100,
-            boxShadow: "0 8px 40px rgba(30,40,20,0.45), 0 2px 8px rgba(0,0,0,0.2)",
+            background: SURFACE,
+            borderRadius: expanded ? 20 : 100,
+            boxShadow: "0 10px 40px rgba(61,34,21,0.15), 0 2px 8px rgba(61,34,21,0.08)",
             overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.1)",
+            border: `1px solid rgba(138,112,48,0.18)`,
+            backdropFilter: "blur(16px)",
           }}
         >
-          {/* Collapsed pill */}
+          {/* Collapsed pill — minimal, clean */}
           {!expanded && (
             <motion.div
               layout
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 8px 16px" }}
             >
-              {/* Equalizer bars */}
-              <div
-                style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 22, cursor: "pointer", flexShrink: 0 }}
+              {/* Animated note icon */}
+              <motion.div
+                animate={playing ? { rotate: [0, -8, 8, 0] } : { rotate: 0 }}
+                transition={playing ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
                 onClick={() => setExpanded(true)}
+                style={{ cursor: "pointer", display: "flex", alignItems: "center", color: ACCENT }}
               >
-                {bars.slice(0, 7).map((h, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ height: h }}
-                    transition={{ duration: 0.08, ease: "linear" }}
-                    style={{ width: 2.5, background: playing ? accent : "rgba(255,255,255,0.28)", borderRadius: 2, minHeight: 4 }}
-                  />
-                ))}
-              </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12.5V4l7-1.5v8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="4.5" cy="12.5" r="1.5" stroke="currentColor" strokeWidth="1.4"/>
+                  <circle cx="11.5" cy="10.5" r="1.5" stroke="currentColor" strokeWidth="1.4"/>
+                </svg>
+              </motion.div>
 
-              {/* Title */}
+              {/* Title — only when collapsed */}
               <button
                 onClick={() => setExpanded(true)}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "'Jost', sans-serif", fontSize: "0.7rem",
-                  letterSpacing: "0.1em", color: "rgba(255,255,255,0.82)",
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "0.86rem", fontStyle: "italic",
+                  color: TEXT_PRIMARY,
                   whiteSpace: "nowrap", padding: 0,
+                  letterSpacing: "0.02em",
                 }}
               >
-                {t.music_note}
+                {t.music_title}
               </button>
 
-              {/* Play button */}
+              {/* Play button — golden circle */}
               <button
                 onClick={togglePlay}
-                disabled={!isReady}
+                disabled={!ready}
+                aria-label={playing ? "Pause" : "Play"}
                 style={{
-                  width: 30, height: 30, borderRadius: "50%",
-                  background: isReady ? accent : "rgba(255,255,255,0.15)",
-                  border: "none", cursor: isReady ? "pointer" : "default",
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: ready
+                    ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`
+                    : "rgba(138,112,48,0.2)",
+                  border: "none",
+                  cursor: ready ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, transition: "background 0.3s",
+                  flexShrink: 0,
+                  boxShadow: ready ? "0 3px 12px rgba(138,112,48,0.35)" : "none",
+                  transition: "background 0.3s, box-shadow 0.3s",
                 }}
               >
                 {playing ? (
-                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                    <rect x="1" y="0.5" width="2.5" height="8" rx="1" fill="white"/>
-                    <rect x="5.5" y="0.5" width="2.5" height="8" rx="1" fill="white"/>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <rect x="1.5" y="1" width="2.5" height="8" rx="1" fill="white"/>
+                    <rect x="6" y="1" width="2.5" height="8" rx="1" fill="white"/>
                   </svg>
                 ) : (
-                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                    <path d="M2 1L8 4.5L2 8V1Z" fill="white"/>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2.5 1L9 5L2.5 9V1Z" fill="white"/>
                   </svg>
                 )}
               </button>
             </motion.div>
           )}
 
-          {/* Expanded panel */}
+          {/* Expanded panel — cleaner layout */}
           <AnimatePresence>
             {expanded && (
               <motion.div
@@ -256,69 +251,115 @@ export function MusicPlayer() {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                style={{ padding: "20px 20px 16px", borderRadius: 24 }}
+                style={{ padding: "20px 22px 18px" }}
               >
-                {/* Header row */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.58rem", letterSpacing: "0.2em", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", marginBottom: 3 }}>
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{
+                      fontFamily: "'Jost', sans-serif",
+                      fontSize: "0.58rem",
+                      letterSpacing: "0.22em",
+                      color: TEXT_MUTED,
+                      textTransform: "uppercase",
+                      marginBottom: 4,
+                    }}>
                       {t.music_label}
                     </p>
-                    <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1rem", fontStyle: "italic", color: "#FFF8EE", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
+                    <p style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontSize: "1.1rem",
+                      fontStyle: "italic",
+                      fontWeight: 500,
+                      color: TEXT_PRIMARY,
+                      lineHeight: 1.2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
                       {t.music_title}
                     </p>
                   </div>
                   <button
                     onClick={() => setExpanded(false)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", lineHeight: 1, padding: "0 0 0 12px", flexShrink: 0 }}
+                    aria-label="Collapse"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: TEXT_DIM,
+                      fontSize: "1.2rem",
+                      lineHeight: 1,
+                      padding: "0 0 0 12px",
+                      flexShrink: 0,
+                    }}
                   >
                     ×
                   </button>
                 </div>
 
-                {/* Waveform */}
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 36, marginBottom: 14, justifyContent: "center" }}>
-                  {bars.map((h, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ height: h }}
-                      transition={{ duration: 0.08, ease: "linear" }}
-                      style={{
-                        flex: 1,
-                        background: playing
-                          ? `rgba(123,140,88,${0.35 + (i / 20) * 0.65})`
-                          : "rgba(255,255,255,0.12)",
-                        borderRadius: 3,
-                        minHeight: 4,
-                        maxWidth: 11,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                {/* Progress bar */}
+                {/* Progress bar — clean, no waveform clutter */}
                 <div
                   onClick={seek}
-                  style={{ height: 3, background: "rgba(255,255,255,0.12)", borderRadius: 2, cursor: "pointer", marginBottom: 6, position: "relative" }}
+                  style={{
+                    height: 4,
+                    background: "rgba(138,112,48,0.15)",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    marginBottom: 8,
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
                 >
-                  <div style={{ height: "100%", width: `${progress}%`, background: accent, borderRadius: 2, transition: "width 0.5s linear" }} />
+                  <div style={{
+                    height: "100%",
+                    width: `${progress}%`,
+                    background: `linear-gradient(to right, ${ACCENT}, ${ACCENT_DARK})`,
+                    borderRadius: 4,
+                    transition: "width 0.5s linear",
+                  }} />
+                  {/* Tiny dot at progress head */}
+                  {progress > 0 && (
+                    <div style={{
+                      position: "absolute",
+                      left: `${progress}%`,
+                      top: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: 10, height: 10,
+                      borderRadius: "50%",
+                      background: ACCENT,
+                      boxShadow: "0 1px 4px rgba(138,112,48,0.4)",
+                    }} />
+                  )}
                 </div>
 
                 {/* Time */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-                  <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.58rem", color: "rgba(255,255,255,0.35)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
+                  <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
                     {formatTime(currentTime)}
                   </span>
-                  <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.58rem", color: "rgba(255,255,255,0.35)" }}>
+                  <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
                     {duration > 0 ? formatTime(duration) : "--:--"}
                   </span>
                 </div>
 
-                {/* Controls */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20 }}>
+                {/* Controls — clean centered row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 24 }}>
                   <button
                     onClick={() => skipBy(-10)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center" }}
+                    aria-label="Back 10s"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: TEXT_MUTED,
+                      display: "flex",
+                      alignItems: "center",
+                      padding: 4,
+                      transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = TEXT_PRIMARY; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = TEXT_MUTED; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                       <path d="M9 3V1L5 4l4 3V5a5 5 0 1 1-5 5H2a7 7 0 1 0 7-7z" fill="currentColor"/>
@@ -327,31 +368,49 @@ export function MusicPlayer() {
 
                   <button
                     onClick={togglePlay}
-                    disabled={!isReady}
+                    disabled={!ready}
+                    aria-label={playing ? "Pause" : "Play"}
                     style={{
-                      width: 46, height: 46, borderRadius: "50%",
-                      background: isReady ? `linear-gradient(135deg, ${accent}, #5A6A40)` : "rgba(255,255,255,0.1)",
-                      border: "none", cursor: isReady ? "pointer" : "default",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      boxShadow: isReady ? `0 4px 16px rgba(123,140,88,0.4)` : "none",
+                      width: 48, height: 48, borderRadius: "50%",
+                      background: ready
+                        ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`
+                        : "rgba(138,112,48,0.2)",
+                      border: "none",
+                      cursor: ready ? "pointer" : "default",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: ready ? "0 4px 16px rgba(138,112,48,0.4)" : "none",
                       transition: "all 0.3s",
                     }}
                   >
                     {playing ? (
-                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <rect x="2" y="1" width="3.5" height="11" rx="1.5" fill="white"/>
-                        <rect x="7.5" y="1" width="3.5" height="11" rx="1.5" fill="white"/>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="2.5" y="1.5" width="3.5" height="11" rx="1.5" fill="white"/>
+                        <rect x="8" y="1.5" width="3.5" height="11" rx="1.5" fill="white"/>
                       </svg>
                     ) : (
-                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <path d="M3 1.5L12 6.5L3 11.5V1.5Z" fill="white"/>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3.5 2L13 7L3.5 12V2Z" fill="white"/>
                       </svg>
                     )}
                   </button>
 
                   <button
                     onClick={() => skipBy(10)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center" }}
+                    aria-label="Forward 10s"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: TEXT_MUTED,
+                      display: "flex",
+                      alignItems: "center",
+                      padding: 4,
+                      transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = TEXT_PRIMARY; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = TEXT_MUTED; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                       <path d="M9 3V1l4 3-4 3V5a5 5 0 1 0 5 5h2A7 7 0 1 1 9 3z" fill="currentColor"/>
@@ -359,8 +418,16 @@ export function MusicPlayer() {
                   </button>
                 </div>
 
-                {/* YouTube attribution (required by YT ToS) */}
-                <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.52rem", color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
+                {/* YouTube attribution */}
+                <p style={{
+                  fontFamily: "'Jost', sans-serif",
+                  fontSize: "0.5rem",
+                  color: TEXT_DIM,
+                  textAlign: "center",
+                  marginTop: 14,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}>
                   Powered by YouTube
                 </p>
               </motion.div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "motion/react";
 import { LangProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
@@ -25,10 +25,13 @@ import ringImg from "../../imports/Ring.svg";
 
 /* ── Floating golden particles ── */
 function Particles() {
-  const pts = Array.from({ length: 14 }, (_, i) => ({
-    id: i, x: Math.random() * 100, y: Math.random() * 100,
-    size: Math.random() * 3 + 2, dur: Math.random() * 6 + 7, delay: Math.random() * 5,
-  }));
+  const pts = useMemo(
+    () => Array.from({ length: 14 }, (_, i) => ({
+      id: i, x: Math.random() * 100, y: Math.random() * 100,
+      size: Math.random() * 3 + 2, dur: Math.random() * 6 + 7, delay: Math.random() * 5,
+    })),
+    [],
+  );
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 2 }}>
       {pts.map((p) => (
@@ -64,12 +67,12 @@ function CountdownTimer() {
           <AnimatePresence mode="wait">
             <motion.div
               key={v} initial={{ y: -14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 14, opacity: 0 }} transition={{ duration: 0.3 }}
-              style={{ background: "rgba(255,248,240,0.1)", border: "1px solid rgba(196,168,64,0.2)", borderRadius: 12, padding: "16px 20px", fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 5vw, 2.5rem)", fontWeight: 500, color: "#FFF8F0", lineHeight: 1, minWidth: 72, textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.15)", backdropFilter: "blur(8px)" }}
+              style={{ background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "16px 20px", fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.8rem, 5vw, 2.5rem)", fontWeight: 500, color: COLORS.navy, lineHeight: 1, minWidth: 72, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}
             >
               {String(v).padStart(2, "0")}
             </motion.div>
           </AnimatePresence>
-          <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: "rgba(196,168,64,0.55)", marginTop: 10, textTransform: "uppercase" }}>{label}</span>
+          <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: COLORS.lightBrown, marginTop: 10, textTransform: "uppercase" }}>{label}</span>
         </motion.div>
       ))}
     </div>
@@ -320,7 +323,7 @@ function InvitationContent() {
             <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.5 }} style={{ position: "relative", minHeight: 400, overflow: "hidden" }}>
               <img src={FLORAL_IMAGE} alt="Venue" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 400 }} />
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 50%, rgba(242,232,212,0.7) 100%)" }} />
-              <div style={{ position: "absolute", top: 20, left: 20, background: COLORS.navy, borderRadius: 100, padding: "7px 16px" }}>
+              <div style={{ position: "absolute", top: 20, left: 20, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, borderRadius: 100, padding: "7px 16px", boxShadow: "0 4px 12px rgba(138,112,48,0.3)" }}>
                 <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: COLORS.white, textTransform: "uppercase" }}>{t.venue_label}</span>
               </div>
             </motion.div>
@@ -378,14 +381,17 @@ function InvitationContent() {
       </section>
 
       {/* ═══ COUNTDOWN ═══ */}
-      <section ref={countdownSec.ref} style={{ padding: "96px 24px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-          <img src={GARDEN_IMAGE} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(15,48,64,0.88) 0%, rgba(27,74,92,0.72) 100%)" }} />
+      <section ref={countdownSec.ref} style={{ padding: "96px 24px", textAlign: "center", position: "relative", overflow: "hidden", background: "linear-gradient(180deg, #EEE2C8 0%, #E3D2B0 50%, #DBC59A 100%)" }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, opacity: 0.18 }}>
+          <img src={GARDEN_IMAGE} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "sepia(50%) saturate(0.7)" }} />
         </div>
+        <WatercolorWash variant="warm" intensity={0.6} />
+        <PaperTexture opacity={0.25} />
+        <WatercolorFlower size={36} color="#D4A574" style={{ position: "absolute", top: 60, left: 36, opacity: 0.55, zIndex: 1 }} />
+        <WatercolorFlower size={30} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 90, right: 40, opacity: 0.5, zIndex: 1 }} />
         <motion.div initial={{ opacity: 0, y: 32 }} animate={countdownSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ position: "relative", zIndex: 2, maxWidth: 600, margin: "0 auto" }}>
-          <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.65rem", letterSpacing: "0.28em", color: "rgba(196,168,64,0.6)", textTransform: "uppercase", marginBottom: 16 }}>{t.countdown_label}</p>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.5rem, 4.5vw, 2.6rem)", fontWeight: 400, fontStyle: "italic", color: "#FFF8F0", marginBottom: 48, lineHeight: 1.3 }}>{t.countdown_subtitle}</h2>
+          <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.65rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 16 }}>{t.countdown_label}</p>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.5rem, 4.5vw, 2.6rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 48, lineHeight: 1.3 }}>{t.countdown_subtitle}</h2>
           <CountdownTimer />
         </motion.div>
       </section>

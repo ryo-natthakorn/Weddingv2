@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { useLang, Lang } from "./wedding-context";
 
 export function LangToggle() {
@@ -16,13 +16,13 @@ export function LangToggle() {
         zIndex: 999,
         display: "flex",
         alignItems: "center",
-        background: "rgba(27,74,92,0.92)",
+        background: "rgba(253,250,245,0.85)",
         backdropFilter: "blur(12px)",
         borderRadius: 100,
         padding: 4,
         gap: 2,
-        boxShadow: "0 4px 20px rgba(27,74,92,0.3)",
-        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 4px 20px rgba(61,34,21,0.12)",
+        border: "1px solid rgba(138,112,48,0.2)",
       }}
     >
       {(["EN", "TH"] as Lang[]).map((l) => (
@@ -40,7 +40,7 @@ export function LangToggle() {
             fontSize: "0.72rem",
             fontWeight: 500,
             letterSpacing: "0.12em",
-            color: lang === l ? "#FFF8EE" : "rgba(255,255,255,0.45)",
+            color: lang === l ? "#FFF8EE" : "rgba(58,44,24,0.55)",
             transition: "color 0.3s",
             zIndex: 1,
           }}
@@ -51,10 +51,10 @@ export function LangToggle() {
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "linear-gradient(135deg, #2A6A80, #1B4A5C)",
+                background: "linear-gradient(135deg, #8A7030, #6B5520)",
                 borderRadius: 100,
                 zIndex: -1,
-                boxShadow: "0 2px 8px rgba(27,74,92,0.4)",
+                boxShadow: "0 2px 8px rgba(138,112,48,0.3)",
               }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
             />

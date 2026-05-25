@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import ringImg from "../../../imports/Ring.svg";
 import pnLogo from "../../../imports/Logo.svg";
@@ -22,6 +22,17 @@ function Petal({ x, delay, size }: { x: number; delay: number; size: number }) {
     />
   );
 }
+
+const PETAL_CONFIG = [8, 18, 32, 47, 60, 74, 88].map((x, i) => ({
+  x, delay: i * 1.1, size: 5 + (i % 3) * 2,
+}));
+
+const CORNERS = [
+  { style: { top: 0, left: 0 }, rotate: "0deg" },
+  { style: { top: 0, right: 0 }, rotate: "90deg" },
+  { style: { bottom: 0, left: 0 }, rotate: "-90deg" },
+  { style: { bottom: 0, right: 0 }, rotate: "180deg" },
+] as const;
 
 export function IntroAnimation({ onComplete }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -68,9 +79,13 @@ export function IntroAnimation({ onComplete }: Props) {
     if (!unlocked && pos < 88) setPos(0);
   };
 
-  const petals = [8, 18, 32, 47, 60, 74, 88].map((x, i) => ({
-    x, delay: i * 1.1, size: 5 + (i % 3) * 2,
-  }));
+  const burstParticles = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => ({
+      x: 150 + Math.cos(i * 60 * Math.PI / 180) * 80,
+      y: 36 + Math.sin(i * 60 * Math.PI / 180) * 60,
+    })),
+    [],
+  );
 
   return (
     <AnimatePresence>
@@ -86,16 +101,21 @@ export function IntroAnimation({ onComplete }: Props) {
             overflow: "hidden", userSelect: "none",
           }}
         >
-          {petals.map((p, i) => <Petal key={i} {...p} />)}
+          {PETAL_CONFIG.map((p, i) => <Petal key={i} {...p} />)}
 
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(500px,90vw)", height: "min(500px,90vw)", borderRadius: "50%", background: "radial-gradient(circle, rgba(232,192,154,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
+          {/* Soft radial glow centered behind monogram */}
+          <div
+            style={{
+              position: "absolute", top: "50%", left: "50%",
+              transform: "translate(-50%,-50%)",
+              width: "min(500px,90vw)", height: "min(500px,90vw)",
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(232,192,154,0.22) 0%, transparent 70%)",
+              pointerEvents: "none",
+            }}
+          />
 
-          {[
-            { style: { top: 0, left: 0 }, rotate: "0deg" },
-            { style: { top: 0, right: 0 }, rotate: "90deg" },
-            { style: { bottom: 0, left: 0 }, rotate: "-90deg" },
-            { style: { bottom: 0, right: 0 }, rotate: "180deg" },
-          ].map((corner, i) => (
+          {CORNERS.map((corner, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.5 }}
@@ -112,47 +132,83 @@ export function IntroAnimation({ onComplete }: Props) {
             </motion.div>
           ))}
 
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
-
-            {/* PN Monogram — SVG โปร่งใสอยู่แล้ว ไม่ต้อง mix-blend */}
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+          {/* PN Monogram — anchored EXACTLY at viewport center */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 5,
+              pointerEvents: "none",
+            }}
+          >
+            <motion.img
+              src={pnLogo}
+              alt="PN"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              style={{ marginBottom: 8 }}
-            >
-              <img
-                src={pnLogo}
-                alt="PN"
-                style={{ width: "min(110px,28vw)", height: "auto", display: "block" }}
-              />
-            </motion.div>
+              style={{
+                width: "min(160px,38vw)",
+                height: "auto",
+                display: "block",
+              }}
+            />
+          </div>
 
+          {/* Date + venue + divider — placed just below the centered monogram */}
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(50% + min(95px, 22vw))",
+              left: 0,
+              right: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              zIndex: 5,
+              pointerEvents: "none",
+              padding: "0 24px",
+            }}
+          >
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.1rem, 3.5vw, 1.6rem)", letterSpacing: "0.25em", color: "#8A7030", marginBottom: 6 }}
+              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.1rem, 3.5vw, 1.6rem)", letterSpacing: "0.25em", color: "#8A7030" }}
             >
               22 · 11 · 26
             </motion.p>
-
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1, duration: 0.9 }}
-              style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.62rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.5)", textTransform: "uppercase", marginBottom: 0 }}
+              style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.62rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.5)", textTransform: "uppercase", marginTop: 8 }}
             >
               SailomSangdad · Bangkok
             </motion.p>
-
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 1.3, duration: 0.8 }}
-              style={{ width: 80, height: 1, background: "rgba(138,112,48,0.35)", margin: "24px 0 32px" }}
+              style={{ width: 80, height: 1, background: "rgba(138,112,48,0.35)", marginTop: 20 }}
             />
+          </div>
 
+          {/* Bottom area — hint + slider */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "8vh",
+              left: 0,
+              right: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "0 32px",
+            }}
+          >
             <AnimatePresence>
               {showHint && (
                 <motion.p
@@ -201,7 +257,6 @@ export function IntroAnimation({ onComplete }: Props) {
                   ))}
                 </div>
 
-                {/* Ring — SVG โปร่งใสอยู่แล้ว */}
                 <motion.div
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
@@ -240,11 +295,11 @@ export function IntroAnimation({ onComplete }: Props) {
               <AnimatePresence>
                 {unlocked && (
                   <>
-                    {[...Array(6)].map((_, i) => (
+                    {burstParticles.map((p, i) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 1, scale: 0, x: 150, y: 36 }}
-                        animate={{ opacity: 0, scale: 1.5, x: 150 + Math.cos(i * 60 * Math.PI / 180) * 80, y: 36 + Math.sin(i * 60 * Math.PI / 180) * 60 }}
+                        animate={{ opacity: 0, scale: 1.5, x: p.x, y: p.y }}
                         transition={{ duration: 0.7, ease: "easeOut" }}
                         style={{ position: "absolute", top: 0, left: 0, width: 8, height: 8, borderRadius: "50%", background: "#8A7030", pointerEvents: "none" }}
                       />

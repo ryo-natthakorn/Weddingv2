@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLang } from "./wedding-context";
-import { useReveal, Divider, COLORS } from "./shared";
+import {
+  useReveal,
+  Divider,
+  COLORS,
+  WatercolorWash,
+  PaperTexture,
+  WatercolorFlower,
+  BotanicalBorder,
+} from "./shared";
 
 type Status = "idle" | "submitted-yes" | "submitted-no";
 
@@ -54,15 +62,23 @@ export function RSVPSection() {
       ref={ref}
       style={{
         padding: "96px 24px",
-        background: `linear-gradient(135deg, ${COLORS.ivory} 0%, #E8DDD0 100%)`,
+        background: "linear-gradient(180deg, #F2E8D2 0%, #EBDDc4 50%, #E8DDD0 100%)",
         textAlign: "center",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      <WatercolorWash variant="warm" intensity={0.6} />
+      <PaperTexture opacity={0.3} />
+      <BotanicalBorder />
+      <WatercolorFlower size={32} color="#D4A574" style={{ position: "absolute", top: 90, left: 36, opacity: 0.55, zIndex: 1 }} />
+      <WatercolorFlower size={28} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 120, right: 40, opacity: 0.5, zIndex: 1 }} />
+
       <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.9 }}
-        style={{ maxWidth: 560, margin: "0 auto" }}
+        style={{ maxWidth: 560, margin: "0 auto", position: "relative", zIndex: 2 }}
       >
         <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
           {t.rsvp_label}
