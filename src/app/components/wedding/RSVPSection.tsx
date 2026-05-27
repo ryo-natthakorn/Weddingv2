@@ -62,7 +62,7 @@ export function RSVPSection() {
       ref={ref}
       style={{
         padding: "96px 24px",
-        background: "linear-gradient(180deg, #F2E8D2 0%, #EBDDc4 50%, #E8DDD0 100%)",
+        background: "transparent",
         textAlign: "center",
         position: "relative",
         overflow: "hidden",

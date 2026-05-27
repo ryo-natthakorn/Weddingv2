@@ -45,7 +45,7 @@ function CountdownTimer() {
   );
 }
 
-export function NameIntroSection() {
+export function NameIntroWithCountdown() {
   const { t } = useLang();
   const { ref, inView } = useReveal("-40px");
 

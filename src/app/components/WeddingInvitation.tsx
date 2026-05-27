@@ -6,7 +6,7 @@ import { MusicPlayer } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
 import { RSVPSection } from "./wedding/RSVPSection";
 import { IntroAnimation } from "./wedding/IntroAnimation";
-import { NameIntroSection } from "./wedding/NameIntroSection";
+import { NameIntroWithCountdown } from "./wedding/NameIntroWithCountdown";
 import { HashtagSection } from "./wedding/HashtagSection";
 import {
   useReveal,
@@ -138,7 +138,7 @@ function InvitationContent() {
       </section>
 
       {/* ═══ NAME INTRODUCTION ═══ */}
-      <NameIntroSection />
+      <NameIntroWithCountdown />
 
       {/* ═══ GALLERY ═══ */}
       <GallerySection />
