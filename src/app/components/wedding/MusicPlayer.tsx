@@ -201,7 +201,7 @@ export function MusicPlayer() {
                 onClick={() => setExpanded(true)}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'TT Interphases', sans-serif",
                   fontSize: "0.86rem", fontStyle: "italic",
                   color: TEXT_PRIMARY,
                   whiteSpace: "nowrap", padding: 0,
@@ -257,7 +257,7 @@ export function MusicPlayer() {
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <p style={{
-                      fontFamily: "'Jost', sans-serif",
+                      fontFamily: "'TT Interphases', sans-serif",
                       fontSize: "0.58rem",
                       letterSpacing: "0.22em",
                       color: TEXT_MUTED,
@@ -267,7 +267,7 @@ export function MusicPlayer() {
                       {t.music_label}
                     </p>
                     <p style={{
-                      fontFamily: "'Cormorant Garamond', serif",
+                      fontFamily: "'TT Interphases', sans-serif",
                       fontSize: "1.1rem",
                       fontStyle: "italic",
                       fontWeight: 500,
@@ -335,10 +335,10 @@ export function MusicPlayer() {
 
                 {/* Time */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                  <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
+                  <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
                     {formatTime(currentTime)}
                   </span>
-                  <span style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
+                  <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
                     {duration > 0 ? formatTime(duration) : "--:--"}
                   </span>
                 </div>
@@ -420,7 +420,7 @@ export function MusicPlayer() {
 
                 {/* YouTube attribution */}
                 <p style={{
-                  fontFamily: "'Jost', sans-serif",
+                  fontFamily: "'TT Interphases', sans-serif",
                   fontSize: "0.5rem",
                   color: TEXT_DIM,
                   textAlign: "center",

@@ -150,7 +150,7 @@ export function IntroAnimation({ onComplete }: Props) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                width: "min(160px,38vw)",
+                width: "min(220px,55vw)",
                 height: "auto",
                 display: "block",
               }}
@@ -161,7 +161,7 @@ export function IntroAnimation({ onComplete }: Props) {
           <div
             style={{
               position: "absolute",
-              top: "calc(50% + min(95px, 22vw))",
+              top: "calc(50% + min(150px, 38vw))",
               left: 0,
               right: 0,
               display: "flex",
@@ -176,7 +176,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.1rem, 3.5vw, 1.6rem)", letterSpacing: "0.25em", color: "#8A7030" }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", color: "#8A7030" }}
             >
               22 · 11 · 26
             </motion.p>
@@ -184,7 +184,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1, duration: 0.9 }}
-              style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.62rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.5)", textTransform: "uppercase", marginTop: 8 }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.8rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.5)", textTransform: "uppercase", marginTop: 8 }}
             >
               SailomSangdad · Bangkok
             </motion.p>
@@ -192,7 +192,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 1.3, duration: 0.8 }}
-              style={{ width: 80, height: 1, background: "rgba(138,112,48,0.35)", marginTop: 20 }}
+              style={{ display: "block", width: 80, height: 1, background: "rgba(138,112,48,0.35)", margin: "20px auto 0" }}
             />
           </div>
 
@@ -215,7 +215,7 @@ export function IntroAnimation({ onComplete }: Props) {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7 }}
-                  style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.6)", marginBottom: 20, letterSpacing: "0.05em" }}
+                  style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.6)", marginBottom: 20, letterSpacing: "0.05em" }}
                 >
                   Slide to open
                 </motion.p>

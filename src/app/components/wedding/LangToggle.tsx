@@ -36,7 +36,7 @@ export function LangToggle() {
             cursor: "pointer",
             padding: "6px 16px",
             borderRadius: 100,
-            fontFamily: "'Jost', sans-serif",
+            fontFamily: "'TT Interphases', sans-serif",
             fontSize: "0.72rem",
             fontWeight: 500,
             letterSpacing: "0.12em",
