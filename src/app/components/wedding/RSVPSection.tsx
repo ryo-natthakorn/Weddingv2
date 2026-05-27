@@ -37,7 +37,7 @@ export function RSVPSection() {
     border: `1px solid ${focused === id ? COLORS.navy : "rgba(27,74,92,0.15)"}`,
     borderRadius: 12,
     padding: "14px 18px",
-    fontFamily: "'Jost', sans-serif",
+    fontFamily: "'TT Interphases', sans-serif",
     fontSize: "0.88rem",
     fontWeight: 300,
     color: COLORS.warmBrown,
@@ -48,7 +48,7 @@ export function RSVPSection() {
   });
 
   const labelStyle: React.CSSProperties = {
-    fontFamily: "'Jost', sans-serif",
+    fontFamily: "'TT Interphases', sans-serif",
     fontSize: "0.68rem",
     letterSpacing: "0.2em",
     textTransform: "uppercase",
@@ -80,14 +80,14 @@ export function RSVPSection() {
         transition={{ duration: 0.9 }}
         style={{ maxWidth: 560, margin: "0 auto", position: "relative", zIndex: 2 }}
       >
-        <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
           {t.rsvp_label}
         </p>
         <Divider className="mb-6" />
-        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
           {t.rsvp_title}
         </h2>
-        <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.82rem", color: COLORS.lightBrown, marginBottom: 48, letterSpacing: "0.06em" }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", color: COLORS.lightBrown, marginBottom: 48, letterSpacing: "0.06em" }}>
           {t.rsvp_subtitle}
         </p>
 
@@ -151,7 +151,7 @@ export function RSVPSection() {
                             : `rgba(192,57,43,0.06)`
                           : "rgba(255,255,255,0.5)",
                         cursor: "pointer",
-                        fontFamily: "'Jost', sans-serif",
+                        fontFamily: "'TT Interphases', sans-serif",
                         fontSize: "0.8rem",
                         letterSpacing: "0.1em",
                         color: attending === val
@@ -222,7 +222,7 @@ export function RSVPSection() {
                   border: "none",
                   borderRadius: 100,
                   padding: "16px 40px",
-                  fontFamily: "'Jost', sans-serif",
+                  fontFamily: "'TT Interphases', sans-serif",
                   fontSize: "0.78rem",
                   letterSpacing: "0.2em",
                   textTransform: "uppercase",
@@ -256,15 +256,15 @@ export function RSVPSection() {
               >
                 {status === "submitted-yes" ? "♥" : "✦"}
               </motion.div>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.4rem, 3.5vw, 2rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.3 }}>
+              <h3 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 3.5vw, 2rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.3 }}>
                 {name}
               </h3>
-              <p style={{ fontFamily: "'Jost', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8 }}>
+              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8 }}>
                 {status === "submitted-yes" ? t.rsvp_thanks : t.rsvp_sorry}
               </p>
               <button
                 onClick={() => { setStatus("idle"); setName(""); setEmail(""); setAttending(null); setDietary(""); setGuests(1); }}
-                style={{ marginTop: 28, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'Jost', sans-serif", fontSize: "0.7rem", letterSpacing: "0.16em", color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
+                style={{ marginTop: 28, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.16em", color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
               >
                 ← Go Back
               </button>

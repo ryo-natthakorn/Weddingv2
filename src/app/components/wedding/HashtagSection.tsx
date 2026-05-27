@@ -82,8 +82,8 @@ export function HashtagSection() {
     <section
       ref={ref}
       style={{
-        padding: "96px 24px",
-        background: "linear-gradient(180deg, #F2E8D2 0%, #EBDDc4 50%, #E3D2B0 100%)",
+        padding: "40px 24px 64px",
+        background: "transparent",
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
@@ -134,7 +134,7 @@ export function HashtagSection() {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
           style={{
-            fontFamily: "'Jost', sans-serif",
+            fontFamily: "'TT Interphases', sans-serif",
             fontSize: "0.7rem",
             letterSpacing: "0.28em",
             color: COLORS.lightBrown,
@@ -161,7 +161,7 @@ export function HashtagSection() {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ delay: 0.3, duration: 0.5 }}
           style={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "'TT Interphases', sans-serif",
             fontSize: "clamp(2rem, 7vw, 4rem)",
             fontWeight: 600,
             letterSpacing: "0.04em",
@@ -187,7 +187,7 @@ export function HashtagSection() {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ delay: 0.7, duration: 0.9 }}
           style={{
-            fontFamily: "'Jost', sans-serif",
+            fontFamily: "'TT Interphases', sans-serif",
             fontSize: "0.82rem",
             fontWeight: 300,
             letterSpacing: "0.12em",
