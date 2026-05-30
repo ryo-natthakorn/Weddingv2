@@ -132,36 +132,12 @@ export function IntroAnimation({ onComplete }: Props) {
             </motion.div>
           ))}
 
-          {/* PN Monogram — anchored EXACTLY at viewport center */}
+          {/* PN Monogram + date — one centered unit, pushed up 60px from center
+              (keeping them together prevents the desktop/Windows overlap) */}
           <div
             style={{
               position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 5,
-              pointerEvents: "none",
-            }}
-          >
-            <motion.img
-              src={pnLogo}
-              alt="PN"
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              style={{
-                width: "min(220px,55vw)",
-                height: "auto",
-                display: "block",
-              }}
-            />
-          </div>
-
-          {/* Date + venue + divider — placed just below the centered monogram */}
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(50% + min(150px, 38vw))",
+              top: "calc(50% - 60px)",
               left: 0,
               right: 0,
               display: "flex",
@@ -172,11 +148,23 @@ export function IntroAnimation({ onComplete }: Props) {
               padding: "0 24px",
             }}
           >
+            <motion.img
+              src={pnLogo}
+              alt="PN"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                width: "min(200px,50vw)",
+                height: "auto",
+                display: "block",
+              }}
+            />
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", color: "#8A7030" }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", color: "#8A7030", marginTop: 28 }}
             >
               22 · 11 · 26
             </motion.p>
@@ -206,6 +194,7 @@ export function IntroAnimation({ onComplete }: Props) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              gap: 24,
               padding: "0 32px",
             }}
           >
@@ -215,7 +204,7 @@ export function IntroAnimation({ onComplete }: Props) {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.7 }}
-                  style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.6)", marginBottom: 20, letterSpacing: "0.05em" }}
+                  style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.6)", letterSpacing: "0.05em" }}
                 >
                   Slide to open
                 </motion.p>
@@ -284,7 +273,7 @@ export function IntroAnimation({ onComplete }: Props) {
                     alt="Ring"
                     draggable={false}
                     style={{
-                      width: 56, height: 56, objectFit: "contain",
+                      width: 80, height: 80, objectFit: "contain",
                       filter: "drop-shadow(0 4px 12px rgba(27,74,92,0.25))",
                       pointerEvents: "none",
                     }}

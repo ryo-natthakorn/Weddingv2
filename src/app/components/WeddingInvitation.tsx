@@ -104,7 +104,7 @@ function InvitationContent() {
 
         {/* PN Monogram + date — centered in the hero viewport */}
         <motion.div
-          style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 3, opacity: heroOpacity, textAlign: "center", width: "100%", pointerEvents: "none" }}
+          style={{ position: "absolute", top: "calc(50% - 90px)", left: "50%", transform: "translate(-50%, -50%)", zIndex: 3, opacity: heroOpacity, textAlign: "center", width: "100%", pointerEvents: "none" }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
@@ -114,9 +114,9 @@ function InvitationContent() {
             <img
               src={pnLogo}
               alt="PN"
-              style={{ width: "min(140px,35vw)", height: "auto", display: "block", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))", margin: "0 auto" }}
+              style={{ width: "min(200px,50vw)", height: "auto", display: "block", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))", margin: "0 auto" }}
             />
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.2rem, 4vw, 1.8rem)", letterSpacing: "0.4em", color: "#8A7030", marginTop: 14, fontWeight: 500 }}>
+            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4vw, 2rem)", letterSpacing: "0.38em", color: "#8A7030", marginTop: 14, fontWeight: 500 }}>
               22 · 11 · 26
             </p>
           </motion.div>
