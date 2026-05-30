@@ -13,22 +13,65 @@ import {
 
 type Status = "idle" | "submitted-yes" | "submitted-no";
 
+const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL as string | undefined;
+
 export function RSVPSection() {
   const { t } = useLang();
   const { ref, inView } = useReveal();
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [attending, setAttending] = useState<"yes" | "no" | null>(null);
   const [guests, setGuests] = useState(1);
-  const [dietary, setDietary] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !attending) return;
-    setStatus(attending === "yes" ? "submitted-yes" : "submitted-no");
+    if (!name || !attending || submitting) return;
+    setSubmitting(true);
+    setError(false);
+
+    const payload = {
+      name,
+      attending,
+      guests: attending === "yes" ? guests : 0,
+    };
+
+    try {
+      if (SCRIPT_URL) {
+        // text/plain avoids a CORS preflight; no-cors keeps the POST from
+        // throwing on Apps Script's opaque response — the row still writes.
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      setSubmitting(false);
+      setStatus(attending === "yes" ? "submitted-yes" : "submitted-no");
+
+      // Show the confirmation briefly, then glide down to the gift section.
+      setTimeout(() => {
+        document
+          .getElementById("gift-section")
+          ?.scrollIntoView({ behavior: "smooth" });
+      }, 2500);
+    } catch {
+      setSubmitting(false);
+      setError(true);
+    }
+  };
+
+  const resetForm = () => {
+    setStatus("idle");
+    setName("");
+    setAttending(null);
+    setGuests(1);
+    setError(false);
   };
 
   const inputStyle = (id: string): React.CSSProperties => ({
@@ -116,20 +159,6 @@ export function RSVPSection() {
                 />
               </div>
 
-              {/* Email */}
-              <div>
-                <label style={labelStyle}>{t.rsvp_email}</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setFocused("email")}
-                  onBlur={() => setFocused(null)}
-                  placeholder="you@example.com"
-                  style={inputStyle("email")}
-                />
-              </div>
-
               {/* Attending */}
               <div>
                 <label style={labelStyle}>{t.rsvp_attend}</label>
@@ -171,7 +200,7 @@ export function RSVPSection() {
                 </div>
               </div>
 
-              {/* Guests - only if attending */}
+              {/* Number of guests — only if attending */}
               <AnimatePresence>
                 {attending === "yes" && (
                   <motion.div
@@ -180,42 +209,36 @@ export function RSVPSection() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.4 }}
                   >
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <div>
-                        <label style={labelStyle}>{t.rsvp_guests}</label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={10}
-                          value={guests}
-                          onChange={(e) => setGuests(Number(e.target.value))}
-                          onFocus={() => setFocused("guests")}
-                          onBlur={() => setFocused(null)}
-                          style={inputStyle("guests")}
-                        />
-                      </div>
-                      <div>
-                        <label style={labelStyle}>{t.rsvp_dietary}</label>
-                        <input
-                          type="text"
-                          value={dietary}
-                          onChange={(e) => setDietary(e.target.value)}
-                          onFocus={() => setFocused("dietary")}
-                          onBlur={() => setFocused(null)}
-                          placeholder="Vegan, gluten-free..."
-                          style={inputStyle("dietary")}
-                        />
-                      </div>
+                    <div>
+                      <label style={labelStyle}>{t.rsvp_guests}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={guests}
+                        onChange={(e) => setGuests(Number(e.target.value))}
+                        onFocus={() => setFocused("guests")}
+                        onBlur={() => setFocused(null)}
+                        style={inputStyle("guests")}
+                      />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
+              {/* Error message */}
+              {error && (
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.8rem", color: "#C0392B", textAlign: "center" }}>
+                  {t.rsvp_error}
+                </p>
+              )}
+
               {/* Submit */}
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.97 }}
+                disabled={submitting}
+                whileHover={submitting ? {} : { scale: 1.02, y: -2 }}
+                whileTap={submitting ? {} : { scale: 0.97 }}
                 style={{
                   background: `linear-gradient(135deg, ${COLORS.navy}, ${COLORS.navyLight})`,
                   color: "#FFF8EE",
@@ -226,13 +249,14 @@ export function RSVPSection() {
                   fontSize: "0.78rem",
                   letterSpacing: "0.2em",
                   textTransform: "uppercase",
-                  cursor: "pointer",
+                  cursor: submitting ? "default" : "pointer",
+                  opacity: submitting ? 0.7 : 1,
                   marginTop: 8,
                   boxShadow: "0 8px 24px rgba(27,42,74,0.25)",
                   transition: "box-shadow 0.3s",
                 }}
               >
-                {t.rsvp_submit}
+                {submitting ? t.rsvp_sending : t.rsvp_submit}
               </motion.button>
             </motion.form>
           ) : (
@@ -263,7 +287,7 @@ export function RSVPSection() {
                 {status === "submitted-yes" ? t.rsvp_thanks : t.rsvp_sorry}
               </p>
               <button
-                onClick={() => { setStatus("idle"); setName(""); setEmail(""); setAttending(null); setDietary(""); setGuests(1); }}
+                onClick={resetForm}
                 style={{ marginTop: 28, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.16em", color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
               >
                 ← Go Back

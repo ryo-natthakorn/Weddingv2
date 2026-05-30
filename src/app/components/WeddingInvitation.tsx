@@ -5,6 +5,7 @@ import { LangToggle } from "./wedding/LangToggle";
 import { MusicPlayer } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
 import { RSVPSection } from "./wedding/RSVPSection";
+import { GiftSection } from "./wedding/GiftSection";
 import { IntroAnimation } from "./wedding/IntroAnimation";
 import { NameIntroWithCountdown } from "./wedding/NameIntroWithCountdown";
 import { HashtagSection } from "./wedding/HashtagSection";
@@ -254,6 +255,9 @@ function InvitationContent() {
 
       <RSVPSection />
 
+      {/* ═══ GIFT / ใส่ซอง ═══ */}
+      <GiftSection />
+
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <WatercolorWash variant="soft" intensity={0.6} />
@@ -275,7 +279,8 @@ function InvitationContent() {
           <div style={{ width: 48, height: 1.5, background: COLORS.gold, opacity: 0.5, borderRadius: 1, margin: "12px auto 16px" }} />
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 48 }}>22 · 11 · 2026</p>
           <Divider className="mb-8" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.14em", color: "#A89078", textTransform: "uppercase" }}>{t.footer_venue}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.14em", color: "#A89078", textTransform: "uppercase", marginBottom: 18 }}>{t.footer_venue}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.1rem)", fontStyle: "italic", color: COLORS.midBrown, letterSpacing: "0.04em" }}>{t.footer_closing}</p>
         </motion.div>
       </footer>
     </div>
