@@ -81,7 +81,7 @@ function InvitationContent() {
   const FLORAL_IMAGE = "https://images.unsplash.com/photo-1634562984686-5e559a782117?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd2hpdGUlMjBmbG9yYWxzJTIwZ3JlZW5lcnklMjB3ZWRkaW5nJTIwdGFibGV8ZW58MXx8fHwxNzc4NDY4NTYxfDA&ixlib=rb-4.1.0&q=80&w=1080";
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F8F1E6 0%, #EBDDc4 50%, #E3D2B0 100%)", backgroundAttachment: "fixed", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F8F1E6 0%, #F2E8D2 20%, #EBDDc4 50%, #E3D2B0 75%, #DBC59A 100%)", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
 
       {/* ═══ HERO ═══ */}
       <section

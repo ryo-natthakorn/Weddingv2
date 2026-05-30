@@ -25,7 +25,7 @@ export function LangToggle() {
         border: "1px solid rgba(138,112,48,0.2)",
       }}
     >
-      {(["EN", "TH"] as Lang[]).map((l) => (
+      {(["TH", "EN"] as Lang[]).map((l) => (
         <button
           key={l}
           onClick={() => setLang(l)}
