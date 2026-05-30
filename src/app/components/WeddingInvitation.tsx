@@ -21,8 +21,7 @@ import {
 import heroIllustration from "../../imports/Hero.jpg";
 import pnLogo from "../../imports/Logo.svg";
 
-const MAP_EMBED_URL =
-  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.0!2d100.5231!3d13.7399!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDQ0JzIzLjYiTiAxMDDCsDMxJzIzLjIiRQ!5e0!3m2!1sen!2sth!4v1234567890";
+const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok";
 
 const DIRECTIONS = [
   { icon: "🚗", label: "By Car", detail: "25 min from Siam, free parking available on site." },
@@ -144,90 +143,62 @@ function InvitationContent() {
       <GallerySection />
 
       {/* ═══ VENUE ═══ */}
-      <section ref={venueSec.ref} style={{ padding: "0 24px 80px", maxWidth: 1100, margin: "0 auto" }}>
+      <section ref={venueSec.ref} style={{ padding: "40px 24px 80px", maxWidth: 760, margin: "0 auto" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 0, borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 60px rgba(27,74,92,0.1)" }}>
-            <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.5 }} style={{ position: "relative", minHeight: 400, overflow: "hidden" }}>
-              <img src={FLORAL_IMAGE} alt="Venue" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 400 }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 50%, rgba(242,232,212,0.7) 100%)" }} />
-              <div style={{ position: "absolute", top: 20, left: 20, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, borderRadius: 100, padding: "7px 16px", boxShadow: "0 4px 12px rgba(138,112,48,0.3)" }}>
-                <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: COLORS.white, textTransform: "uppercase" }}>{t.venue_label}</span>
-              </div>
-            </motion.div>
-            <div style={{ background: "linear-gradient(135deg, #F2E8D2, #EBDDc4)", padding: "52px 44px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-              <WatercolorWash variant="soft" intensity={0.5} />
-              <PaperTexture opacity={0.25} />
-              <div style={{ position: "relative", zIndex: 2 }}>
-                <div style={{ width: 3, height: 44, background: COLORS.gold, opacity: 0.7, borderRadius: 2, marginBottom: 20 }} />
-                <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 600, color: COLORS.navy, lineHeight: 1.1, marginBottom: 4 }}>{t.venue_name_line1}</h2>
-                <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 300, fontStyle: "italic", color: COLORS.navy, lineHeight: 1.1, marginBottom: 24, opacity: 0.75 }}>{t.venue_name_line2}</h2>
-                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 28 }}>{t.venue_desc}</p>
-                <motion.a href="#map" whileHover={{ gap: 14 }} style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", textTransform: "uppercase", color: COLORS.navy, textDecoration: "none", borderBottom: `1px solid rgba(27,74,92,0.3)`, paddingBottom: 3, width: "fit-content" }}>
-                  {t.directions}
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5H11M11 6.5L7.5 3M11 6.5L7.5 10" stroke={COLORS.navy} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </motion.a>
-              </div>
+
+          {/* BLOCK 1 — Full-width venue photo with name overlay */}
+          <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)" }}>
+            <img src={FLORAL_IMAGE} alt="Venue" style={{ width: "100%", height: "clamp(280px, 58vw, 440px)", objectFit: "cover", display: "block" }} />
+            {/* dark gradient for legibility */}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(42,26,10,0.7) 0%, rgba(42,26,10,0.15) 35%, transparent 60%)" }} />
+            {/* gold pill — top-left */}
+            <div style={{ position: "absolute", top: 16, left: 16, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, borderRadius: 100, padding: "7px 16px", boxShadow: "0 4px 12px rgba(138,112,48,0.35)" }}>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: COLORS.white, textTransform: "uppercase" }}>{t.venue_label}</span>
+            </div>
+            {/* venue name — bottom-left */}
+            <div style={{ position: "absolute", bottom: 18, left: 20, right: 20 }}>
+              <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.5rem, 6vw, 2.4rem)", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
             </div>
           </div>
 
-          {/* ─── Map + Directions (merged) ─── */}
-          <div id="map" style={{ marginTop: 24, borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 60px rgba(27,74,92,0.1)" }}>
-            <div style={{ position: "relative", minHeight: 320 }}>
-              <iframe
-                src={MAP_EMBED_URL}
-                width="100%"
-                height="100%"
-                style={{ border: 0, minHeight: 320, display: "block", filter: "sepia(15%) saturate(0.9) brightness(0.96)" }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Venue Location"
-              />
-              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <motion.div
-                  animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-                  style={{ background: COLORS.gold, borderRadius: "50% 50% 50% 0", width: 36, height: 36, transform: "rotate(-45deg)", boxShadow: "0 4px 16px rgba(138,112,48,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}
-                >
-                  <div style={{ transform: "rotate(45deg)", color: "#FFF8EE", fontSize: "1rem" }}>♥</div>
-                </motion.div>
-              </div>
-            </div>
+          {/* BLOCK 2 — Address + CTA */}
+          <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
+            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em" }}>{t.map_address}</p>
+            <motion.a
+              href={MAPS_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
+                <circle cx="8" cy="6" r="1.5" stroke="#FFF8EE" strokeWidth="1.2"/>
+              </svg>
+              {t.map_btn}
+            </motion.a>
+          </div>
 
-            <div style={{ background: "linear-gradient(135deg, rgba(248,241,230,0.95), rgba(235,221,196,0.95))", border: "1px solid rgba(138,107,75,0.15)", padding: "40px 36px", display: "flex", flexDirection: "column", gap: 28, textAlign: "left" }}>
-              {DIRECTIONS.map(({ icon, label, detail }) => (
-                <div key={label} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                  <div style={{ width: 40, height: 40, background: "rgba(138,112,48,0.12)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem", flexShrink: 0 }}>
-                    {icon}
-                  </div>
-                  <div>
-                    <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{label}</p>
-                    <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{detail}</p>
-                  </div>
+          {/* BLOCK 3 — Directions */}
+          <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
+            {DIRECTIONS.map(({ icon, label, detail }) => (
+              <div key={label} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))`, border: "1px solid rgba(138,112,48,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
+                  {icon}
                 </div>
-              ))}
-              <div style={{ paddingTop: 24, display: "flex", justifyContent: "center", borderTop: "1px solid rgba(138,107,75,0.18)" }}>
-                <motion.a
-                  href="https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
-                    <circle cx="8" cy="6" r="1.5" stroke="#FFF8EE" strokeWidth="1.2"/>
-                  </svg>
-                  {t.map_btn}
-                </motion.a>
+                <div>
+                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{label}</p>
+                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{detail}</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </motion.div>
       </section>
 
       {/* ═══ PROGRAM ═══ */}
-      <section ref={programSec.ref} style={{ padding: "96px 24px", maxWidth: 660, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      <section ref={programSec.ref} style={{ padding: "96px 24px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <WatercolorWash variant="warm" intensity={0.5} />
         <PaperTexture opacity={0.3} />
         <BotanicalBorder />
@@ -235,23 +206,17 @@ function InvitationContent() {
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
               <motion.div
                 key={item.time}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -24 : 24 }} animate={programSec.inView ? { opacity: 1, x: 0 } : {}} transition={{ delay: 0.1 + i * 0.15, duration: 0.8 }}
-                whileHover={{ x: 4 }}
-                style={{ display: "flex", gap: 24, padding: "28px 0", borderBottom: i < t.program.length - 1 ? "1px solid rgba(27,74,92,0.1)" : "none", textAlign: "left" }}
+                initial={{ opacity: 0, y: 28 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.1 + i * 0.15, duration: 0.8 }}
+                whileHover={{ y: -6 }}
+                style={{ background: "rgba(255,248,240,0.6)", border: "1px solid rgba(138,107,75,0.15)", borderTop: `3px solid ${COLORS.gold}`, borderRadius: 16, padding: "36px 24px", boxShadow: "0 10px 30px rgba(61,34,21,0.1)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}
               >
-                <div style={{ minWidth: 60, paddingTop: 2 }}><span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.2rem", fontWeight: 500, color: COLORS.gold }}>{item.time}</span></div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 8 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: COLORS.navy, opacity: 0.6, flexShrink: 0 }} />
-                  {i < t.program.length - 1 && <div style={{ width: 1, flex: 1, background: "rgba(27,74,92,0.15)", marginTop: 8 }} />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", fontWeight: 500, color: COLORS.navy, marginBottom: 5 }}>{item.title}</p>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, color: COLORS.lightBrown, lineHeight: 1.75 }}>{item.desc}</p>
-                </div>
+                <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, color: COLORS.lightBrown, lineHeight: 1.65 }}>{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -284,6 +249,9 @@ function InvitationContent() {
         </div>
       </section>
 
+      {/* ═══ HASHTAG — directly under dress code, before RSVP ═══ */}
+      <HashtagSection />
+
       <RSVPSection />
 
       {/* ═══ FOOTER ═══ */}
@@ -293,9 +261,6 @@ function InvitationContent() {
         <BotanicalBorder />
         <WatercolorFlower size={32} color="#D4A574" style={{ position: "absolute", top: 100, left: 36, opacity: 0.55, zIndex: 2 }} />
         <WatercolorFlower size={28} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 130, right: 40, opacity: 0.5, zIndex: 2 }} />
-
-        {/* Hashtag moved into footer area */}
-        <HashtagSection />
 
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
           <Divider className="mb-10" />

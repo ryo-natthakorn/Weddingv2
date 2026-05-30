@@ -33,7 +33,7 @@ function CountdownTimer() {
           <AnimatePresence mode="wait">
             <motion.div
               key={v} initial={{ y: -14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 14, opacity: 0 }} transition={{ duration: 0.3 }}
-              style={{ background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "14px 16px", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.6rem, 5vw, 2.2rem)", fontWeight: 500, color: COLORS.navy, lineHeight: 1, minWidth: 60, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}
+              style={{ background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "14px 16px", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.6rem, 5vw, 2.2rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, minWidth: 60, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}
             >
               {String(v).padStart(2, "0")}
             </motion.div>
@@ -49,8 +49,9 @@ export function NameIntroWithCountdown() {
   const { t } = useLang();
   const { ref, inView } = useReveal("-40px");
 
-  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.2rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em", marginBottom: 6 } as const;
-  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.2rem, 4.5vw, 2.4rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.02em", lineHeight: 1.2 } as const;
+  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1.1rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.06em", marginBottom: 6 } as const;
+  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.15 } as const;
+  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.74rem, 1.9vw, 0.9rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.5, flex: 1, minWidth: 0 } as const;
 
   return (
     <section
@@ -75,80 +76,72 @@ export function NameIntroWithCountdown() {
       <WatercolorFlower size={28} color="#D4A574" style={{ position: "absolute", bottom: 110, left: 50, opacity: 0.5, zIndex: 2 }} />
 
       <div style={{ position: "relative", zIndex: 3, maxWidth: 720, margin: "0 auto" }}>
-        {/* Parents line */}
+        {/* 1. Countdown — moved to the top */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.1, duration: 0.9 }}
+        >
+          <CountdownTimer />
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.95rem)", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 18 }}>
+            {t.countdown_caption}
+          </p>
+        </motion.div>
+
+        {/* 2. Parents — left / right columns */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.15, duration: 0.8 }}
-          style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 4vw, 48px)", flexWrap: "wrap", marginBottom: 8 }}
+          transition={{ delay: 0.25, duration: 0.8 }}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "clamp(16px, 6vw, 60px)", marginTop: 56 }}
         >
-          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.72rem, 1.8vw, 0.85rem)", color: COLORS.midBrown, letterSpacing: "0.04em" }}>
-            {t.parents_groom}
-          </span>
-          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.72rem, 1.8vw, 0.85rem)", color: COLORS.midBrown, opacity: 0.5 }}>|</span>
-          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.72rem, 1.8vw, 0.85rem)", color: COLORS.midBrown, letterSpacing: "0.04em" }}>
-            {t.parents_bride}
-          </span>
+          <span style={{ ...parentStyle, textAlign: "left" }}>{t.parents_groom}</span>
+          <span style={{ ...parentStyle, textAlign: "right" }}>{t.parents_bride}</span>
         </motion.div>
 
-        {/* Invite line */}
+        {/* 3. Invite line — centered */}
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.25, duration: 0.8 }}
-          style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.75rem, 1.8vw, 0.88rem)", color: COLORS.lightBrown, letterSpacing: "0.06em", marginBottom: 40 }}
+          transition={{ delay: 0.32, duration: 0.8 }}
+          style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 1.9vw, 0.9rem)", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 32 }}
         >
           {t.invite_line}
         </motion.p>
 
-        {/* Three-column name row: Bride | Ring | Groom */}
+        {/* 4-6. Bride · Ring · Groom — stacked, names full width */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.38, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(8px, 3vw, 24px)" }}
+          transition={{ delay: 0.42, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          style={{ marginTop: 40 }}
         >
           {/* Bride */}
-          <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-            <p style={titleStyle}>{t.bride_title}</p>
-            <p style={nameStyle}>{t.bride_name}</p>
-          </div>
+          <p style={titleStyle}>{t.bride_title}</p>
+          <p style={nameStyle}>{t.bride_name}</p>
 
-          {/* Ring */}
-          <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img
-              src={ringImg}
-              alt="ring"
-              style={{
-                width: "clamp(40px, 12vw, 56px)", height: "auto", objectFit: "contain",
-                filter: "drop-shadow(0 2px 6px rgba(27,74,92,0.18))",
-              }}
-            />
-          </div>
+          {/* Ring — large focal point */}
+          <img
+            src={ringImg}
+            alt="ring"
+            style={{
+              width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
+              display: "block", margin: "26px auto",
+              filter: "drop-shadow(0 3px 10px rgba(27,74,92,0.2))",
+            }}
+          />
 
           {/* Groom */}
-          <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-            <p style={titleStyle}>{t.groom_title}</p>
-            <p style={nameStyle}>{t.groom_name}</p>
-          </div>
+          <p style={titleStyle}>{t.groom_title}</p>
+          <p style={nameStyle}>{t.groom_name}</p>
         </motion.div>
 
-        {/* Countdown directly below the name row */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.6, duration: 0.9 }}
-          style={{ marginTop: 48 }}
-        >
-          <CountdownTimer />
-        </motion.div>
-
-        {/* Date */}
+        {/* 7-8. Date + venue */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.78, duration: 0.9 }}
-          style={{ marginTop: 48 }}
+          transition={{ delay: 0.62, duration: 0.9 }}
+          style={{ marginTop: 52 }}
         >
           <Divider className="mb-6" />
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.1rem, 3vw, 1.5rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.12em", marginBottom: 4 }}>
@@ -156,6 +149,9 @@ export function NameIntroWithCountdown() {
           </p>
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.3rem, 3.5vw, 1.9rem)", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.1em" }}>
             22 November 2026
+          </p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 12 }}>
+            {t.map_title}
           </p>
         </motion.div>
       </div>

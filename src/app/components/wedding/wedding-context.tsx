@@ -36,6 +36,7 @@ export const translations = {
     ],
     countdown_label: "Counting Down To Our Special Day",
     countdown_subtitle: "We can't wait to celebrate with you",
+    countdown_caption: "until we say I do",
     story_label: "Our Story",
     story_subtitle: "A love written in moments",
     story_items: [
@@ -44,7 +45,7 @@ export const translations = {
       { year: "2024", title: "The Proposal", caption: "With a song written just for you, I asked for forever." },
       { year: "2026", title: "Forever Begins", caption: "And now we write our greatest chapter together." },
     ],
-    hashtag: "#PNEst221126",
+    hashtag: "#PNEST221126",
     hashtag_sub: "Share your memories with us",
     map_label: "Finding Us",
     map_title: "SailomSangdad Homey Studio",
@@ -108,6 +109,7 @@ export const translations = {
     ],
     countdown_label: "นับถอยหลังสู่วันพิเศษของเรา",
     countdown_subtitle: "เราตั้งตารอที่จะได้เฉลิมฉลองร่วมกับคุณ",
+    countdown_caption: "จนกว่าเราจะได้กล่าวคำสัญญารัก",
     story_label: "เรื่องราวของเรา",
     story_subtitle: "ความรักที่เขียนขึ้นจากทุกช่วงเวลา",
     story_items: [
@@ -116,7 +118,7 @@ export const translations = {
       { year: "2024", title: "การขอแต่งงาน", caption: "ด้วยเพลงที่เขียนขึ้นเพื่อคุณโดยเฉพาะ ฉันขอมอบชีวิตทั้งชีวิต" },
       { year: "2026", title: "จุดเริ่มต้นของนิรันดร์", caption: "และตอนนี้เราจะเขียนบทที่ยิ่งใหญ่ที่สุดด้วยกัน" },
     ],
-    hashtag: "#PNEst221126",
+    hashtag: "#PNEST221126",
     hashtag_sub: "แชร์ความทรงจำของคุณกับเรา",
     map_label: "เส้นทางมาหาเรา",
     map_title: "สายลมสังแดด โฮมมี่ สตูดิโอ",
