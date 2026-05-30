@@ -1,10 +1,45 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { useLang } from "./wedding-context";
 
-const YT_VIDEO_ID = "p8iVeHphD3c";
+const YT_VIDEO_ID = (import.meta.env.VITE_YOUTUBE_VIDEO_ID as string) || "p8iVeHphD3c";
+const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
+const YT_THUMB = `https://img.youtube.com/vi/${YT_VIDEO_ID}/0.jpg`;
 
-/* ── YouTube IFrame API types (minimal) ── */
+const TITLE = "Pantika";
+const SUBTITLE = "Written for her, on the day I asked forever";
+
+/* ───────────────────────────────────────────────────────────────
+   TIME-SYNCED LYRICS
+   ----------------------------------------------------------------
+   The YouTube Data API v3 can list caption *tracks* with an API key,
+   but downloading the caption *text* needs OAuth + video ownership,
+   so synced lyrics cannot be fetched client-side with a key alone.
+   These hardcoded, time-stamped lines are the reliable source.
+
+   ►► CLIENT: replace the lines below with the real lyrics of
+      "Pantika" and their start times (in seconds). Leave the array
+      empty ([]) to hide the lyric line entirely.
+─────────────────────────────────────────────────────────────── */
+type Lyric = { t: number; line: string };
+const LYRICS: Lyric[] = [
+  { t: 0, line: "♪" },
+  { t: 12, line: "In every quiet morning, I find you" },
+  { t: 30, line: "A song I never knew I'd sing" },
+  { t: 50, line: "Pantika, my every reason" },
+  { t: 74, line: "On the day I asked forever" },
+  { t: 98, line: "You said yes, and the world stood still" },
+  { t: 126, line: "Now every road leads home to you" },
+  { t: 158, line: "Forever starts the moment you smile" },
+  { t: 196, line: "♪" },
+];
+
+const ACCENT = "#8A7030";       // olive gold
+const ACCENT_DARK = "#6B5520";  // deeper gold
+const SURFACE = "rgba(253,250,245,0.94)";
+const TEXT_PRIMARY = "#3A2C18";
+const TEXT_MUTED = "rgba(58,44,24,0.55)";
+const TEXT_DIM = "rgba(58,44,24,0.4)";
+
 declare global {
   interface Window {
     YT: any;
@@ -12,25 +47,63 @@ declare global {
   }
 }
 
+/* Gold petals drifting INTO the button — a quiet "discovery" cue */
+function PetalTrail() {
+  const petals = useRef(
+    Array.from({ length: 6 }, (_, i) => ({
+      id: i,
+      dx: -(40 + Math.random() * 130),   // start to the left of the button
+      dy: -(110 + Math.random() * 170),  // start above the button
+      size: 5 + Math.random() * 4,
+      dur: 4.5 + Math.random() * 2.5,
+      delay: i * 0.9,
+      rot: Math.random() * 360,
+    })),
+  ).current;
+
+  return (
+    <div style={{ position: "fixed", right: 52, bottom: 52, width: 0, height: 0, pointerEvents: "none", zIndex: 999 }} aria-hidden>
+      {petals.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ x: p.dx, y: p.dy, opacity: 0, scale: 0.5 }}
+          animate={{ x: [p.dx, 0], y: [p.dy, 0], opacity: [0, 0.7, 0], scale: [0.5, 1, 0.35] }}
+          transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            position: "absolute",
+            width: p.size,
+            height: p.size * 1.5,
+            borderRadius: "50% 50% 50% 0",
+            background: "rgba(138,112,48,0.6)",
+            transform: `rotate(${p.rot}deg)`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function MusicPlayer() {
-  const { t } = useLang();
   const playerRef = useRef<any>(null);
   const playerDivRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
+
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [showTrail, setShowTrail] = useState(true);
 
   /* ── Init YouTube IFrame API ── */
   const initPlayer = useCallback(() => {
-    if (!playerDivRef.current) return;
-    if (playerRef.current) return;
+    if (!playerDivRef.current || playerRef.current) return;
     playerRef.current = new window.YT.Player(playerDivRef.current, {
       videoId: YT_VIDEO_ID,
       playerVars: {
-        autoplay: 0,
+        autoplay: 0,            // discovery is the petal trail, not autoplay
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -40,7 +113,10 @@ export function MusicPlayer() {
         origin: window.location.origin,
       },
       events: {
-        onReady: () => setReady(true),
+        onReady: () => {
+          setReady(true);
+          try { setDuration(playerRef.current.getDuration?.() ?? 0); } catch {}
+        },
         onStateChange: (e: any) => {
           setPlaying(e.data === 1);
           if (e.data === 0) {
@@ -76,11 +152,20 @@ export function MusicPlayer() {
     };
   }, [initPlayer]);
 
-  /* ── Progress polling while playing ── */
+  /* ── The discovery cue retires after a while, or once engaged ── */
+  useEffect(() => {
+    const id = setTimeout(() => setShowTrail(false), 16000);
+    return () => clearTimeout(id);
+  }, []);
+  useEffect(() => {
+    if (expanded || playing) setShowTrail(false);
+  }, [expanded, playing]);
+
+  /* ── Progress + lyric polling while playing ── */
   useEffect(() => {
     if (!playing) return;
     const interval = setInterval(() => {
-      if (!playerRef.current) return;
+      if (!playerRef.current || draggingRef.current) return;
       try {
         const cur = playerRef.current.getCurrentTime?.() ?? 0;
         const dur = playerRef.current.getDuration?.() ?? 0;
@@ -88,353 +173,255 @@ export function MusicPlayer() {
         setDuration(dur);
         setProgress(dur > 0 ? (cur / dur) * 100 : 0);
       } catch {}
-    }, 500);
+    }, 300);
     return () => clearInterval(interval);
   }, [playing]);
 
   const togglePlay = useCallback(() => {
     if (!ready || !playerRef.current) return;
     try {
-      if (playing) {
-        playerRef.current.pauseVideo();
-      } else {
-        playerRef.current.playVideo();
-      }
+      if (playing) playerRef.current.pauseVideo();
+      else playerRef.current.playVideo();
     } catch {}
   }, [ready, playing]);
-
-  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!playerRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    try {
-      const dur = playerRef.current.getDuration?.() ?? 0;
-      playerRef.current.seekTo(ratio * dur, true);
-      setProgress(ratio * 100);
-    } catch {}
-  };
 
   const skipBy = (sec: number) => {
     if (!playerRef.current) return;
     try {
       const cur = playerRef.current.getCurrentTime?.() ?? 0;
-      playerRef.current.seekTo(cur + sec, true);
+      playerRef.current.seekTo(Math.max(0, cur + sec), true);
     } catch {}
   };
 
+  /* ── Draggable progress bar ── */
+  const seekToClientX = (clientX: number) => {
+    const el = trackRef.current;
+    if (!el || !playerRef.current) return;
+    const rect = el.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const dur = (() => { try { return playerRef.current.getDuration?.() ?? duration; } catch { return duration; } })();
+    try { playerRef.current.seekTo(ratio * dur, true); } catch {}
+    setProgress(ratio * 100);
+    setCurrentTime(ratio * dur);
+  };
+  const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    seekToClientX(e.clientX);
+  };
+  const onTrackPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (draggingRef.current) seekToClientX(e.clientX);
+  };
+  const onTrackPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = false;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
+  };
+
   const formatTime = (s: number) => {
+    if (!s || !isFinite(s)) return "0:00";
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  /* Earth-tone palette to match watercolor theme */
-  const ACCENT = "#8A7030";       // olive gold
-  const ACCENT_DARK = "#6B5520";  // deeper gold
-  const SURFACE = "rgba(253,250,245,0.92)";
-  const TEXT_PRIMARY = "#3A2C18";
-  const TEXT_MUTED = "rgba(58,44,24,0.55)";
-  const TEXT_DIM = "rgba(58,44,24,0.4)";
+  /* Current lyric line from playback time */
+  let currentLyric = "";
+  let lyricKey = -1;
+  for (let i = 0; i < LYRICS.length; i++) {
+    if (currentTime >= LYRICS[i].t) { currentLyric = LYRICS[i].line; lyricKey = i; }
+    else break;
+  }
+
+  const PlayPauseIcon = ({ size = 14 }: { size?: number }) =>
+    playing ? (
+      <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+        <rect x="2.5" y="1.5" width="3.5" height="11" rx="1.5" fill="white" />
+        <rect x="8" y="1.5" width="3.5" height="11" rx="1.5" fill="white" />
+      </svg>
+    ) : (
+      <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+        <path d="M3.5 2L13 7L3.5 12V2Z" fill="white" />
+      </svg>
+    );
 
   return (
     <>
-      {/* Hidden YouTube player div — must be in DOM */}
-      <div
-        style={{ position: "fixed", left: "-9999px", top: 0, width: 2, height: 2, overflow: "hidden", pointerEvents: "none" }}
-      >
+      {/* Hidden YouTube player div — must stay in the DOM */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, width: 2, height: 2, overflow: "hidden", pointerEvents: "none" }}>
         <div ref={playerDivRef} />
       </div>
 
-      {/* Floating player shell */}
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 2.5, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          position: "fixed",
-          bottom: 24,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          display: "flex",
-          justifyContent: "center",
-          padding: "0 16px",
-          pointerEvents: "none",
-        }}
-      >
-        <motion.div
-          layout
-          style={{
-            pointerEvents: "auto",
-            width: expanded ? "min(360px, 100%)" : "auto",
-            maxWidth: "calc(100vw - 32px)",
-            background: SURFACE,
-            borderRadius: expanded ? 20 : 100,
-            boxShadow: "0 10px 40px rgba(61,34,21,0.15), 0 2px 8px rgba(61,34,21,0.08)",
-            overflow: "hidden",
-            border: `1px solid rgba(138,112,48,0.18)`,
-            backdropFilter: "blur(16px)",
-          }}
-        >
-          {/* Collapsed pill — minimal, clean */}
-          {!expanded && (
+      {/* Discovery cue — gold petals drifting into the button */}
+      <AnimatePresence>{showTrail && !expanded && <PetalTrail />}</AnimatePresence>
+
+      {/* COLLAPSED — 56px gold circle, bottom-right */}
+      <AnimatePresence>
+        {!expanded && (
+          <motion.div
+            key="collapsed"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56 }}
+          >
+            {/* Warm glow (stronger during discovery) */}
             <motion.div
-              layout
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 8px 16px" }}
-            >
-              {/* Animated note icon */}
+              animate={{ opacity: showTrail ? [0.5, 0.9, 0.5] : [0.25, 0.45, 0.25], scale: [1, 1.18, 1] }}
+              transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
+              style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(138,112,48,0.45) 0%, transparent 70%)", pointerEvents: "none" }}
+            />
+            {/* Pulse ring while playing */}
+            {playing && (
               <motion.div
-                animate={playing ? { rotate: [0, -8, 8, 0] } : { rotate: 0 }}
-                transition={playing ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
-                onClick={() => setExpanded(true)}
-                style={{ cursor: "pointer", display: "flex", alignItems: "center", color: ACCENT }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M6 12.5V4l7-1.5v8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="4.5" cy="12.5" r="1.5" stroke="currentColor" strokeWidth="1.4"/>
-                  <circle cx="11.5" cy="10.5" r="1.5" stroke="currentColor" strokeWidth="1.4"/>
-                </svg>
-              </motion.div>
-
-              {/* Title — only when collapsed */}
-              <button
-                onClick={() => setExpanded(true)}
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "'TT Interphases', sans-serif",
-                  fontSize: "0.86rem", fontStyle: "italic",
-                  color: TEXT_PRIMARY,
-                  whiteSpace: "nowrap", padding: 0,
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {t.music_title}
-              </button>
-
-              {/* Play button — golden circle */}
-              <button
-                onClick={togglePlay}
-                disabled={!ready}
-                aria-label={playing ? "Pause" : "Play"}
-                style={{
-                  width: 34, height: 34, borderRadius: "50%",
-                  background: ready
-                    ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`
-                    : "rgba(138,112,48,0.2)",
-                  border: "none",
-                  cursor: ready ? "pointer" : "default",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                  boxShadow: ready ? "0 3px 12px rgba(138,112,48,0.35)" : "none",
-                  transition: "background 0.3s, box-shadow 0.3s",
-                }}
-              >
-                {playing ? (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <rect x="1.5" y="1" width="2.5" height="8" rx="1" fill="white"/>
-                    <rect x="6" y="1" width="2.5" height="8" rx="1" fill="white"/>
-                  </svg>
-                ) : (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path d="M2.5 1L9 5L2.5 9V1Z" fill="white"/>
-                  </svg>
-                )}
-              </button>
-            </motion.div>
-          )}
-
-          {/* Expanded panel — cleaner layout */}
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                style={{ padding: "20px 22px 18px" }}
-              >
-                {/* Header */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{
-                      fontFamily: "'TT Interphases', sans-serif",
-                      fontSize: "0.58rem",
-                      letterSpacing: "0.22em",
-                      color: TEXT_MUTED,
-                      textTransform: "uppercase",
-                      marginBottom: 4,
-                    }}>
-                      {t.music_label}
-                    </p>
-                    <p style={{
-                      fontFamily: "'TT Interphases', sans-serif",
-                      fontSize: "1.1rem",
-                      fontStyle: "italic",
-                      fontWeight: 500,
-                      color: TEXT_PRIMARY,
-                      lineHeight: 1.2,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {t.music_title}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setExpanded(false)}
-                    aria-label="Collapse"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: TEXT_DIM,
-                      fontSize: "1.2rem",
-                      lineHeight: 1,
-                      padding: "0 0 0 12px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Progress bar — clean, no waveform clutter */}
-                <div
-                  onClick={seek}
-                  style={{
-                    height: 4,
-                    background: "rgba(138,112,48,0.15)",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                    marginBottom: 8,
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div style={{
-                    height: "100%",
-                    width: `${progress}%`,
-                    background: `linear-gradient(to right, ${ACCENT}, ${ACCENT_DARK})`,
-                    borderRadius: 4,
-                    transition: "width 0.5s linear",
-                  }} />
-                  {/* Tiny dot at progress head */}
-                  {progress > 0 && (
-                    <div style={{
-                      position: "absolute",
-                      left: `${progress}%`,
-                      top: "50%",
-                      transform: "translate(-50%, -50%)",
-                      width: 10, height: 10,
-                      borderRadius: "50%",
-                      background: ACCENT,
-                      boxShadow: "0 1px 4px rgba(138,112,48,0.4)",
-                    }} />
-                  )}
-                </div>
-
-                {/* Time */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                  <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
-                    {formatTime(currentTime)}
-                  </span>
-                  <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>
-                    {duration > 0 ? formatTime(duration) : "--:--"}
-                  </span>
-                </div>
-
-                {/* Controls — clean centered row */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 24 }}>
-                  <button
-                    onClick={() => skipBy(-10)}
-                    aria-label="Back 10s"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: TEXT_MUTED,
-                      display: "flex",
-                      alignItems: "center",
-                      padding: 4,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = TEXT_PRIMARY; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = TEXT_MUTED; }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                      <path d="M9 3V1L5 4l4 3V5a5 5 0 1 1-5 5H2a7 7 0 1 0 7-7z" fill="currentColor"/>
-                    </svg>
-                  </button>
-
-                  <button
-                    onClick={togglePlay}
-                    disabled={!ready}
-                    aria-label={playing ? "Pause" : "Play"}
-                    style={{
-                      width: 48, height: 48, borderRadius: "50%",
-                      background: ready
-                        ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`
-                        : "rgba(138,112,48,0.2)",
-                      border: "none",
-                      cursor: ready ? "pointer" : "default",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: ready ? "0 4px 16px rgba(138,112,48,0.4)" : "none",
-                      transition: "all 0.3s",
-                    }}
-                  >
-                    {playing ? (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <rect x="2.5" y="1.5" width="3.5" height="11" rx="1.5" fill="white"/>
-                        <rect x="8" y="1.5" width="3.5" height="11" rx="1.5" fill="white"/>
-                      </svg>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M3.5 2L13 7L3.5 12V2Z" fill="white"/>
-                      </svg>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => skipBy(10)}
-                    aria-label="Forward 10s"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: TEXT_MUTED,
-                      display: "flex",
-                      alignItems: "center",
-                      padding: 4,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = TEXT_PRIMARY; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = TEXT_MUTED; }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                      <path d="M9 3V1l4 3-4 3V5a5 5 0 1 0 5 5h2A7 7 0 1 1 9 3z" fill="currentColor"/>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* YouTube attribution */}
-                <p style={{
-                  fontFamily: "'TT Interphases', sans-serif",
-                  fontSize: "0.5rem",
-                  color: TEXT_DIM,
-                  textAlign: "center",
-                  marginTop: 14,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}>
-                  Powered by YouTube
-                </p>
-              </motion.div>
+                animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
+                transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
+                style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `1.5px solid ${ACCENT}` }}
+              />
             )}
-          </AnimatePresence>
-        </motion.div>
-      </motion.div>
+            <button
+              onClick={() => setExpanded(true)}
+              aria-label="Open music player"
+              style={{
+                position: "relative",
+                width: 56, height: 56, borderRadius: "50%",
+                background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
+                border: "none",
+                cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 8px 24px rgba(138,112,48,0.4)",
+              }}
+            >
+              <PlayPauseIcon size={18} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* EXPANDED — 300px card, bottom-right, spring slide-up */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0, y: 40, scale: 0.9, transformOrigin: "bottom right" }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+              width: "min(300px, calc(100vw - 32px))",
+              background: SURFACE,
+              borderRadius: 20,
+              boxShadow: "0 16px 50px rgba(61,34,21,0.22)",
+              border: "1px solid rgba(138,112,48,0.18)",
+              backdropFilter: "blur(16px)",
+              overflow: "hidden",
+              padding: "16px 18px 18px",
+            }}
+          >
+            {/* Header: thumbnail + title/subtitle + close */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <img
+                src={YT_THUMB}
+                alt={TITLE}
+                style={{ width: 46, height: 46, borderRadius: 10, objectFit: "cover", flexShrink: 0, boxShadow: "0 2px 8px rgba(61,34,21,0.2)" }}
+              />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1rem", fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.2 }}>
+                  {TITLE}
+                </p>
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", fontStyle: "italic", color: TEXT_MUTED, lineHeight: 1.35, marginTop: 2 }}>
+                  {SUBTITLE}
+                </p>
+              </div>
+              <button
+                onClick={() => setExpanded(false)}
+                aria-label="Close"
+                style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_DIM, fontSize: "1.2rem", lineHeight: 1, padding: "0 0 0 6px", flexShrink: 0 }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Lyric line — one at a time, gold, fading */}
+            {LYRICS.length > 0 && (
+              <div style={{ minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", margin: "14px 0 4px" }}>
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={lyricKey}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.5 }}
+                    style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontStyle: "italic", color: ACCENT, lineHeight: 1.4 }}
+                  >
+                    {currentLyric}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Progress — 4px draggable, gold fill */}
+            <div
+              ref={trackRef}
+              onPointerDown={onTrackPointerDown}
+              onPointerMove={onTrackPointerMove}
+              onPointerUp={onTrackPointerUp}
+              onPointerCancel={onTrackPointerUp}
+              style={{ height: 4, background: "rgba(138,112,48,0.15)", borderRadius: 4, cursor: "pointer", position: "relative", marginTop: 12, touchAction: "none" }}
+            >
+              <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(to right, ${ACCENT}, ${ACCENT_DARK})`, borderRadius: 4 }} />
+              <div style={{ position: "absolute", left: `${progress}%`, top: "50%", transform: "translate(-50%, -50%)", width: 11, height: 11, borderRadius: "50%", background: ACCENT, boxShadow: "0 1px 4px rgba(138,112,48,0.5)" }} />
+            </div>
+
+            {/* Time */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, marginBottom: 14 }}>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{formatTime(currentTime)}</span>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{duration > 0 ? formatTime(duration) : "--:--"}</span>
+            </div>
+
+            {/* Controls: back 10 · play/pause · forward 10 · YouTube link */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center" }}>
+              <span />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22 }}>
+                <button onClick={() => skipBy(-10)} aria-label="Back 10 seconds" style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_MUTED, display: "flex", padding: 4 }}>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M9 3V1L5 4l4 3V5a5 5 0 1 1-5 5H2a7 7 0 1 0 7-7z" fill="currentColor" />
+                  </svg>
+                </button>
+                <button
+                  onClick={togglePlay}
+                  disabled={!ready}
+                  aria-label={playing ? "Pause" : "Play"}
+                  style={{ width: 48, height: 48, borderRadius: "50%", background: ready ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : "rgba(138,112,48,0.2)", border: "none", cursor: ready ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: ready ? "0 4px 16px rgba(138,112,48,0.4)" : "none" }}
+                >
+                  <PlayPauseIcon size={14} />
+                </button>
+                <button onClick={() => skipBy(10)} aria-label="Forward 10 seconds" style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_MUTED, display: "flex", padding: 4 }}>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M9 3V1l4 3-4 3V5a5 5 0 1 0 5 5h2A7 7 0 1 1 9 3z" fill="currentColor" />
+                  </svg>
+                </button>
+              </div>
+              <a
+                href={YT_WATCH_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open on YouTube"
+                style={{ justifySelf: "end", display: "inline-flex", alignItems: "center", gap: 3, fontFamily: "'TT Interphases', sans-serif", fontSize: "0.58rem", letterSpacing: "0.1em", color: TEXT_MUTED, textDecoration: "none" }}
+              >
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M4 2h6v6M10 2L3 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                YT
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
