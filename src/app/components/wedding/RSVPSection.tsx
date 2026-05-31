@@ -8,6 +8,7 @@ import {
 } from "./shared";
 
 type Status = "idle" | "submitted-yes" | "submitted-no";
+type Spark = { id: number; x: number; y: number; size: number; color: string };
 
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL as string | undefined;
 
@@ -22,6 +23,25 @@ export function RSVPSection() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
+  const [burst, setBurst] = useState<Spark[]>([]);
+
+  // 14-particle gold/navy burst fired when "Joyfully Accept" is tapped.
+  const fireBurst = () => {
+    const palette = [COLORS.gold, COLORS.navy];
+    const sparks: Spark[] = Array.from({ length: 14 }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.45;
+      const dist = 40 + Math.random() * 40; // 40–80px
+      return {
+        id: Date.now() + i,
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        size: 5 + Math.random() * 5, // 5–10px diameter
+        color: palette[Math.floor(Math.random() * palette.length)],
+      };
+    });
+    setBurst(sparks);
+    window.setTimeout(() => setBurst([]), 720); // remove from DOM after the 0.7s anim
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,9 +140,16 @@ export function RSVPSection() {
         <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
           {t.rsvp_title}
         </h2>
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", color: COLORS.lightBrown, marginBottom: 48, letterSpacing: "0.06em" }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: "0.06em" }}>
           {t.rsvp_subtitle}
         </p>
+
+        {/* Importance message — warm, gentle, between subtitle and form */}
+        {status === "idle" && (
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: "0.02em", marginBottom: 40, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
+            {t.rsvp_importance}
+          </p>
+        )}
 
         <AnimatePresence mode="wait">
           {status === "idle" ? (
@@ -153,40 +180,72 @@ export function RSVPSection() {
               <div>
                 <label style={labelStyle}>{t.rsvp_attend}</label>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {(["yes", "no"] as const).map((val) => (
-                    <motion.button
-                      key={val}
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setAttending(val)}
-                      style={{
-                        padding: "14px",
-                        borderRadius: 12,
-                        border: `1.5px solid ${attending === val ? (val === "yes" ? COLORS.navy : "#C0392B") : "rgba(138,107,75,0.2)"}`,
-                        background: attending === val
-                          ? val === "yes"
-                            ? `rgba(27,42,74,0.08)`
-                            : `rgba(192,57,43,0.06)`
-                          : "rgba(255,255,255,0.5)",
-                        cursor: "pointer",
-                        fontFamily: "'TT Interphases', sans-serif",
-                        fontSize: "0.8rem",
-                        letterSpacing: "0.1em",
-                        color: attending === val
-                          ? val === "yes" ? COLORS.navy : "#C0392B"
-                          : COLORS.lightBrown,
-                        transition: "all 0.3s",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <span style={{ fontSize: "1rem" }}>{val === "yes" ? "♥" : "✦"}</span>
-                      {val === "yes" ? t.rsvp_yes : t.rsvp_no}
-                    </motion.button>
-                  ))}
+                  {(["yes", "no"] as const).map((val) => {
+                    const isYes = val === "yes";
+                    const selected = attending === val;
+                    const accent = isYes ? COLORS.navy : COLORS.lightBrown;
+                    return (
+                      <motion.button
+                        key={val}
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          setAttending(val);
+                          if (isYes) fireBurst();
+                        }}
+                        style={{
+                          position: "relative",
+                          padding: "14px",
+                          borderRadius: 12,
+                          border: `1.5px solid ${selected ? (isYes ? COLORS.navy : "rgba(138,107,75,0.5)") : "rgba(138,107,75,0.2)"}`,
+                          background: selected
+                            ? isYes ? "rgba(27,42,74,0.08)" : "rgba(138,107,75,0.07)"
+                            : "rgba(255,255,255,0.5)",
+                          cursor: "pointer",
+                          fontFamily: "'TT Interphases', sans-serif",
+                          fontSize: "0.8rem",
+                          letterSpacing: "0.1em",
+                          color: selected ? accent : COLORS.lightBrown,
+                          // Yes pops; No simply dims with a quiet, slower fade.
+                          opacity: selected && !isYes ? 0.7 : 1,
+                          transition: isYes
+                            ? "all 0.3s"
+                            : "border-color 0.6s ease, color 0.6s ease, background 0.6s ease, opacity 0.6s ease",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <span style={{ fontSize: "1rem" }}>{isYes ? "♥" : "✦"}</span>
+                        {isYes ? t.rsvp_yes : t.rsvp_no}
+                        {/* Burst particles — Yes button only */}
+                        {isYes && burst.map((s) => (
+                          <motion.span
+                            key={s.id}
+                            aria-hidden
+                            initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+                            animate={{ opacity: 0, x: s.x, y: s.y, scale: 0.5 }}
+                            transition={{ duration: 0.7, ease: "easeOut" }}
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              top: "50%",
+                              width: s.size,
+                              height: s.size,
+                              marginLeft: -s.size / 2,
+                              marginTop: -s.size / 2,
+                              borderRadius: "50%",
+                              background: s.color,
+                              pointerEvents: "none",
+                              zIndex: 5,
+                            }}
+                          />
+                        ))}
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -211,6 +270,9 @@ export function RSVPSection() {
                         onBlur={() => setFocused(null)}
                         style={inputStyle("guests")}
                       />
+                      <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", marginTop: 6 }}>
+                        {t.rsvp_guests_help}
+                      </p>
                     </div>
                   </motion.div>
                 )}

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "motion/react";
 import { LangProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
@@ -8,7 +8,6 @@ import { RSVPSection } from "./wedding/RSVPSection";
 import { GiftSection } from "./wedding/GiftSection";
 import { IntroAnimation } from "./wedding/IntroAnimation";
 import { NameIntroWithCountdown } from "./wedding/NameIntroWithCountdown";
-import { HashtagSection } from "./wedding/HashtagSection";
 import {
   useReveal,
   Divider,
@@ -98,12 +97,79 @@ function Particles() {
   );
 }
 
-function ArchSwatch({ color, label }: { color: string; label: string }) {
+/* Color swatch arch — drops in (fade + rise) when the section is in view.
+   `index` drives a 70ms left-to-right, top-row-first stagger. */
+function ArchSwatch({ color, label, index, inView }: { color: string; label: string; index: number; inView: boolean }) {
   return (
-    <motion.div whileHover={{ scale: 1.08, y: -5 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 22 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ delay: index * 0.07, duration: 0.45, ease: "easeOut" }}
+      whileHover={{ scale: 1.08, y: -5 }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+    >
       <div style={{ width: 42, height: 58, background: color, borderRadius: "50% 50% 0 0 / 40% 40% 0 0", border: "1px solid rgba(138,107,75,0.18)", boxShadow: "0 3px 12px rgba(61,34,21,0.12)" }} />
       <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.55rem", letterSpacing: "0.1em", color: COLORS.lightBrown, textTransform: "uppercase", textAlign: "center", maxWidth: 44 }}>{label}</span>
     </motion.div>
+  );
+}
+
+/* ── Hashtag helpers (merged in from the former HashtagSection) ── */
+function TypewriterText({ text, active, color }: { text: string; active: boolean; color: string }) {
+  const [visible, setVisible] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (!active) { setVisible(0); return; }
+    setVisible(0);
+    let i = 0;
+    const tick = () => {
+      i += 1;
+      setVisible(i);
+      if (i < text.length) timerRef.current = setTimeout(tick, 60);
+    };
+    timerRef.current = setTimeout(tick, 300);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [active, text]);
+
+  return (
+    <span>
+      {text.split("").map((char, idx) => (
+        <motion.span
+          key={idx}
+          initial={{ opacity: 0, y: 12 }}
+          animate={idx < visible ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{ color, display: "inline-block" }}
+        >
+          {char}
+        </motion.span>
+      ))}
+      {visible < text.length && visible > 0 && (
+        <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 0.8 }} style={{ color, marginLeft: 2 }}>
+          |
+        </motion.span>
+      )}
+    </span>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="2" width="20" height="20" rx="5.5" stroke={COLORS.gold} strokeWidth="1.5" strokeOpacity="0.7"/>
+      <circle cx="12" cy="12" r="4.5" stroke={COLORS.gold} strokeWidth="1.5" strokeOpacity="0.7"/>
+      <circle cx="17.5" cy="6.5" r="1" fill={COLORS.gold} fillOpacity="0.7"/>
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="2" width="20" height="20" rx="5.5" stroke={COLORS.gold} strokeWidth="1.5" strokeOpacity="0.7"/>
+      <path d="M13.5 7H15V4.5H13C11.3 4.5 10 5.8 10 7.5V9H8V12H10V20H13V12H15L15.5 9H13V7.5C13 7.2 13.2 7 13.5 7Z" fill={COLORS.gold} fillOpacity="0.7"/>
+    </svg>
   );
 }
 
@@ -121,6 +187,7 @@ function InvitationContent() {
   const venueSec = useReveal();
   const programSec = useReveal();
   const dressSec = useReveal();
+  const hashtagSec = useReveal("-80px");
   const footerSec = useReveal();
 
   const FLORAL_IMAGE = "https://images.unsplash.com/photo-1634562984686-5e559a782117?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd2hpdGUlMjBmbG9yYWxzJTIwZ3JlZW5lcnklMjB3ZWRkaW5nJTIwdGFibGV8ZW58MXx8fHwxNzc4NDY4NTYxfDA&ixlib=rb-4.1.0&q=80&w=1080";
@@ -266,29 +333,58 @@ function InvitationContent() {
         </div>
       </section>
 
-      {/* ═══ DRESS CODE ═══ */}
+      {/* ═══ DRESS CODE + HASHTAG — one unified section ═══ */}
       <section ref={dressSec.ref} style={{ padding: "96px 24px", textAlign: "center", maxWidth: 600, margin: "0 auto", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
+          {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
             <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 44 }}>{t.dress_desc}</p>
-            {[
-              [{ color: "#3A2C18", label: "Dark Brown" }, { color: "#7A5C30", label: "Brown" }, { color: "#B8956A", label: "Tan" }],
-              [{ color: "#6B5020", label: "Mustard" }, { color: "#A88030", label: "Gold" }, { color: "#D4BC70", label: "Pale Gold" }],
-              [{ color: "#2A3C1E", label: "Forest" }, { color: "#4A6030", label: "Olive" }, { color: "#7A9060", label: "Sage" }],
-            ].map((row, ri) => (
-              <div key={ri} style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 28px)", marginBottom: 20 }}>
-                {row.map(({ color, label }) => <ArchSwatch key={color} color={color} label={label} />)}
-              </div>
-            ))}
           </motion.div>
+
+          {/* 9 swatch arches — drop in left→right, top row first */}
+          {[
+            [{ color: "#3A2C18", label: "Dark Brown" }, { color: "#7A5C30", label: "Brown" }, { color: "#B8956A", label: "Tan" }],
+            [{ color: "#6B5020", label: "Mustard" }, { color: "#A88030", label: "Gold" }, { color: "#D4BC70", label: "Pale Gold" }],
+            [{ color: "#2A3C1E", label: "Forest" }, { color: "#4A6030", label: "Olive" }, { color: "#7A9060", label: "Sage" }],
+          ].map((row, ri) => (
+            <div key={ri} style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 28px)", marginBottom: 20 }}>
+              {row.map(({ color, label }, ci) => (
+                <ArchSwatch key={color} color={color} label={label} index={ri * 3 + ci} inView={dressSec.inView} />
+              ))}
+            </div>
+          ))}
+
+          {/* Gentle gold separator — dress code flows into the hashtag */}
+          <div style={{ width: "60%", maxWidth: 320, height: 1, background: COLORS.gold, opacity: 0.4, margin: "48px auto 40px" }} />
+
+          {/* Hashtag / social — own reveal so the typewriter fires on entry */}
+          <div ref={hashtagSec.ref}>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={hashtagSec.inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.7 }}
+              style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 28 }}
+            >
+              <InstagramIcon />
+              <FacebookIcon />
+            </motion.div>
+            <div style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 7vw, 3.4rem)", fontWeight: 600, letterSpacing: "0.04em", color: COLORS.gold, marginBottom: 20, lineHeight: 1.1, minHeight: "1.2em", textShadow: "0 2px 8px rgba(138,112,48,0.15)" }}>
+              <TypewriterText text={t.hashtag} active={hashtagSec.inView} color={COLORS.gold} />
+            </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={hashtagSec.inView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.4, duration: 0.9 }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, letterSpacing: "0.12em", color: COLORS.midBrown, textTransform: "uppercase" }}
+            >
+              {t.hashtag_sub}
+            </motion.p>
+          </div>
         </div>
       </section>
-
-      {/* ═══ HASHTAG — directly under dress code, before RSVP ═══ */}
-      <HashtagSection />
 
       <RSVPSection />
 

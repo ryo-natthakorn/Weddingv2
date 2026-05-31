@@ -82,9 +82,9 @@ function Envelope() {
             position: "absolute",
             inset: 0,
             borderRadius: 12,
-            background: "linear-gradient(160deg, #EBDDC4 0%, #DFCBA6 100%)",
-            border: "1px solid rgba(138,112,48,0.3)",
-            boxShadow: "0 16px 40px rgba(61,34,21,0.18)",
+            background: "rgba(255, 248, 235, 0.95)",
+            border: "1.5px solid rgba(138, 112, 48, 0.5)",
+            boxShadow: "0 12px 36px rgba(138, 112, 48, 0.25)",
             overflow: "visible",
           }}
         >
@@ -167,7 +167,7 @@ function Envelope() {
               width: "100%",
               height: "100%",
               clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-              background: "linear-gradient(160deg, #DFCBA6 0%, #CDB884 100%)",
+              background: "linear-gradient(160deg, #E0CBA0 0%, #DCC89A 100%)",
               borderRadius: "12px 12px 0 0",
               boxShadow: "0 4px 10px rgba(61,34,21,0.12)",
             }}
@@ -180,17 +180,17 @@ function Envelope() {
                 left: "50%",
                 top: "calc(100% - 18px)",
                 transform: "translate(-50%, -50%)",
-                width: 30,
-                height: 30,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
-                background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`,
+                background: "linear-gradient(135deg, #A88030, #7A5520)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 3px 8px rgba(138,112,48,0.4)",
+                boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
               }}
             >
-              <span style={{ color: "#FFF8EE", fontSize: "0.85rem" }}>♥</span>
+              <span style={{ color: "#FFF8EE", fontSize: "1rem" }}>♥</span>
             </div>
           )}
         </motion.div>

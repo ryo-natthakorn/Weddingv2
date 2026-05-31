@@ -65,6 +65,9 @@ export const translations = {
     rsvp_yes: "Joyfully Accept",
     rsvp_no: "Regretfully Decline",
     rsvp_guests: "Number of Guests",
+    rsvp_guests_help: "Including yourself",
+    rsvp_importance:
+      "Your RSVP helps us make sure everything is perfect — from the seating to the food to every last detail.",
     rsvp_dietary: "Dietary Preferences / Notes",
     rsvp_submit: "Send RSVP",
     rsvp_sending: "Sending...",
@@ -146,6 +149,9 @@ export const translations = {
     rsvp_yes: "ยินดีตอบรับ",
     rsvp_no: "ขอแสดงความเสียใจที่ไม่สะดวก",
     rsvp_guests: "จำนวนผู้เข้าร่วม",
+    rsvp_guests_help: "รวมตัวคุณด้วย",
+    rsvp_importance:
+      "การตอบรับของคุณช่วยให้เราเตรียมทุกอย่างได้อย่างพอดี ทั้งที่นั่ง อาหาร และทุกรายละเอียด",
     rsvp_dietary: "อาหารที่แพ้หรือหมายเหตุเพิ่มเติม",
     rsvp_submit: "ส่งการตอบรับ",
     rsvp_sending: "กำลังส่ง...",

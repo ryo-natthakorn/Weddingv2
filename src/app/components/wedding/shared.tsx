@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import type { CSSProperties } from "react";
-import { useInView } from "motion/react";
+import { motion, useInView } from "motion/react";
 
 export function useReveal(margin = "-60px") {
   const ref = useRef(null);
@@ -65,24 +65,42 @@ export function InkSplotch({
   );
 }
 
-/* Hand-drawn imperfect divider — wavy line instead of straight */
+/* Hand-drawn imperfect divider — wavy line instead of straight.
+   On first visibility both wavy lines draw simultaneously outward from the
+   center diamond (pathLength 0→1), then the diamond fades in. The left line's
+   path is authored right→left so its draw starts at the center too. */
 export function HandDrawnDivider({ className = "" }: { className?: string }) {
+  const { ref, inView } = useReveal("-40px");
+  const lineTransition = { duration: 0.9, ease: "easeOut" } as const;
+
   return (
     <div
+      ref={ref}
       className={`flex items-center gap-3 justify-center ${className}`}
       style={{ position: "relative" }}
     >
       <svg width="60" height="8" viewBox="0 0 60 8" fill="none">
-        <path
-          d="M2 4 Q15 2 30 4 T58 4"
+        <motion.path
+          d="M58 4 Q45 6 30 4 Q15 2 2 4"
           stroke="#8A7030"
           strokeWidth="1"
           strokeOpacity="0.5"
           strokeLinecap="round"
           fill="none"
+          initial={{ pathLength: 0 }}
+          animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
+          transition={lineTransition}
         />
       </svg>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <motion.svg
+        width="14"
+        height="14"
+        viewBox="0 0 14 14"
+        fill="none"
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.3, delay: 0.85 }}
+      >
         <path
           d="M7 0C7 0 7.6 3.5 10.5 3.5C7.6 3.5 7 7 7 7C7 7 6.4 3.5 3.5 3.5C6.4 3.5 7 0 7 0Z"
           fill="#8A7030"
@@ -93,15 +111,18 @@ export function HandDrawnDivider({ className = "" }: { className?: string }) {
           fill="#8A7030"
           fillOpacity="0.6"
         />
-      </svg>
+      </motion.svg>
       <svg width="60" height="8" viewBox="0 0 60 8" fill="none">
-        <path
+        <motion.path
           d="M2 4 Q15 6 30 4 T58 4"
           stroke="#8A7030"
           strokeWidth="1"
           strokeOpacity="0.5"
           strokeLinecap="round"
           fill="none"
+          initial={{ pathLength: 0 }}
+          animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
+          transition={lineTransition}
         />
       </svg>
     </div>
