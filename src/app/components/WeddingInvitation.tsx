@@ -427,9 +427,11 @@ export function WeddingInvitation() {
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
+            // Fire play() synchronously inside the unlock gesture (best shot at
+            // iOS autoplay); keep the onComplete play() as a fallback.
+            onUnlock={() => musicRef.current?.play()}
             onComplete={() => {
               setShowIntro(false);
-              // Autoplay the song the moment the invitation fades in.
               musicRef.current?.play();
             }}
           />
