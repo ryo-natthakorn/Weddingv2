@@ -9,17 +9,20 @@ import {
 } from "./shared";
 
 /* ───────────────────────────────────────────────────────────────
-   GALLERY — FILM ROLL MECHANIC
+   GALLERY — FILM ROLL MECHANIC (growing strip)
    ----------------------------------------------------------------
-   Two film rolls stacked vertically. A Kodak-style canister is
-   fixed at one edge; a "Pull me" tab sits beside it. Dragging the
-   tab away from the canister retracts the dark "unexposed film"
-   cover, revealing the photos one frame at a time. When the tab
-   reaches the far edge the roll snaps fully open and the strip
-   becomes a horizontally-scrollable filmstrip to browse the rest.
+   Two film rolls stacked vertically. A Kodak-style canister is fixed
+   at one edge; a "Pull me" tab sits immediately beside its mouth. At
+   rest only the canister + tab show against the dark unexposed film.
+   Dragging the tab away from the canister GROWS the exposed photo
+   strip — its width equals how far the tab has travelled — so frames
+   emerge from the canister one at a time. The dark film backdrop to
+   the leading side reads as film still inside the roll. When the tab
+   reaches the far edge the roll snaps fully open and the strip becomes
+   a horizontally-scrollable filmstrip to browse the rest.
 
-   Roll 1 — Our Memories : canister LEFT,  drag RIGHTWARD
-   Roll 2 — Pre-Wedding  : canister RIGHT, drag LEFTWARD (mirror)
+   Roll 1 — Our Memories : canister LEFT,  grows RIGHTWARD
+   Roll 2 — Pre-Wedding  : canister RIGHT, grows LEFTWARD (mirror)
 ─────────────────────────────────────────────────────────────── */
 
 /* Personal photos — Roll 1 */
@@ -174,11 +177,11 @@ function FilmRoll({
   // travel = how far the tab can move before hitting the far edge
   const travel = Math.max(0, W - CANISTER_W - TAB_W);
 
-  // Unexposed-film cover retracts as the tab is pulled away from the canister.
-  const coverW = useTransform([x, travelMV], ([xv, t]: number[]) => {
-    const p = clamp(isLeft ? xv : -xv, 0, t);
-    return Math.max(0, t - p);
-  });
+  // The exposed strip grows from the canister: its width equals how far the
+  // tab has been pulled away from the canister mouth.
+  const stripW = useTransform([x, travelMV], ([xv, t]: number[]) =>
+    clamp(isLeft ? xv : -xv, 0, t),
+  );
 
   const hasImages = images.length > 0;
 
@@ -262,110 +265,106 @@ function FilmRoll({
           height: TOTAL_H,
           borderRadius: 7,
           overflow: "hidden",
-          background: FILM_BG,
+          background: `repeating-linear-gradient(45deg, ${FILM_DARK} 0 9px, ${FILM_BG} 9px 18px)`,
           boxShadow: "0 16px 42px rgba(61,34,21,0.28)",
           userSelect: "none",
         }}
       >
-        {/* Photo frames — scrollable once unrolled */}
-        <div
-          ref={viewportRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            overflowX: done ? "auto" : "hidden",
-            overflowY: "hidden",
-            touchAction: done ? "auto" : "pan-y",
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "none",
-            zIndex: 1,
-          }}
-        >
-          {/* leading spacer — clears the canister on the left roll */}
-          <div style={{ flex: "0 0 auto", width: isLeft ? CANISTER_W : 28 }} aria-hidden />
-
-          {hasImages ? (
-            frameList.map((src) => (
-              <div
-                key={src}
-                style={{
-                  flex: "0 0 auto",
-                  width: FRAME_W,
-                  height: STRIP_H,
-                  marginInline: FRAME_GAP / 2,
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  background: "#000",
-                  boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.55)",
-                }}
-              >
-                <img
-                  src={src}
-                  alt=""
-                  draggable={false}
-                  loading="lazy"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                    filter: "sepia(26%) saturate(0.94) contrast(0.98)",
-                  }}
-                />
-              </div>
-            ))
-          ) : (
+        {/* Photo window — grows from the canister as the tab is pulled; the
+            dark wrap background around it reads as unexposed film. Once fully
+            unrolled it becomes a horizontally-scrollable filmstrip. */}
+        {hasImages && (
+          <motion.div
+            ref={viewportRef}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              [isLeft ? "left" : "right"]: CANISTER_W,
+              width: done ? Math.max(0, W - CANISTER_W) : stripW,
+              overflowX: done ? "auto" : "hidden",
+              overflowY: "hidden",
+              touchAction: done ? "auto" : "pan-y",
+              WebkitOverflowScrolling: "touch",
+              scrollbarWidth: "none",
+              transition: done ? "width 0.35s ease" : undefined,
+              zIndex: 1,
+            }}
+          >
+            {/* Photo row — fixed layout anchored to the canister side, so the
+                growing window reveals one frame at a time. */}
             <div
               style={{
-                flex: "0 0 auto",
-                minWidth: FRAME_W * 1.6,
-                height: STRIP_H,
-                marginInline: FRAME_GAP / 2,
+                position: done ? "relative" : "absolute",
+                top: 0,
+                [isLeft ? "left" : "right"]: 0,
+                height: "100%",
+                width: "max-content",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                padding: "0 20px",
-                color: "rgba(250,244,232,0.62)",
-                fontFamily: "'TT Interphases', sans-serif",
-                fontSize: "0.74rem",
-                letterSpacing: "0.08em",
-                lineHeight: 1.5,
               }}
             >
-              {emptyText}
+              {frameList.map((src) => (
+                <div
+                  key={src}
+                  style={{
+                    flex: "0 0 auto",
+                    width: FRAME_W,
+                    height: STRIP_H,
+                    marginInline: FRAME_GAP / 2,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    background: "#000",
+                    boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.55)",
+                  }}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    draggable={false}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                      filter: "sepia(26%) saturate(0.94) contrast(0.98)",
+                    }}
+                  />
+                </div>
+              ))}
             </div>
-          )}
+          </motion.div>
+        )}
 
-          {/* trailing spacer — clears the canister on the right roll */}
-          <div style={{ flex: "0 0 auto", width: isLeft ? 28 : CANISTER_W }} aria-hidden />
-        </div>
+        {/* Empty-state placeholder (e.g. pre-wedding photos not yet provided) */}
+        {!hasImages && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              padding: "0 40px",
+              color: "rgba(250,244,232,0.62)",
+              fontFamily: "'TT Interphases', sans-serif",
+              fontSize: "0.74rem",
+              letterSpacing: "0.08em",
+              lineHeight: 1.5,
+              zIndex: 1,
+            }}
+          >
+            {emptyText}
+          </div>
+        )}
 
         {/* Sprocket bands (drawn over photos + cover for a continuous strip) */}
         <SprocketBand edge="top" />
         <SprocketBand edge="bottom" />
 
-        {/* Unexposed-film cover — retracts as the tab is pulled */}
-        {hasImages && !done && (
-          <motion.div
-            style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              [isLeft ? "right" : "left"]: 0,
-              width: coverW,
-              zIndex: 3,
-              background: `repeating-linear-gradient(45deg, ${FILM_DARK} 0 9px, ${FILM_BG} 9px 18px)`,
-              boxShadow: isLeft
-                ? "inset 12px 0 22px rgba(0,0,0,0.55)"
-                : "inset -12px 0 22px rgba(0,0,0,0.55)",
-            }}
-          />
-        )}
-
-        {/* Draggable "Pull me" tab — sits at the exposed/unexposed boundary */}
+        {/* Draggable "Pull me" tab — rides the leading edge of the growing strip */}
         {hasImages && !done && W > 0 && (
           <motion.div
             drag="x"
