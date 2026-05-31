@@ -444,7 +444,7 @@ export function WeddingInvitation() {
         <LangToggle />
         <MusicPlayer ref={musicRef} />
       </motion.div>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 0.8, delay: 0.9 }}>
         <InvitationContent />
       </motion.div>
     </LangProvider>
