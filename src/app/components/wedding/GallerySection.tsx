@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useTransform } from "motion/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { motion, useMotionValue, useTransform, animate } from "motion/react";
+import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
   useReveal,
@@ -10,6 +11,21 @@ import {
   WatercolorFlower,
 } from "./shared";
 
+/* ───────────────────────────────────────────────────────────────
+   GALLERY — FILM ROLL MECHANIC
+   ----------------------------------------------------------------
+   Two film rolls stacked vertically. A Kodak-style canister is
+   fixed at one edge; a "Pull me" tab sits beside it. Dragging the
+   tab away from the canister retracts the dark "unexposed film"
+   cover, revealing the photos one frame at a time. When the tab
+   reaches the far edge the roll snaps fully open and the strip
+   becomes a horizontally-scrollable filmstrip to browse the rest.
+
+   Roll 1 — Our Memories : canister LEFT,  drag RIGHTWARD
+   Roll 2 — Pre-Wedding  : canister RIGHT, drag LEFTWARD (mirror)
+─────────────────────────────────────────────────────────────── */
+
+/* Personal photos — Roll 1 */
 const STORY_IMAGES = [
   "https://images.unsplash.com/photo-1502389498275-fe50566c4c5a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjBwb3J0cmFpdCUyMHN1bnNldCUyMGdvbGRlbiUyMGhvdXIlMjBsb3ZlfGVufDF8fHx8MTc3ODQ2OTIxMHww&ixlib=rb-4.1.0&q=80&w=1080",
   "https://images.unsplash.com/photo-1776957389179-b2388f2653ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjB3YWxraW5nJTIwaGFuZCUyMGluJTIwaGFuZCUyMG5hdHVyZSUyMHBhdGh8ZW58MXx8fHwxNzc4NDY5MjExfDA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -17,24 +33,114 @@ const STORY_IMAGES = [
   "https://images.unsplash.com/photo-1775441522523-317359de673f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjBsYXVnaGluZyUyMGhhcHB5JTIwcGljbmljJTIwb3V0ZG9vcnxlbnwxfHx8fDE3Nzg0NjkyMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
 ];
 
-const STRIP_HEIGHT = 200;
-const SPROCKET = 22; // height of perforated edge band
+/* Pre-Wedding shoot — Roll 2.
+   ►► CLIENT: replace these with the real pre-wedding photos.
+      The mechanic adapts to however many images you provide.
+      Leave the array empty ([]) to show a gentle placeholder. */
+const PRE_WEDDING_IMAGES = [
+  "https://images.unsplash.com/photo-1519741497674-611481863552?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+  "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+  "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+  "https://images.unsplash.com/photo-1525258946800-98cfd641d0de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+];
 
-/* Dark perforated film edge (top/bottom) */
-function Sprockets() {
+const CANISTER_W = 46; // fixed canister width at the roll edge
+const TAB_W = 42; // pull-tab width
+const SPROCKET = 16; // perforated edge band height (top & bottom)
+const STRIP_H = 168; // photo frame height
+const TOTAL_H = STRIP_H + SPROCKET * 2;
+const FRAME_W = 150; // each photo frame width
+const FRAME_GAP = 5; // dark border between frames
+const FILM_BG = "#3A1A00"; // dark brown film base
+const FILM_DARK = "#2A1200";
+
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+/* Perforated sprocket band — runs along top or bottom of the strip */
+function SprocketBand({ edge }: { edge: "top" | "bottom" }) {
   return (
     <div
+      aria-hidden
       style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        [edge]: 0,
         height: SPROCKET,
-        background: "#1c130c",
+        background: "#1B0E04",
         backgroundImage:
-          "repeating-linear-gradient(to right, transparent 0 9px, rgba(248,241,230,0.85) 9px 19px, transparent 19px 28px)",
-        backgroundSize: "28px 8px",
+          "repeating-linear-gradient(to right, transparent 0 11px, rgba(250,244,232,0.92) 11px 21px, transparent 21px 32px)",
+        backgroundSize: "32px 8px",
         backgroundPosition: "center",
         backgroundRepeat: "repeat-x",
-        flexShrink: 0,
+        zIndex: 4,
+        pointerEvents: "none",
       }}
     />
+  );
+}
+
+/* Kodak-style film canister fixed at the roll edge */
+function Canister({ side }: { side: "left" | "right" }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        [side]: 0,
+        width: CANISTER_W,
+        zIndex: 6,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+      }}
+    >
+      {/* shadow the canister casts onto the emerging film */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          [side === "left" ? "right" : "left"]: -14,
+          width: 14,
+          background:
+            side === "left"
+              ? "linear-gradient(to right, rgba(0,0,0,0.45), transparent)"
+              : "linear-gradient(to left, rgba(0,0,0,0.45), transparent)",
+        }}
+      />
+      <div
+        style={{
+          width: CANISTER_W - 8,
+          height: "88%",
+          borderRadius: 9,
+          background: "linear-gradient(180deg, #F0AE54 0%, #C9791F 52%, #9C5712 100%)",
+          boxShadow:
+            "0 6px 18px rgba(0,0,0,0.45), inset 0 0 0 2px rgba(255,255,255,0.18), inset 0 -10px 14px rgba(0,0,0,0.25)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+        }}
+      >
+        {/* spool hole */}
+        <div
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            background: FILM_BG,
+            boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.32)",
+          }}
+        />
+        {/* top & bottom lips */}
+        <div style={{ position: "absolute", top: -5, left: 3, right: 3, height: 9, borderRadius: 5, background: "#A85F12" }} />
+        <div style={{ position: "absolute", bottom: -5, left: 3, right: 3, height: 9, borderRadius: 5, background: "#A85F12" }} />
+      </div>
+    </div>
   );
 }
 
@@ -42,150 +148,343 @@ function FilmRoll({
   images,
   label,
   tabLabel,
-  direction,
+  swipeHint,
+  emptyText,
+  side,
 }: {
   images: string[];
   label: string;
   tabLabel: string;
-  direction: "right" | "left";
+  swipeHint: string;
+  emptyText: string;
+  side: "left" | "right";
 }) {
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [frameW, setFrameW] = useState(300);
-  const x = useMotionValue(0);
+  const isLeft = side === "left";
 
-  useEffect(() => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  const [W, setW] = useState(0); // measured strip width
+  const [done, setDone] = useState(false); // fully unrolled → browse mode
+  const [hintGone, setHintGone] = useState(false);
+
+  // Drag position of the tab (transform x relative to its anchored edge).
+  const x = useMotionValue(0);
+  // travel mirrored as a motion value so the cover transform recomputes once
+  // the measured width arrives (x alone may not have changed by then).
+  const travelMV = useMotionValue(0);
+
+  // travel = how far the tab can move before hitting the far edge
+  const travel = Math.max(0, W - CANISTER_W - TAB_W);
+
+  // Unexposed-film cover retracts as the tab is pulled away from the canister.
+  const coverW = useTransform([x, travelMV], ([xv, t]: number[]) => {
+    const p = clamp(isLeft ? xv : -xv, 0, t);
+    return Math.max(0, t - p);
+  });
+
+  const hasImages = images.length > 0;
+
+  /* Measure the strip width and keep it current on resize/rotate. */
+  useLayoutEffect(() => {
     const measure = () => {
-      if (frameRef.current) setFrameW(frameRef.current.offsetWidth);
+      if (!wrapRef.current) return;
+      const w = wrapRef.current.clientWidth;
+      setW(w);
+      travelMV.set(Math.max(0, w - CANISTER_W - TAB_W));
     };
     measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
+    const ro = new ResizeObserver(measure);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, [travelMV]);
 
-  // Revealed amount (0..frameW) derived continuously from drag position.
-  const revealed = useTransform(x, (v) =>
-    direction === "right"
-      ? Math.min(frameW, Math.max(0, v))
-      : Math.min(frameW, Math.max(0, -v)),
-  );
-  // Opaque "unexposed film" cover width = the not-yet-pulled portion.
-  const coverW = useTransform(revealed, (r) => frameW - r);
+  /* Right-side roll browses from the canister (right) leftward, so pin
+     the scroll to the far-right end until the user takes over. */
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || isLeft || done) return;
+    el.scrollLeft = el.scrollWidth - el.clientWidth;
+  }, [isLeft, done, W, images.length]);
 
-  const isRight = direction === "right";
+  /* Retire the swipe hint after a moment once unrolled. */
+  useEffect(() => {
+    if (!done) return;
+    const id = setTimeout(() => setHintGone(true), 4200);
+    return () => clearTimeout(id);
+  }, [done]);
+
+  const openTo = isLeft ? travel : -travel;
+
+  const settle = (open: boolean) => {
+    animate(x, open ? openTo : 0, {
+      type: "spring",
+      stiffness: 360,
+      damping: 34,
+      onComplete: () => {
+        if (open) setDone(true);
+      },
+    });
+  };
+
+  const onDragEnd = (_e: unknown, info: PanInfo) => {
+    const p = clamp(isLeft ? x.get() : -x.get(), 0, travel);
+    const fast = isLeft ? info.velocity.x > 380 : info.velocity.x < -380;
+    settle(p > travel * 0.4 || fast);
+  };
+
+  // Keep a normal `row` flex (predictable scrollLeft). For the right roll we
+  // reverse the images and swap the canister spacer to the trailing side, so
+  // image[0] ends up next to the right canister and is revealed first.
+  const frameList = isLeft ? images : [...images].reverse();
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Label */}
+      {/* Section label above the roll */}
       <p
         style={{
           fontFamily: "'TT Interphases', sans-serif",
           fontSize: "0.7rem",
-          letterSpacing: "0.28em",
+          letterSpacing: "0.26em",
           color: COLORS.lightBrown,
           textTransform: "uppercase",
-          textAlign: isRight ? "left" : "right",
+          textAlign: isLeft ? "left" : "right",
           marginBottom: 12,
+          paddingInline: 4,
         }}
       >
         {label}
       </p>
 
-      {/* Film strip */}
+      {/* The strip */}
       <div
-        ref={frameRef}
+        ref={wrapRef}
         style={{
           position: "relative",
           width: "100%",
-          borderRadius: 6,
+          height: TOTAL_H,
+          borderRadius: 7,
           overflow: "hidden",
-          boxShadow: "0 16px 40px rgba(61,34,21,0.25)",
-          background: "#1c130c",
-          touchAction: "pan-y",
+          background: FILM_BG,
+          boxShadow: "0 16px 42px rgba(61,34,21,0.28)",
           userSelect: "none",
         }}
       >
-        <Sprockets />
+        {/* Photo frames — scrollable once unrolled */}
+        <div
+          ref={viewportRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            overflowX: done ? "auto" : "hidden",
+            overflowY: "hidden",
+            touchAction: done ? "auto" : "pan-y",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+            zIndex: 1,
+          }}
+        >
+          {/* leading spacer — clears the canister on the left roll */}
+          <div style={{ flex: "0 0 auto", width: isLeft ? CANISTER_W : 28 }} aria-hidden />
 
-        {/* Photo window */}
-        <div style={{ position: "relative", height: STRIP_HEIGHT, overflow: "hidden" }}>
-          {/* Photos underneath, sepia-warmed */}
-          <div style={{ position: "absolute", inset: 0, display: "flex" }}>
-            {images.map((src, i) => (
-              <div key={i} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {hasImages ? (
+            frameList.map((src) => (
+              <div
+                key={src}
+                style={{
+                  flex: "0 0 auto",
+                  width: FRAME_W,
+                  height: STRIP_H,
+                  marginInline: FRAME_GAP / 2,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  background: "#000",
+                  boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.55)",
+                }}
+              >
                 <img
                   src={src}
                   alt=""
                   draggable={false}
+                  loading="lazy"
                   style={{
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
                     display: "block",
-                    filter: "sepia(28%) saturate(0.92) contrast(0.98)",
+                    filter: "sepia(26%) saturate(0.94) contrast(0.98)",
                   }}
                 />
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <div
+              style={{
+                flex: "0 0 auto",
+                minWidth: FRAME_W * 1.6,
+                height: STRIP_H,
+                marginInline: FRAME_GAP / 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: "0 20px",
+                color: "rgba(250,244,232,0.62)",
+                fontFamily: "'TT Interphases', sans-serif",
+                fontSize: "0.74rem",
+                letterSpacing: "0.08em",
+                lineHeight: 1.5,
+              }}
+            >
+              {emptyText}
+            </div>
+          )}
 
-          {/* Unexposed-film cover that retracts as the tab is pulled */}
+          {/* trailing spacer — clears the canister on the right roll */}
+          <div style={{ flex: "0 0 auto", width: isLeft ? 28 : CANISTER_W }} aria-hidden />
+        </div>
+
+        {/* Sprocket bands (drawn over photos + cover for a continuous strip) */}
+        <SprocketBand edge="top" />
+        <SprocketBand edge="bottom" />
+
+        {/* Unexposed-film cover — retracts as the tab is pulled */}
+        {hasImages && !done && (
           <motion.div
             style={{
               position: "absolute",
               top: 0,
               bottom: 0,
-              [isRight ? "right" : "left"]: 0,
+              [isLeft ? "right" : "left"]: 0,
               width: coverW,
-              background:
-                "repeating-linear-gradient(45deg, #1c130c 0 8px, #241810 8px 16px)",
-              boxShadow: isRight
-                ? "inset 10px 0 18px rgba(0,0,0,0.5)"
-                : "inset -10px 0 18px rgba(0,0,0,0.5)",
+              zIndex: 3,
+              background: `repeating-linear-gradient(45deg, ${FILM_DARK} 0 9px, ${FILM_BG} 9px 18px)`,
+              boxShadow: isLeft
+                ? "inset 12px 0 22px rgba(0,0,0,0.55)"
+                : "inset -12px 0 22px rgba(0,0,0,0.55)",
             }}
           />
+        )}
 
-          {/* Draggable film tab — sits at the canister opening edge */}
+        {/* Draggable "Pull me" tab — sits at the exposed/unexposed boundary */}
+        {hasImages && !done && W > 0 && (
           <motion.div
             drag="x"
-            dragConstraints={
-              isRight ? { left: 0, right: frameW } : { left: -frameW, right: 0 }
-            }
-            dragElastic={0.04}
+            dragConstraints={isLeft ? { left: 0, right: travel } : { left: -travel, right: 0 }}
+            dragElastic={0.05}
             dragMomentum={false}
+            onDragEnd={onDragEnd}
             style={{
               x,
               position: "absolute",
               top: 0,
               bottom: 0,
-              [isRight ? "left" : "right"]: 0,
-              width: 56,
+              [isLeft ? "left" : "right"]: CANISTER_W,
+              width: TAB_W,
+              zIndex: 5,
               cursor: "grab",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: `linear-gradient(${isRight ? "90deg" : "270deg"}, rgba(138,112,48,0.0), ${COLORS.gold})`,
               touchAction: "none",
             }}
             whileTap={{ cursor: "grabbing" }}
+            role="slider"
+            aria-label="Pull to reveal photos"
+            aria-valuemin={0}
+            aria-valuemax={100}
           >
+            {/* the tab tag */}
+            <div
+              style={{
+                width: TAB_W - 8,
+                height: "78%",
+                borderRadius: 6,
+                background: `linear-gradient(${isLeft ? "90deg" : "270deg"}, ${COLORS.gold}, #6B5520)`,
+                boxShadow: "0 3px 12px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.18)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 7,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "'TT Interphases', sans-serif",
+                  fontSize: "0.56rem",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "#FFF8EE",
+                  writingMode: "vertical-rl",
+                  transform: isLeft ? "none" : "rotate(180deg)",
+                  fontWeight: 500,
+                }}
+              >
+                {tabLabel}
+              </span>
+              {/* bobbing chevron pointing in the pull direction */}
+              <motion.span
+                animate={{ x: isLeft ? [0, 4, 0] : [0, -4, 0] }}
+                transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+                style={{ display: "flex", color: "rgba(255,248,238,0.9)" }}
+              >
+                <svg width="9" height="11" viewBox="0 0 9 11" fill="none" style={{ transform: isLeft ? "none" : "scaleX(-1)" }}>
+                  <path d="M2 1L7 5.5L2 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </motion.span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Canister fixed at the edge */}
+        {hasImages && <Canister side={side} />}
+
+        {/* Swipe-to-browse hint once unrolled */}
+        {hasImages && done && !hintGone && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "absolute",
+              bottom: SPROCKET + 8,
+              [isLeft ? "right" : "left"]: 12,
+              zIndex: 5,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "5px 11px",
+              borderRadius: 100,
+              background: "rgba(27,14,4,0.55)",
+              backdropFilter: "blur(3px)",
+              pointerEvents: "none",
+            }}
+          >
+            <motion.span
+              animate={{ x: isLeft ? [0, 5, 0] : [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.3, ease: "easeInOut" }}
+              style={{ display: "flex", color: "rgba(255,248,238,0.95)" }}
+            >
+              <svg width="14" height="12" viewBox="0 0 14 12" fill="none" style={{ transform: isLeft ? "none" : "scaleX(-1)" }}>
+                <path d="M1 6H12M12 6L8 2M12 6L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </motion.span>
             <span
               style={{
                 fontFamily: "'TT Interphases', sans-serif",
-                fontSize: "0.6rem",
-                letterSpacing: "0.16em",
+                fontSize: "0.58rem",
+                letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#FFF8EE",
-                writingMode: "vertical-rl",
-                transform: isRight ? "none" : "rotate(180deg)",
-                fontWeight: 500,
+                color: "rgba(255,248,238,0.95)",
               }}
             >
-              {tabLabel}
+              {swipeHint}
             </span>
           </motion.div>
-        </div>
-
-        <Sprockets />
+        )}
       </div>
     </div>
   );
@@ -197,12 +496,15 @@ export function GallerySection() {
 
   const memoriesLabel = lang === "TH" ? "ความทรงจำของเรา" : "Our Memories";
   const preWeddingLabel = lang === "TH" ? "พรีเวดดิ้ง" : "Pre-Wedding";
-  const pull = lang === "TH" ? "ดึงเลย" : "Pull me";
+  const pull = lang === "TH" ? "ดึง" : "Pull me";
+  const swipeHint = lang === "TH" ? "ปัดเพื่อชม" : "Swipe to browse";
+  const emptyText =
+    lang === "TH" ? "ภาพพรีเวดดิ้งกำลังจะมาเร็ว ๆ นี้" : "Pre-wedding photos coming soon";
 
   return (
     <section
       style={{
-        padding: "96px 24px 110px",
+        padding: "92px 14px 108px",
         position: "relative",
         overflow: "hidden",
         background: "transparent",
@@ -210,35 +512,38 @@ export function GallerySection() {
     >
       <WatercolorWash variant="warm" intensity={0.5} />
       <PaperTexture opacity={0.25} />
-      <WatercolorFlower size={36} style={{ position: "absolute", top: 70, left: 24, opacity: 0.5, zIndex: 1 }} />
-      <WatercolorFlower size={30} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 100, right: 28, opacity: 0.45, zIndex: 1 }} />
+      <WatercolorFlower size={36} style={{ position: "absolute", top: 64, left: 22, opacity: 0.5, zIndex: 1 }} />
+      <WatercolorFlower size={30} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 96, right: 26, opacity: 0.45, zIndex: 1 }} />
 
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.9 }}
-        style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
+        style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}
       >
-        <Divider className="mb-12" />
+        <Divider className="mb-10" />
 
-        {/* Roll 1 — Our Memories (tab right, drag rightward) */}
+        {/* Roll 1 — Our Memories (canister left, drag rightward) */}
         <FilmRoll
-          images={[STORY_IMAGES[0], STORY_IMAGES[1]]}
+          images={STORY_IMAGES}
           label={memoriesLabel}
           tabLabel={pull}
-          direction="right"
+          swipeHint={swipeHint}
+          emptyText={emptyText}
+          side="left"
         />
 
-        {/* Generous gap between rolls */}
-        <div style={{ height: 72 }} />
+        <div style={{ height: 64 }} />
 
-        {/* Roll 2 — Pre-Wedding (tab left, drag leftward) */}
+        {/* Roll 2 — Pre-Wedding (canister right, drag leftward) */}
         <FilmRoll
-          images={[STORY_IMAGES[2], STORY_IMAGES[3]]}
+          images={PRE_WEDDING_IMAGES}
           label={preWeddingLabel}
           tabLabel={pull}
-          direction="left"
+          swipeHint={swipeHint}
+          emptyText={emptyText}
+          side="right"
         />
       </motion.div>
     </section>
