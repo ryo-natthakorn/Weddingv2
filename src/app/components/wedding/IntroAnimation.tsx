@@ -5,9 +5,6 @@ import pnLogo from "../../../imports/Logo.svg";
 
 interface Props {
   onComplete: () => void;
-  /* Fired synchronously the instant the slider unlocks — still inside the
-     touch gesture, which iOS requires to permit audio playback. */
-  onUnlock?: () => void;
 }
 
 function Petal({ x, delay, size }: { x: number; delay: number; size: number }) {
@@ -37,7 +34,7 @@ const CORNERS = [
   { style: { bottom: 0, right: 0 }, rotate: "180deg" },
 ] as const;
 
-export function IntroAnimation({ onComplete, onUnlock }: Props) {
+export function IntroAnimation({ onComplete }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -52,7 +49,6 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
 
   const triggerUnlock = () => {
     if (unlocked) return;
-    onUnlock?.(); // synchronous, still inside the touch gesture (iOS autoplay)
     setUnlocked(true);
     setPos(100);
     setTimeout(() => {
@@ -98,7 +94,7 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
           key="intro"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 1.04 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: "fixed", inset: 0, zIndex: 9999,
             background: "linear-gradient(175deg, #EAC898 0%, #EDD8A8 30%, #F3E8CC 60%, #F8F1E6 100%)",

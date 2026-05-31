@@ -125,7 +125,6 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
       videoId: YT_VIDEO_ID,
       playerVars: {
         autoplay: 0,            // discovery is the petal trail, not autoplay
-        playsinline: 1,         // iOS: play inline (not fullscreen) so autoplay can work
         controls: 0,
         disablekb: 1,
         fs: 0,

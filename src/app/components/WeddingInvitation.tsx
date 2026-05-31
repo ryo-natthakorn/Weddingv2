@@ -187,7 +187,6 @@ function InvitationContent() {
   const venueSec = useReveal();
   const programSec = useReveal();
   const dressSec = useReveal();
-  const swatchSec = useReveal("-40px");
   const hashtagSec = useReveal("-80px");
   const footerSec = useReveal();
 
@@ -345,22 +344,18 @@ function InvitationContent() {
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 44 }}>{t.dress_desc}</p>
           </motion.div>
 
-          {/* 9 swatch arches — drop in left→right, top row first.
-              Own observer (the section ref triggers too early — swatches sit
-              well below the fold when the section top crosses the viewport). */}
-          <div ref={swatchSec.ref}>
-            {[
-              [{ color: "#3A2C18", label: "Dark Brown" }, { color: "#7A5C30", label: "Brown" }, { color: "#B8956A", label: "Tan" }],
-              [{ color: "#6B5020", label: "Mustard" }, { color: "#A88030", label: "Gold" }, { color: "#D4BC70", label: "Pale Gold" }],
-              [{ color: "#2A3C1E", label: "Forest" }, { color: "#4A6030", label: "Olive" }, { color: "#7A9060", label: "Sage" }],
-            ].map((row, ri) => (
-              <div key={ri} style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 28px)", marginBottom: 20 }}>
-                {row.map(({ color, label }, ci) => (
-                  <ArchSwatch key={color} color={color} label={label} index={ri * 3 + ci} inView={swatchSec.inView} />
-                ))}
-              </div>
-            ))}
-          </div>
+          {/* 9 swatch arches — drop in left→right, top row first */}
+          {[
+            [{ color: "#3A2C18", label: "Dark Brown" }, { color: "#7A5C30", label: "Brown" }, { color: "#B8956A", label: "Tan" }],
+            [{ color: "#6B5020", label: "Mustard" }, { color: "#A88030", label: "Gold" }, { color: "#D4BC70", label: "Pale Gold" }],
+            [{ color: "#2A3C1E", label: "Forest" }, { color: "#4A6030", label: "Olive" }, { color: "#7A9060", label: "Sage" }],
+          ].map((row, ri) => (
+            <div key={ri} style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 28px)", marginBottom: 20 }}>
+              {row.map(({ color, label }, ci) => (
+                <ArchSwatch key={color} color={color} label={label} index={ri * 3 + ci} inView={dressSec.inView} />
+              ))}
+            </div>
+          ))}
 
           {/* Gentle gold separator — dress code flows into the hashtag */}
           <div style={{ width: "60%", maxWidth: 320, height: 1, background: COLORS.gold, opacity: 0.4, margin: "48px auto 40px" }} />
@@ -421,42 +416,28 @@ function InvitationContent() {
 
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
-  // Drives the crossfade. Set the instant the slider unlocks, so the
-  // invitation fades UP beneath the intro while the intro fades OUT on top —
-  // the content is solid before the cover clears, so no bare grain shows.
-  const [revealed, setRevealed] = useState(false);
   const musicRef = useRef<MusicPlayerHandle>(null);
-
-  // Content fade reaches full (~1.0s) before the intro overlay finishes its
-  // exit (begins +0.7s, fades 0.5s → gone ~1.2s), giving a clean crossfade.
-  const crossfade = { duration: 1, ease: [0.22, 1, 0.36, 1] } as const;
-
   return (
     <LangProvider>
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
-            // Fired synchronously inside the unlock gesture: begin the
-            // crossfade and (best shot at iOS autoplay) start the music.
-            onUnlock={() => {
-              setRevealed(true);
-              musicRef.current?.play();
-            }}
             onComplete={() => {
               setShowIntro(false);
+              // Autoplay the song the moment the invitation fades in.
               musicRef.current?.play();
             }}
           />
         )}
       </AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: revealed ? 1 : 0 }} transition={crossfade}
+        initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 0.9, delay: 0.2 }}
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
         <MusicPlayer ref={musicRef} />
       </motion.div>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: revealed ? 1 : 0 }} transition={crossfade}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
         <InvitationContent />
       </motion.div>
     </LangProvider>

@@ -282,7 +282,6 @@ function FilmRoll({
               bottom: 0,
               [isLeft ? "left" : "right"]: CANISTER_W,
               width: done ? Math.max(0, W - CANISTER_W) : stripW,
-              clipPath: "inset(0)", // clips absolute children reliably on iOS Safari (overflow:hidden doesn't)
               overflowX: done ? "auto" : "hidden",
               overflowY: "hidden",
               touchAction: done ? "auto" : "pan-y",
