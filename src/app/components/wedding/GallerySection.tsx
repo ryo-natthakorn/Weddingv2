@@ -256,42 +256,50 @@ function FilmRoll({
         {label}
       </p>
 
-      {/* The strip */}
+      {/* The strip — transparent wrapper; the dark film is the growing strip */}
       <div
         ref={wrapRef}
         style={{
           position: "relative",
           width: "100%",
           height: TOTAL_H,
-          borderRadius: 7,
-          overflow: "hidden",
-          background: `repeating-linear-gradient(45deg, ${FILM_DARK} 0 9px, ${FILM_BG} 9px 18px)`,
-          boxShadow: "0 16px 42px rgba(61,34,21,0.28)",
+          overflow: "visible",
+          background: "transparent",
           userSelect: "none",
         }}
       >
-        {/* Photo window — grows from the canister as the tab is pulled; the
-            dark wrap background around it reads as unexposed film. Once fully
-            unrolled it becomes a horizontally-scrollable filmstrip. */}
-        {hasImages && (
-          <motion.div
-            ref={viewportRef}
-            style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              [isLeft ? "left" : "right"]: CANISTER_W,
-              width: done ? Math.max(0, W - CANISTER_W) : stripW,
-              clipPath: "inset(0)", // clips absolute children reliably on iOS Safari (overflow:hidden doesn't)
-              overflowX: done ? "auto" : "hidden",
-              overflowY: "hidden",
-              touchAction: done ? "auto" : "pan-y",
-              WebkitOverflowScrolling: "touch",
-              scrollbarWidth: "none",
-              transition: done ? "width 0.35s ease" : undefined,
-              zIndex: 1,
-            }}
-          >
+        {/* Growing film strip — the dark film base grows from the canister as
+            the tab is pulled, holding the sprockets + photo window. clip-path
+            clips its whole subtree (iOS-safe) so photos reveal as it grows. */}
+        <motion.div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            [isLeft ? "left" : "right"]: CANISTER_W,
+            width: done ? Math.max(0, W - CANISTER_W) : stripW,
+            background: `repeating-linear-gradient(45deg, ${FILM_DARK} 0 9px, ${FILM_BG} 9px 18px)`,
+            boxShadow: "0 16px 42px rgba(61,34,21,0.28)",
+            overflow: "hidden",
+            clipPath: "inset(0)",
+          }}
+        >
+          {/* Photo window — fills the growing strip; reveals frames as it
+              grows, becomes a horizontal filmstrip once fully unrolled. */}
+          {hasImages && (
+            <motion.div
+              ref={viewportRef}
+              style={{
+                position: "absolute",
+                inset: 0,
+                overflowX: done ? "auto" : "hidden",
+                overflowY: "hidden",
+                touchAction: done ? "auto" : "pan-y",
+                WebkitOverflowScrolling: "touch",
+                scrollbarWidth: "none",
+                zIndex: 1,
+              }}
+            >
             {/* Photo row — fixed layout anchored to the canister side, so the
                 growing window reveals one frame at a time. */}
             <div
@@ -338,6 +346,11 @@ function FilmRoll({
           </motion.div>
         )}
 
+          {/* Sprocket bands — run along the growing film strip */}
+          <SprocketBand edge="top" />
+          <SprocketBand edge="bottom" />
+        </motion.div>
+
         {/* Empty-state placeholder (e.g. pre-wedding photos not yet provided) */}
         {!hasImages && (
           <div
@@ -360,10 +373,6 @@ function FilmRoll({
             {emptyText}
           </div>
         )}
-
-        {/* Sprocket bands (drawn over photos + cover for a continuous strip) */}
-        <SprocketBand edge="top" />
-        <SprocketBand edge="bottom" />
 
         {/* Draggable "Pull me" tab — rides the leading edge of the growing strip */}
         {hasImages && !done && W > 0 && (
