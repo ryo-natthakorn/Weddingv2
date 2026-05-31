@@ -26,6 +26,55 @@ const DIRECTIONS = [
   { icon: "🛺", label: "By Grab", detail: "Search 'SailomSangdad Homey Studio' in the Grab app." },
 ];
 
+/* Program icons — client drops ring-icon / camera-icon / glasses-icon into
+   src/imports/. import.meta.glob resolves only files that actually exist at
+   build time, so a missing icon simply falls back to its emoji (no build
+   error). Rebuild after adding the files and they appear automatically. */
+const ICON_MODULES = import.meta.glob(
+  "../../imports/{ring,camera,glasses}-icon.{png,svg}",
+  { eager: true, query: "?url", import: "default" },
+) as Record<string, string>;
+
+const PROGRAM_ICONS = [
+  { base: "ring", emoji: "💍" },
+  { base: "camera", emoji: "📷" },
+  { base: "glasses", emoji: "🥂" },
+].map(({ base, emoji }) => ({
+  emoji,
+  src: Object.entries(ICON_MODULES).find(([k]) => k.includes(`/${base}-icon.`))?.[1],
+}));
+
+/* Program card icon — loads the PNG/SVG if present, otherwise (or on load
+   error) shows a gold circle with the matching emoji placeholder. */
+function ProgramIcon({ src, emoji }: { src?: string; emoji: string }) {
+  const [failed, setFailed] = useState(false);
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        onError={() => setFailed(true)}
+        style={{ width: 46, height: 46, objectFit: "contain", display: "block" }}
+      />
+    );
+  }
+  return (
+    <div
+      aria-hidden
+      style={{
+        width: 46, height: 46, borderRadius: "50%",
+        background: "linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))",
+        border: "1px solid rgba(138,112,48,0.3)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "1.4rem",
+      }}
+    >
+      {emoji}
+    </div>
+  );
+}
+
 /* ── Floating golden particles ── */
 function Particles() {
   const pts = useMemo(
@@ -207,6 +256,7 @@ function InvitationContent() {
                 whileHover={{ y: -6 }}
                 style={{ background: "rgba(255,248,240,0.6)", border: "1px solid rgba(138,107,75,0.15)", borderTop: `3px solid ${COLORS.gold}`, borderRadius: 16, padding: "36px 24px", boxShadow: "0 10px 30px rgba(61,34,21,0.1)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}
               >
+                <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} />
                 <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
                 <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
                 <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, color: COLORS.lightBrown, lineHeight: 1.65 }}>{item.desc}</p>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -37,6 +37,33 @@ function CountdownTimer() {
           <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.58rem", letterSpacing: "0.2em", color: COLORS.lightBrown, marginTop: 8, textTransform: "uppercase" }}>{label}</span>
         </motion.div>
       ))}
+    </div>
+  );
+}
+
+/* Left-to-right "signing" reveal via a clip-path wipe.
+   Chosen over SVG stroke-dashoffset because Thai ligatures make stroke
+   length unreliable — a clip-rect wipe reveals any script correctly. */
+function ClipReveal({
+  active,
+  duration,
+  delay = 0,
+  children,
+}: {
+  active: boolean;
+  duration: number;
+  delay?: number;
+  children: ReactNode;
+}) {
+  return (
+    <div style={{ overflow: "hidden" }}>
+      <motion.div
+        initial={{ clipPath: "inset(0% 100% 0% 0%)" }}
+        animate={active ? { clipPath: "inset(0% 0% 0% 0%)" } : { clipPath: "inset(0% 100% 0% 0%)" }}
+        transition={{ duration, delay, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {children}
+      </motion.div>
     </div>
   );
 }
@@ -94,21 +121,30 @@ export function NameIntroWithCountdown() {
           {t.invite_line}
         </motion.p>
 
-        {/* 4-6. Bride · Ring · Groom — stacked, names full width */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.42, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          style={{ marginTop: 40 }}
-        >
+        {/* 4-6. Bride · Ring · Groom — names reveal left-to-right (clip-wipe).
+            Bride wipes first (1.8s); groom follows after 0.3s (2.2s). Both
+            triggered together when the section enters the viewport. */}
+        <div style={{ marginTop: 40 }}>
           {/* Bride */}
-          <p style={titleStyle}>{t.bride_title}</p>
-          <p style={nameStyle}>{t.bride_name}</p>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.42, duration: 0.8 }}
+            style={titleStyle}
+          >
+            {t.bride_title}
+          </motion.p>
+          <ClipReveal active={inView} duration={1.8}>
+            <p style={nameStyle}>{t.bride_name}</p>
+          </ClipReveal>
 
           {/* Ring — large focal point */}
-          <img
+          <motion.img
             src={ringImg}
             alt="ring"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ delay: 0.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             style={{
               width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
               display: "block", margin: "26px auto",
@@ -117,9 +153,18 @@ export function NameIntroWithCountdown() {
           />
 
           {/* Groom */}
-          <p style={titleStyle}>{t.groom_title}</p>
-          <p style={nameStyle}>{t.groom_name}</p>
-        </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.42, duration: 0.8 }}
+            style={titleStyle}
+          >
+            {t.groom_title}
+          </motion.p>
+          <ClipReveal active={inView} duration={2.2} delay={0.3}>
+            <p style={nameStyle}>{t.groom_name}</p>
+          </ClipReveal>
+        </div>
 
         {/* 7-8. Date + venue */}
         <motion.div
