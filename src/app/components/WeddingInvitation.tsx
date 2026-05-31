@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "motion/react";
 import { LangProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
-import { MusicPlayer } from "./wedding/MusicPlayer";
+import { MusicPlayer, type MusicPlayerHandle } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
 import { RSVPSection } from "./wedding/RSVPSection";
 import { GiftSection } from "./wedding/GiftSection";
@@ -416,17 +416,26 @@ function InvitationContent() {
 
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
+  const musicRef = useRef<MusicPlayerHandle>(null);
   return (
     <LangProvider>
       <AnimatePresence>
-        {showIntro && <IntroAnimation onComplete={() => setShowIntro(false)} />}
+        {showIntro && (
+          <IntroAnimation
+            onComplete={() => {
+              setShowIntro(false);
+              // Autoplay the song the moment the invitation fades in.
+              musicRef.current?.play();
+            }}
+          />
+        )}
       </AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 0.9, delay: 0.2 }}
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer />
+        <MusicPlayer ref={musicRef} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
         <InvitationContent />

@@ -86,6 +86,7 @@ export const translations = {
     music_label: "Our Song",
     music_title: "Pantika (Proposal Song)",
     music_note: "♪ A song written with love",
+    music_youtube: "▶  Also on YouTube",
   },
   TH: {
     invitation_pre: "ขอเชิญร่วมแบ่งปันความสุขในพิธีมงคลสมรส",
@@ -170,6 +171,7 @@ export const translations = {
     music_label: "เพลงของเรา",
     music_title: "Pantika (เพลงขอแต่งงาน)",
     music_note: "♪ เพลงที่เขียนด้วยความรัก",
+    music_youtube: "▶  ฟังบน YouTube",
   },
 };
 
