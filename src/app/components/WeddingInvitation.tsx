@@ -421,15 +421,27 @@ function InvitationContent() {
 
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
+  // Drives the crossfade. Set the instant the slider unlocks, so the
+  // invitation fades UP beneath the intro while the intro fades OUT on top —
+  // the content is solid before the cover clears, so no bare grain shows.
+  const [revealed, setRevealed] = useState(false);
   const musicRef = useRef<MusicPlayerHandle>(null);
+
+  // Content fade reaches full (~1.0s) before the intro overlay finishes its
+  // exit (begins +0.7s, fades 0.5s → gone ~1.2s), giving a clean crossfade.
+  const crossfade = { duration: 1, ease: [0.22, 1, 0.36, 1] } as const;
+
   return (
     <LangProvider>
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
-            // Fire play() synchronously inside the unlock gesture (best shot at
-            // iOS autoplay); keep the onComplete play() as a fallback.
-            onUnlock={() => musicRef.current?.play()}
+            // Fired synchronously inside the unlock gesture: begin the
+            // crossfade and (best shot at iOS autoplay) start the music.
+            onUnlock={() => {
+              setRevealed(true);
+              musicRef.current?.play();
+            }}
             onComplete={() => {
               setShowIntro(false);
               musicRef.current?.play();
@@ -438,13 +450,13 @@ export function WeddingInvitation() {
         )}
       </AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 0.9, delay: 0.2 }}
+        initial={{ opacity: 0 }} animate={{ opacity: revealed ? 1 : 0 }} transition={crossfade}
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
         <MusicPlayer ref={musicRef} />
       </motion.div>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 0.8, delay: 0.9 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: revealed ? 1 : 0 }} transition={crossfade}>
         <InvitationContent />
       </motion.div>
     </LangProvider>
