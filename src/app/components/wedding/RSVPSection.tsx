@@ -5,10 +5,6 @@ import {
   useReveal,
   Divider,
   COLORS,
-  WatercolorWash,
-  PaperTexture,
-  WatercolorFlower,
-  BotanicalBorder,
 } from "./shared";
 
 type Status = "idle" | "submitted-yes" | "submitted-no";
@@ -111,12 +107,6 @@ export function RSVPSection() {
         overflow: "hidden",
       }}
     >
-      <WatercolorWash variant="warm" intensity={0.6} />
-      <PaperTexture opacity={0.3} />
-      <BotanicalBorder />
-      <WatercolorFlower size={32} color="#D4A574" style={{ position: "absolute", top: 90, left: 36, opacity: 0.55, zIndex: 1 }} />
-      <WatercolorFlower size={28} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 120, right: 40, opacity: 0.5, zIndex: 1 }} />
-
       <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}

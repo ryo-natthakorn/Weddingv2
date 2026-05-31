@@ -4,11 +4,7 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   Divider,
-  BotanicalBorder,
   COLORS,
-  WatercolorWash,
-  PaperTexture,
-  WatercolorFlower,
 } from "./shared";
 import ringImg from "../../../imports/Ring.svg";
 
@@ -64,17 +60,6 @@ export function NameIntroWithCountdown() {
         overflow: "hidden",
       }}
     >
-      {/* Watercolor texture layers */}
-      <WatercolorWash variant="warm" intensity={0.9} />
-      <PaperTexture opacity={0.35} />
-      <BotanicalBorder />
-      <BotanicalBorder flip />
-
-      {/* Decorative flowers */}
-      <WatercolorFlower size={38} style={{ position: "absolute", top: 90, left: 28, opacity: 0.55, zIndex: 2 }} />
-      <WatercolorFlower size={32} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 130, right: 36, opacity: 0.5, zIndex: 2 }} />
-      <WatercolorFlower size={28} color="#D4A574" style={{ position: "absolute", bottom: 110, left: 50, opacity: 0.5, zIndex: 2 }} />
-
       <div style={{ position: "relative", zIndex: 3, maxWidth: 720, margin: "0 auto" }}>
         {/* 1. Countdown — moved to the top */}
         <motion.div

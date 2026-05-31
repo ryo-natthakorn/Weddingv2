@@ -12,12 +12,8 @@ import { HashtagSection } from "./wedding/HashtagSection";
 import {
   useReveal,
   Divider,
-  BotanicalBorder,
   LeafSvg,
   COLORS,
-  WatercolorWash,
-  PaperTexture,
-  WatercolorFlower,
 } from "./wedding/shared";
 import heroIllustration from "../../imports/Hero.jpg";
 import pnLogo from "../../imports/Logo.svg";
@@ -81,7 +77,7 @@ function InvitationContent() {
   const FLORAL_IMAGE = "https://images.unsplash.com/photo-1634562984686-5e559a782117?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd2hpdGUlMjBmbG9yYWxzJTIwZ3JlZW5lcnklMjB3ZWRkaW5nJTIwdGFibGV8ZW58MXx8fHwxNzc4NDY4NTYxfDA&ixlib=rb-4.1.0&q=80&w=1080";
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F8F1E6 0%, #F2E8D2 20%, #EBDDc4 50%, #E3D2B0 75%, #DBC59A 100%)", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
+    <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
 
       {/* ═══ HERO ═══ */}
       <section
@@ -200,10 +196,6 @@ function InvitationContent() {
 
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "96px 24px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <WatercolorWash variant="warm" intensity={0.5} />
-        <PaperTexture opacity={0.3} />
-        <BotanicalBorder />
-        <WatercolorFlower size={30} color="#D4A574" style={{ position: "absolute", top: 100, right: 30, opacity: 0.55, zIndex: 2 }} />
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
@@ -226,11 +218,6 @@ function InvitationContent() {
 
       {/* ═══ DRESS CODE ═══ */}
       <section ref={dressSec.ref} style={{ padding: "96px 24px", textAlign: "center", maxWidth: 600, margin: "0 auto", position: "relative", overflow: "hidden" }}>
-        <WatercolorWash variant="soft" intensity={0.5} />
-        <PaperTexture opacity={0.3} />
-        <BotanicalBorder />
-        <WatercolorFlower size={26} color="#D4A574" style={{ position: "absolute", top: 110, left: 30, opacity: 0.55, zIndex: 2 }} />
-        <WatercolorFlower size={24} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 130, right: 28, opacity: 0.5, zIndex: 2 }} />
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
@@ -260,12 +247,6 @@ function InvitationContent() {
 
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <WatercolorWash variant="soft" intensity={0.6} />
-        <PaperTexture opacity={0.3} />
-        <BotanicalBorder />
-        <WatercolorFlower size={32} color="#D4A574" style={{ position: "absolute", top: 100, left: 36, opacity: 0.55, zIndex: 2 }} />
-        <WatercolorFlower size={28} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 130, right: 40, opacity: 0.5, zIndex: 2 }} />
-
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
           <Divider className="mb-10" />
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote}</p>

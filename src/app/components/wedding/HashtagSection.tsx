@@ -4,10 +4,6 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   COLORS,
-  WatercolorWash,
-  PaperTexture,
-  WatercolorFlower,
-  BotanicalBorder,
   Divider,
 } from "./shared";
 
@@ -89,13 +85,7 @@ export function HashtagSection() {
         overflow: "hidden",
       }}
     >
-      {/* Watercolor texture layers — match Hero */}
-      <WatercolorWash variant="warm" intensity={0.8} />
-      <PaperTexture opacity={0.3} />
-      <BotanicalBorder />
-      <BotanicalBorder flip />
-
-      {/* Soft watercolor circles */}
+      {/* Soft concentric guide circles */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         <div style={{
           position: "absolute", top: "50%", left: "50%",
@@ -110,23 +100,6 @@ export function HashtagSection() {
           border: `1px solid rgba(138,112,48,0.05)`,
         }} />
       </div>
-
-      {/* Decorative watercolor flowers */}
-      <WatercolorFlower
-        size={36}
-        style={{ position: "absolute", top: 90, left: 36, opacity: 0.55, zIndex: 1 }}
-      />
-      <WatercolorFlower
-        size={32}
-        color="#A8B080"
-        centerColor="#7A8A5A"
-        style={{ position: "absolute", top: 130, right: 40, opacity: 0.5, zIndex: 1 }}
-      />
-      <WatercolorFlower
-        size={28}
-        color="#D4A574"
-        style={{ position: "absolute", bottom: 110, left: 50, opacity: 0.5, zIndex: 1 }}
-      />
 
       <div style={{ position: "relative", zIndex: 2, maxWidth: 600, margin: "0 auto" }}>
         <motion.p

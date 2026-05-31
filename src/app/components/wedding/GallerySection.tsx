@@ -6,9 +6,6 @@ import {
   useReveal,
   Divider,
   COLORS,
-  WatercolorWash,
-  PaperTexture,
-  WatercolorFlower,
 } from "./shared";
 
 /* ───────────────────────────────────────────────────────────────
@@ -510,11 +507,6 @@ export function GallerySection() {
         background: "transparent",
       }}
     >
-      <WatercolorWash variant="warm" intensity={0.5} />
-      <PaperTexture opacity={0.25} />
-      <WatercolorFlower size={36} style={{ position: "absolute", top: 64, left: 22, opacity: 0.5, zIndex: 1 }} />
-      <WatercolorFlower size={30} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 96, right: 26, opacity: 0.45, zIndex: 1 }} />
-
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 28 }}

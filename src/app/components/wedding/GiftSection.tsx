@@ -5,9 +5,6 @@ import {
   useReveal,
   Divider,
   COLORS,
-  WatercolorWash,
-  PaperTexture,
-  WatercolorFlower,
 } from "./shared";
 
 const ENV_W = "min(300px, 80vw)";
@@ -229,11 +226,6 @@ export function GiftSection() {
         overflow: "hidden",
       }}
     >
-      <WatercolorWash variant="soft" intensity={0.45} />
-      <PaperTexture opacity={0.25} />
-      <WatercolorFlower size={30} color="#D4A574" style={{ position: "absolute", top: 70, left: 32, opacity: 0.45, zIndex: 1 }} />
-      <WatercolorFlower size={26} color="#A8B080" centerColor="#7A8A5A" style={{ position: "absolute", top: 100, right: 34, opacity: 0.4, zIndex: 1 }} />
-
       <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
