@@ -52,7 +52,6 @@ const TOTAL_H = STRIP_H + SPROCKET * 2;
 const FRAME_W = 150; // each photo frame width
 const FRAME_GAP = 5; // dark border between frames
 const FILM_BG = "#3A1A00"; // dark brown film base
-const FILM_DARK = "#2A1200";
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -67,7 +66,7 @@ function SprocketBand({ edge }: { edge: "top" | "bottom" }) {
         right: 0,
         [edge]: 0,
         height: SPROCKET,
-        background: "#1B0E04",
+        background: FILM_BG,
         backgroundImage:
           "repeating-linear-gradient(to right, transparent 0 11px, rgba(250,244,232,0.92) 11px 21px, transparent 21px 32px)",
         backgroundSize: "32px 8px",
@@ -82,6 +81,7 @@ function SprocketBand({ edge }: { edge: "top" | "bottom" }) {
 
 /* Kodak-style film canister fixed at the roll edge */
 function Canister({ side }: { side: "left" | "right" }) {
+  const isLeft = side === "left";
   return (
     <div
       aria-hidden
@@ -104,19 +104,19 @@ function Canister({ side }: { side: "left" | "right" }) {
           position: "absolute",
           top: 0,
           bottom: 0,
-          [side === "left" ? "right" : "left"]: -14,
-          width: 14,
+          [side === "left" ? "right" : "left"]: -20,
+          width: 20,
           background:
             side === "left"
-              ? "linear-gradient(to right, rgba(0,0,0,0.45), transparent)"
-              : "linear-gradient(to left, rgba(0,0,0,0.45), transparent)",
+              ? "linear-gradient(to right, rgba(0,0,0,0.55), transparent)"
+              : "linear-gradient(to left, rgba(0,0,0,0.55), transparent)",
         }}
       />
       <div
         style={{
-          width: CANISTER_W - 8,
+          width: CANISTER_W - 4,
           height: "88%",
-          borderRadius: 9,
+          borderRadius: isLeft ? "8px 0 0 8px" : "0 8px 8px 0",  // flat edge faces the strip
           background: "linear-gradient(180deg, #F0AE54 0%, #C9791F 52%, #9C5712 100%)",
           boxShadow:
             "0 6px 18px rgba(0,0,0,0.45), inset 0 0 0 2px rgba(255,255,255,0.18), inset 0 -10px 14px rgba(0,0,0,0.25)",
@@ -137,8 +137,8 @@ function Canister({ side }: { side: "left" | "right" }) {
           }}
         />
         {/* top & bottom lips */}
-        <div style={{ position: "absolute", top: -5, left: 3, right: 3, height: 9, borderRadius: 5, background: "#A85F12" }} />
-        <div style={{ position: "absolute", bottom: -5, left: 3, right: 3, height: 9, borderRadius: 5, background: "#A85F12" }} />
+        <div style={{ position: "absolute", top: -5, left: 3, right: side === "left" ? 0 : 3, height: 9, borderRadius: side === "left" ? "5px 0 0 5px" : "0 5px 5px 0", background: "#A85F12" }} />
+        <div style={{ position: "absolute", bottom: -5, left: 3, right: side === "left" ? 0 : 3, height: 9, borderRadius: side === "left" ? "5px 0 0 5px" : "0 5px 5px 0", background: "#A85F12" }} />
       </div>
     </div>
   );
@@ -278,7 +278,7 @@ function FilmRoll({
             bottom: 0,
             [isLeft ? "left" : "right"]: CANISTER_W,
             width: done ? Math.max(0, W - CANISTER_W) : stripW,
-            background: `repeating-linear-gradient(45deg, ${FILM_DARK} 0 9px, ${FILM_BG} 9px 18px)`,
+            background: FILM_BG,
             boxShadow: "0 16px 42px rgba(61,34,21,0.28)",
             overflow: "hidden",
             clipPath: "inset(0)",
