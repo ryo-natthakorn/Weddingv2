@@ -104,12 +104,12 @@ function Canister({ side }: { side: "left" | "right" }) {
           position: "absolute",
           top: 0,
           bottom: 0,
-          [side === "left" ? "right" : "left"]: -20,
-          width: 20,
+          [side === "left" ? "right" : "left"]: -12,
+          width: 12,
           background:
             side === "left"
-              ? "linear-gradient(to right, rgba(0,0,0,0.55), transparent)"
-              : "linear-gradient(to left, rgba(0,0,0,0.55), transparent)",
+              ? "linear-gradient(to right, rgba(0,0,0,0.3), transparent)"
+              : "linear-gradient(to left, rgba(0,0,0,0.3), transparent)",
         }}
       />
       <div
@@ -405,10 +405,10 @@ function FilmRoll({
             {/* the tab tag */}
             <div
               style={{
-                width: TAB_W - 8,
+                width: 28,
                 height: "78%",
                 borderRadius: 6,
-                background: `linear-gradient(${isLeft ? "90deg" : "270deg"}, ${COLORS.gold}, #6B5520)`,
+                background: "#C9791F",
                 boxShadow: "0 3px 12px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.18)",
                 display: "flex",
                 flexDirection: "column",
