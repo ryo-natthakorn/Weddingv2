@@ -88,7 +88,7 @@ function Canister({ side }: { side: "left" | "right" }) {
       style={{
         position: "absolute",
         top: 0,
-        bottom: 0,
+        height: TOTAL_H,
         [side]: 0,
         width: CANISTER_W,
         zIndex: 6,
@@ -115,7 +115,7 @@ function Canister({ side }: { side: "left" | "right" }) {
       <div
         style={{
           width: CANISTER_W - 4,
-          height: "88%",
+          height: "100%",
           borderRadius: isLeft ? "8px 0 0 8px" : "0 8px 8px 0",  // flat edge faces the strip
           background: "linear-gradient(180deg, #F0AE54 0%, #C9791F 52%, #9C5712 100%)",
           boxShadow:
@@ -136,9 +136,6 @@ function Canister({ side }: { side: "left" | "right" }) {
             boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.32)",
           }}
         />
-        {/* top & bottom lips */}
-        <div style={{ position: "absolute", top: -5, left: 3, right: side === "left" ? 0 : 3, height: 9, borderRadius: side === "left" ? "5px 0 0 5px" : "0 5px 5px 0", background: "#A85F12" }} />
-        <div style={{ position: "absolute", bottom: -5, left: 3, right: side === "left" ? 0 : 3, height: 9, borderRadius: side === "left" ? "5px 0 0 5px" : "0 5px 5px 0", background: "#A85F12" }} />
       </div>
     </div>
   );
@@ -411,17 +408,14 @@ function FilmRoll({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: isLeft
-                  ? "2px 0 6px rgba(0,0,0,0.3)"
-                  : "-2px 0 6px rgba(0,0,0,0.3)",
               }}
             >
               <motion.span
                 animate={{ x: isLeft ? [0, 3, 0] : [0, -3, 0] }}
                 transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}
+                style={{ color: "rgba(255,255,255,0.9)", fontSize: 14 }}
               >
-                {isLeft ? "›" : "‹"}
+                {isLeft ? "›› " : " ‹‹"}
               </motion.span>
             </div>
           </motion.div>
