@@ -94,32 +94,20 @@ function Canister({ side }: { side: "left" | "right" }) {
         zIndex: 6,
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: isLeft ? "flex-end" : "flex-start",
         pointerEvents: "none",
       }}
     >
-      {/* shadow the canister casts onto the emerging film */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          [side === "left" ? "right" : "left"]: -12,
-          width: 12,
-          background:
-            side === "left"
-              ? "linear-gradient(to right, rgba(0,0,0,0.3), transparent)"
-              : "linear-gradient(to left, rgba(0,0,0,0.3), transparent)",
-        }}
-      />
       <div
         style={{
           width: CANISTER_W - 4,
           height: "100%",
           borderRadius: isLeft ? "8px 0 0 8px" : "0 8px 8px 0",  // flat edge faces the strip
           background: "linear-gradient(180deg, #F0AE54 0%, #C9791F 52%, #9C5712 100%)",
-          boxShadow:
-            "0 6px 18px rgba(0,0,0,0.45), inset 0 0 0 2px rgba(255,255,255,0.18), inset 0 -10px 14px rgba(0,0,0,0.25)",
+          // only shadow casts away from the strip — strip-facing edge stays flush
+          boxShadow: isLeft
+            ? "-4px 0 12px rgba(0,0,0,0.3)"
+            : "4px 0 12px rgba(0,0,0,0.3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
