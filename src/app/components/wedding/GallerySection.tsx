@@ -45,7 +45,7 @@ const PRE_WEDDING_IMAGES = [
 ];
 
 const CANISTER_W = 46; // fixed canister width at the roll edge
-const TAB_W = 42; // pull-tab width
+const TAB_W = 14; // pull-tab film-leader width
 const SPROCKET = 16; // perforated edge band height (top & bottom)
 const STRIP_H = 168; // photo frame height
 const TOTAL_H = STRIP_H + SPROCKET * 2;
@@ -147,14 +147,12 @@ function Canister({ side }: { side: "left" | "right" }) {
 function FilmRoll({
   images,
   label,
-  tabLabel,
   swipeHint,
   emptyText,
   side,
 }: {
   images: string[];
   label: string;
-  tabLabel: string;
   swipeHint: string;
   emptyText: string;
   side: "left" | "right";
@@ -389,6 +387,7 @@ function FilmRoll({
               bottom: 0,
               [isLeft ? "left" : "right"]: CANISTER_W,
               width: TAB_W,
+              background: "transparent",
               zIndex: 5,
               cursor: "grab",
               display: "flex",
@@ -402,44 +401,27 @@ function FilmRoll({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            {/* the tab tag */}
+            {/* thin dark film-leader strip with a bobbing chevron */}
             <div
               style={{
-                width: 28,
-                height: "78%",
-                borderRadius: 6,
-                background: "#C9791F",
-                boxShadow: "0 3px 12px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.18)",
+                width: 14,
+                height: "90%",
+                background: FILM_BG,
+                borderRadius: isLeft ? "0 3px 3px 0" : "3px 0 0 3px",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 7,
+                boxShadow: isLeft
+                  ? "2px 0 6px rgba(0,0,0,0.3)"
+                  : "-2px 0 6px rgba(0,0,0,0.3)",
               }}
             >
-              <span
-                style={{
-                  fontFamily: "'TT Interphases', sans-serif",
-                  fontSize: "0.56rem",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "#FFF8EE",
-                  writingMode: "vertical-rl",
-                  transform: isLeft ? "none" : "rotate(180deg)",
-                  fontWeight: 500,
-                }}
-              >
-                {tabLabel}
-              </span>
-              {/* bobbing chevron pointing in the pull direction */}
               <motion.span
-                animate={{ x: isLeft ? [0, 4, 0] : [0, -4, 0] }}
+                animate={{ x: isLeft ? [0, 3, 0] : [0, -3, 0] }}
                 transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                style={{ display: "flex", color: "rgba(255,248,238,0.9)" }}
+                style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}
               >
-                <svg width="9" height="11" viewBox="0 0 9 11" fill="none" style={{ transform: isLeft ? "none" : "scaleX(-1)" }}>
-                  <path d="M2 1L7 5.5L2 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                {isLeft ? "›" : "‹"}
               </motion.span>
             </div>
           </motion.div>
@@ -502,7 +484,6 @@ export function GallerySection() {
 
   const memoriesLabel = lang === "TH" ? "ความทรงจำของเรา" : "Our Memories";
   const preWeddingLabel = lang === "TH" ? "พรีเวดดิ้ง" : "Pre-Wedding";
-  const pull = lang === "TH" ? "ดึง" : "Pull me";
   const swipeHint = lang === "TH" ? "ปัดเพื่อชม" : "Swipe to browse";
   const emptyText =
     lang === "TH" ? "ภาพพรีเวดดิ้งกำลังจะมาเร็ว ๆ นี้" : "Pre-wedding photos coming soon";
@@ -529,7 +510,6 @@ export function GallerySection() {
         <FilmRoll
           images={STORY_IMAGES}
           label={memoriesLabel}
-          tabLabel={pull}
           swipeHint={swipeHint}
           emptyText={emptyText}
           side="left"
@@ -541,7 +521,6 @@ export function GallerySection() {
         <FilmRoll
           images={PRE_WEDDING_IMAGES}
           label={preWeddingLabel}
-          tabLabel={pull}
           swipeHint={swipeHint}
           emptyText={emptyText}
           side="right"
