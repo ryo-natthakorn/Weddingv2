@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, animate } from "motion/react";
+import { motion, useMotionValue, useTransform, animate, useReducedMotion } from "motion/react";
 import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -143,6 +143,7 @@ function FilmRoll({
   side: "left" | "right";
 }) {
   const isLeft = side === "left";
+  const reduceMotion = useReducedMotion();
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -150,6 +151,7 @@ function FilmRoll({
   const [W, setW] = useState(0); // measured strip width
   const [done, setDone] = useState(false); // fully unrolled → browse mode
   const [hintGone, setHintGone] = useState(false);
+  const [pct, setPct] = useState(0); // coarse openness (aria + keyboard), not per-frame
 
   // Drag position of the tab (transform x relative to its anchored edge).
   const x = useMotionValue(0);
@@ -182,11 +184,13 @@ function FilmRoll({
     return () => ro.disconnect();
   }, [travelMV]);
 
-  /* Right-side roll browses from the canister (right) leftward, so pin
-     the scroll to the far-right end until the user takes over. */
+  /* Right-side roll browses from the canister (right) leftward. While growing
+     the row is right-anchored (no scroll), but the moment `done` flips the row
+     enters normal flow — anchor the view to the canister end (image[0] lives at
+     the far right), otherwise the browse view jumps to the wrong end. */
   useEffect(() => {
     const el = viewportRef.current;
-    if (!el || isLeft || done) return;
+    if (!el || isLeft) return;
     el.scrollLeft = el.scrollWidth - el.clientWidth;
   }, [isLeft, done, W, images.length]);
 
@@ -213,7 +217,49 @@ function FilmRoll({
   const onDragEnd = (_e: unknown, info: PanInfo) => {
     const p = clamp(isLeft ? x.get() : -x.get(), 0, travel);
     const fast = isLeft ? info.velocity.x > 380 : info.velocity.x < -380;
-    settle(p > travel * 0.4 || fast);
+    const open = p > travel * 0.4 || fast;
+    settle(open);
+    setPct(open ? 100 : 0);
+  };
+
+  /* Keyboard operation of the pull tab — value = openness (0–100). */
+  const nudgeOpen = (delta: number) => {
+    const cur = clamp(isLeft ? x.get() : -x.get(), 0, travel);
+    const next = clamp(cur + delta * travel, 0, travel);
+    if (travel > 0 && next >= travel - 1) {
+      settle(true);
+      setPct(100);
+      return;
+    }
+    animate(x, isLeft ? next : -next, { type: "spring", stiffness: 360, damping: 34 });
+    setPct(travel > 0 ? Math.round((next / travel) * 100) : 0);
+  };
+
+  const onTabKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowRight":
+      case "ArrowUp":
+        e.preventDefault();
+        nudgeOpen(0.15);
+        break;
+      case "ArrowLeft":
+      case "ArrowDown":
+        e.preventDefault();
+        nudgeOpen(-0.15);
+        break;
+      case "End":
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        settle(true);
+        setPct(100);
+        break;
+      case "Home":
+        e.preventDefault();
+        settle(false);
+        setPct(0);
+        break;
+    }
   };
 
   // Keep a normal `row` flex (predictable scrollLeft). For the right roll we
@@ -385,6 +431,9 @@ function FilmRoll({
             aria-label="Pull to reveal photos"
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-valuenow={pct}
+            tabIndex={0}
+            onKeyDown={onTabKeyDown}
           >
             {/* thin dark film-leader strip with a bobbing chevron */}
             <div
@@ -399,8 +448,8 @@ function FilmRoll({
               }}
             >
               <motion.span
-                animate={{ x: isLeft ? [0, 3, 0] : [0, -3, 0] }}
-                transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+                animate={reduceMotion ? undefined : { x: isLeft ? [0, 3, 0] : [0, -3, 0] }}
+                transition={reduceMotion ? undefined : { repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
                 style={{ color: "rgba(255,255,255,0.9)", fontSize: 14 }}
               >
                 {isLeft ? "›› " : " ‹‹"}
@@ -434,8 +483,8 @@ function FilmRoll({
             }}
           >
             <motion.span
-              animate={{ x: isLeft ? [0, 5, 0] : [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.3, ease: "easeInOut" }}
+              animate={reduceMotion ? undefined : { x: isLeft ? [0, 5, 0] : [0, -5, 0] }}
+              transition={reduceMotion ? undefined : { repeat: Infinity, duration: 1.3, ease: "easeInOut" }}
               style={{ display: "flex", color: "rgba(255,248,238,0.95)" }}
             >
               <svg width="14" height="12" viewBox="0 0 14 12" fill="none" style={{ transform: isLeft ? "none" : "scaleX(-1)" }}>

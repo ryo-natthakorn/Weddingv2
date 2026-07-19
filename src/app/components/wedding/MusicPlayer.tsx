@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void };
@@ -92,6 +92,7 @@ function PetalTrail() {
 
 export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
   const { t } = useLang();
+  const reduceMotion = useReducedMotion();
   const playerRef = useRef<any>(null);
   const playerDivRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -215,7 +216,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
   }, [ready, playing]);
 
   const skipBy = (sec: number) => {
-    if (!playerRef.current) return;
+    if (!playerRef.current || !ready) return;
     try {
       const cur = playerRef.current.getCurrentTime?.() ?? 0;
       playerRef.current.seekTo(Math.max(0, cur + sec), true);
@@ -281,7 +282,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
       </div>
 
       {/* Discovery cue — gold petals drifting into the button */}
-      <AnimatePresence>{showTrail && !expanded && <PetalTrail />}</AnimatePresence>
+      <AnimatePresence>{showTrail && !expanded && !reduceMotion && <PetalTrail />}</AnimatePresence>
 
       {/* COLLAPSED — 56px gold circle, bottom-right */}
       <AnimatePresence>
@@ -296,8 +297,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
           >
             {/* Warm glow (stronger during discovery) */}
             <motion.div
-              animate={{ opacity: showTrail ? [0.5, 0.9, 0.5] : [0.25, 0.45, 0.25], scale: [1, 1.18, 1] }}
-              transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
+              animate={reduceMotion
+                ? { opacity: showTrail ? 0.7 : 0.35, scale: 1 }
+                : { opacity: showTrail ? [0.5, 0.9, 0.5] : [0.25, 0.45, 0.25], scale: [1, 1.18, 1] }}
+              transition={reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
               style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(138,112,48,0.45) 0%, transparent 70%)", pointerEvents: "none" }}
             />
             {/* Pulse ring while playing — pure CSS keyframe (smooth, no jitter) */}
@@ -346,7 +349,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
               bottom: 24,
               right: 24,
               zIndex: 1000,
-              width: "min(280px, calc(100vw - 32px))",
+              width: "min(300px, calc(100vw - 32px))",
               background: SURFACE,
               borderRadius: 20,
               boxShadow: "0 16px 50px rgba(61,34,21,0.22)",
@@ -374,7 +377,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
               <button
                 onClick={() => setExpanded(false)}
                 aria-label="Close"
-                style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_DIM, fontSize: "1.2rem", lineHeight: 1, padding: "0 0 0 6px", flexShrink: 0 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_DIM, fontSize: "1.2rem", lineHeight: 1, width: 32, height: 32, margin: "-6px -8px 0 0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               >
                 ×
               </button>
@@ -405,6 +408,16 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
               onPointerMove={onTrackPointerMove}
               onPointerUp={onTrackPointerUp}
               onPointerCancel={onTrackPointerUp}
+              role="slider"
+              aria-label="Song progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress)}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft") { e.preventDefault(); skipBy(-10); }
+                if (e.key === "ArrowRight") { e.preventDefault(); skipBy(10); }
+              }}
               style={{ height: 4, background: "rgba(138,112,48,0.15)", borderRadius: 4, cursor: "pointer", position: "relative", marginTop: 12, touchAction: "none" }}
             >
               <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(to right, ${ACCENT}, ${ACCENT_DARK})`, borderRadius: 4 }} />

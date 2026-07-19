@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
   useReveal,
@@ -19,15 +19,10 @@ function DummyQR() {
   const size = 108;
   const unit = size / cells;
   const filled = (r: number, c: number) => {
-    // three finder squares (top-left, top-right, bottom-left)
+    // three solid finder squares (top-left, top-right, bottom-left)
     const inFinder = (r0: number, c0: number) =>
       r >= r0 && r < r0 + 3 && c >= c0 && c < c0 + 3;
-    if (inFinder(0, 0) || inFinder(0, 6) || inFinder(6, 0)) {
-      const ring =
-        (r === 0 || r === 2 || r === 6 || r === 8) ||
-        (c === 0 || c === 2 || c === 6 || c === 8);
-      return ring || (r % 8 === 1 && c % 8 === 1) ? true : (r + c) % 2 === 0 && false;
-    }
+    if (inFinder(0, 0) || inFinder(0, 6) || inFinder(6, 0)) return true;
     return (r * 3 + c * 7) % 5 < 2;
   };
 
@@ -57,13 +52,20 @@ function DummyQR() {
 function Envelope() {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <motion.div
         onClick={() => setOpen(true)}
-        animate={open ? { y: 0 } : { y: [0, -8, 0] }}
-        transition={open ? { duration: 0.4 } : { repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
+        onKeyDown={(e) => {
+          if (!open && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+        animate={open || reduceMotion ? { y: 0 } : { y: [0, -8, 0] }}
+        transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0 } : { repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
         style={{
           position: "relative",
           width: ENV_W,
@@ -74,6 +76,8 @@ function Envelope() {
         whileHover={open ? {} : { scale: 1.02 }}
         whileTap={open ? {} : { scale: 0.98 }}
         role="button"
+        tabIndex={open ? -1 : 0}
+        aria-expanded={open}
         aria-label={t.gift_tap}
       >
         {/* Envelope body */}
@@ -117,7 +121,7 @@ function Envelope() {
               }}
             >
               <DummyQR />
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.5rem", letterSpacing: "0.04em", color: "#A89078" }}>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
                 [ Replace with PromptPay QR ]
               </span>
             </div>
@@ -172,40 +176,41 @@ function Envelope() {
               boxShadow: "0 4px 10px rgba(61,34,21,0.12)",
             }}
           />
-          {/* Heart seal at the flap tip */}
-          {!open && (
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "calc(100% - 18px)",
-                transform: "translate(-50%, -50%)",
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #A88030, #7A5520)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
-              }}
-            >
-              <span style={{ color: "#FFF8EE", fontSize: "1rem" }}>♥</span>
-            </div>
-          )}
+          {/* Heart seal at the flap tip — fades out as the flap lifts */}
+          <motion.div
+            animate={{ opacity: open ? 0 : 1, scale: open ? 0.8 : 1 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "calc(100% - 18px)",
+              transform: "translate(-50%, -50%)",
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #A88030, #7A5520)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
+              pointerEvents: "none",
+            }}
+          >
+            <span style={{ color: "#FFF8EE", fontSize: "1rem" }}>♥</span>
+          </motion.div>
         </motion.div>
       </motion.div>
 
-      {/* Tap hint — only before opening */}
-      {!open && (
-        <motion.p
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-          style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em", marginTop: 22 }}
-        >
-          {t.gift_tap}
-        </motion.p>
-      )}
+      {/* Tap hint — stays mounted and fades on open, so the closing line
+          below never jumps up */}
+      <motion.p
+        animate={open ? { opacity: 0 } : reduceMotion ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5] }}
+        transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+        aria-hidden={open}
+        style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em", marginTop: 22 }}
+      >
+        {t.gift_tap}
+      </motion.p>
     </div>
   );
 }

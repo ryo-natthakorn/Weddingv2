@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
   useReveal,
@@ -13,8 +13,9 @@ type Spark = { id: number; x: number; y: number; size: number; color: string };
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL as string | undefined;
 
 export function RSVPSection() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { ref, inView } = useReveal();
+  const reduceMotion = useReducedMotion();
 
   const [name, setName] = useState("");
   const [attending, setAttending] = useState<"yes" | "no" | null>(null);
@@ -22,11 +23,18 @@ export function RSVPSection() {
   const [status, setStatus] = useState<Status>("idle");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(false);
+  const [attendHint, setAttendHint] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [burst, setBurst] = useState<Spark[]>([]);
+  const scrollTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => {
+    if (scrollTimerRef.current !== undefined) clearTimeout(scrollTimerRef.current);
+  }, []);
 
   // 14-particle gold/navy burst fired when "Joyfully Accept" is tapped.
   const fireBurst = () => {
+    if (reduceMotion) return;
     const palette = [COLORS.gold, COLORS.navy];
     const sparks: Spark[] = Array.from({ length: 14 }, (_, i) => {
       const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.45;
@@ -45,17 +53,25 @@ export function RSVPSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !attending || submitting) return;
+    if (submitting) return;
+    if (!attending) {
+      setAttendHint(true);
+      return;
+    }
+    if (!name.trim()) return;
     setSubmitting(true);
     setError(false);
 
     const payload = {
-      name,
+      name: name.trim(),
       attending,
-      guests: attending === "yes" ? guests : 0,
+      guests: attending === "yes" ? Math.min(10, Math.max(1, Number(guests) || 1)) : 0,
     };
 
     try {
+      if (!SCRIPT_URL) {
+        console.warn("RSVP: VITE_GOOGLE_SCRIPT_URL is not set — submission was NOT saved.");
+      }
       if (SCRIPT_URL) {
         // text/plain avoids a CORS preflight; no-cors keeps the POST from
         // throwing on Apps Script's opaque response — the row still writes.
@@ -71,7 +87,7 @@ export function RSVPSection() {
       setStatus(attending === "yes" ? "submitted-yes" : "submitted-no");
 
       // Show the confirmation briefly, then glide down to the gift section.
-      setTimeout(() => {
+      scrollTimerRef.current = window.setTimeout(() => {
         document
           .getElementById("gift-section")
           ?.scrollIntoView({ behavior: "smooth" });
@@ -83,11 +99,17 @@ export function RSVPSection() {
   };
 
   const resetForm = () => {
+    // Going back inside the 2.5s window must also cancel the pending glide.
+    if (scrollTimerRef.current !== undefined) {
+      clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = undefined;
+    }
     setStatus("idle");
     setName("");
     setAttending(null);
     setGuests(1);
     setError(false);
+    setAttendHint(false);
   };
 
   const inputStyle = (id: string): React.CSSProperties => ({
@@ -97,7 +119,7 @@ export function RSVPSection() {
     borderRadius: 12,
     padding: "14px 18px",
     fontFamily: "'TT Interphases', sans-serif",
-    fontSize: "0.88rem",
+    fontSize: "1rem", // 16px minimum — anything smaller triggers iOS focus auto-zoom
     fontWeight: 300,
     color: COLORS.warmBrown,
     outline: "none",
@@ -163,14 +185,14 @@ export function RSVPSection() {
             >
               {/* Name */}
               <div>
-                <label style={labelStyle}>{t.rsvp_name}</label>
+                <label htmlFor="rsvp-name" style={labelStyle}>{t.rsvp_name}</label>
                 <input
+                  id="rsvp-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onFocus={() => setFocused("name")}
                   onBlur={() => setFocused(null)}
-                  placeholder="Your name..."
                   required
                   style={inputStyle("name")}
                 />
@@ -192,6 +214,7 @@ export function RSVPSection() {
                         whileTap={{ scale: 0.97 }}
                         onClick={() => {
                           setAttending(val);
+                          setAttendHint(false);
                           if (isYes) fireBurst();
                         }}
                         style={{
@@ -247,6 +270,11 @@ export function RSVPSection() {
                     );
                   })}
                 </div>
+                {attendHint && (
+                  <p role="alert" style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.74rem", color: COLORS.midBrown, letterSpacing: "0.04em", marginTop: 8 }}>
+                    {lang === "TH" ? "กรุณาเลือกว่าจะมาร่วมงานหรือไม่" : "Please choose whether you can join us"}
+                  </p>
+                )}
               </div>
 
               {/* Number of guests — only if attending */}
@@ -259,9 +287,11 @@ export function RSVPSection() {
                     transition={{ duration: 0.4 }}
                   >
                     <div>
-                      <label style={labelStyle}>{t.rsvp_guests}</label>
+                      <label htmlFor="rsvp-guests" style={labelStyle}>{t.rsvp_guests}</label>
                       <input
+                        id="rsvp-guests"
                         type="number"
+                        inputMode="numeric"
                         min={1}
                         max={10}
                         value={guests}
@@ -280,7 +310,7 @@ export function RSVPSection() {
 
               {/* Error message */}
               {error && (
-                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.8rem", color: "#C0392B", textAlign: "center" }}>
+                <p role="alert" style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.8rem", color: "#C0392B", textAlign: "center" }}>
                   {t.rsvp_error}
                 </p>
               )}
@@ -289,6 +319,7 @@ export function RSVPSection() {
               <motion.button
                 type="submit"
                 disabled={submitting}
+                aria-busy={submitting}
                 whileHover={submitting ? {} : { scale: 1.02, y: -2 }}
                 whileTap={submitting ? {} : { scale: 0.97 }}
                 style={{
@@ -314,6 +345,7 @@ export function RSVPSection() {
           ) : (
             <motion.div
               key="thanks"
+              role="status"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -340,7 +372,7 @@ export function RSVPSection() {
               </p>
               <button
                 onClick={resetForm}
-                style={{ marginTop: 28, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.16em", color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
+                style={{ marginTop: 28, minHeight: 44, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.16em", color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
               >
                 ← Go Back
               </button>

@@ -19,11 +19,11 @@ import pnLogo from "../../imports/Logo.svg";
 
 const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok";
 
-const DIRECTIONS = [
-  { icon: "🚗", label: "By Car", detail: "25 min from Siam, free parking available on site." },
-  { icon: "🚇", label: "By BTS/MRT", detail: "Nearest station: Take BTS to On Nut, then 10 min by taxi." },
-  { icon: "🛺", label: "By Grab", detail: "Search 'SailomSangdad Homey Studio' in the Grab app." },
-];
+/* One continuous gradient behind everything after the hero — sections are
+   transparent windows into it, so scrolling never hits a hard color break.
+   The hero's own gradient ends on #F8F1E6, the exact color this starts on. */
+const POST_HERO_GRADIENT =
+  "linear-gradient(180deg, #F8F1E6 0%, #F2E8D2 20%, #EBDDC4 50%, #E3D2B0 75%, #DBC59A 100%)";
 
 /* Program icons — client drops ring-icon / camera-icon / glasses-icon into
    src/imports/. import.meta.glob resolves only files that actually exist at
@@ -250,6 +250,9 @@ function InvitationContent() {
         </motion.div>
       </section>
 
+      {/* ═══ POST-HERO CONTENT — one shared gradient, no per-section backgrounds ═══ */}
+      <div style={{ background: POST_HERO_GRADIENT }}>
+
       {/* ═══ NAME INTRODUCTION ═══ */}
       <NameIntroWithCountdown />
 
@@ -262,7 +265,7 @@ function InvitationContent() {
 
           {/* BLOCK 1 — Full-width venue photo with name overlay */}
           <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)" }}>
-            <img src={FLORAL_IMAGE} alt="Venue" style={{ width: "100%", height: "clamp(280px, 58vw, 440px)", objectFit: "cover", display: "block" }} />
+            <img src={FLORAL_IMAGE} alt={t.map_title} loading="lazy" style={{ width: "100%", height: "clamp(280px, 58vw, 440px)", objectFit: "cover", display: "block" }} />
             {/* dark gradient for legibility */}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(42,26,10,0.7) 0%, rgba(42,26,10,0.15) 35%, transparent 60%)" }} />
             {/* gold pill — top-left */}
@@ -296,14 +299,14 @@ function InvitationContent() {
 
           {/* BLOCK 3 — Directions */}
           <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
-            {DIRECTIONS.map(({ icon, label, detail }) => (
-              <div key={label} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            {t.direction_items.map(({ icon, title, text }) => (
+              <div key={title} style={{ display: "flex", gap: 16, alignItems: "center" }}>
                 <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))`, border: "1px solid rgba(138,112,48,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
                   {icon}
                 </div>
                 <div>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{label}</p>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{detail}</p>
+                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
+                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
                 </div>
               </div>
             ))}
@@ -377,7 +380,11 @@ function InvitationContent() {
               <FacebookIcon />
             </motion.div>
             <div style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 7vw, 3.4rem)", fontWeight: 600, letterSpacing: "0.04em", color: COLORS.gold, marginBottom: 20, lineHeight: 1.1, minHeight: "1.2em", textShadow: "0 2px 8px rgba(138,112,48,0.15)" }}>
-              <TypewriterText text={t.hashtag} active={hashtagSec.inView} color={COLORS.gold} />
+              {/* screen readers get the whole hashtag; the per-character typewriter is decorative */}
+              <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }}>{t.hashtag}</span>
+              <span aria-hidden>
+                <TypewriterText text={t.hashtag} active={hashtagSec.inView} color={COLORS.gold} />
+              </span>
             </div>
             <motion.p
               initial={{ opacity: 0 }}
@@ -409,12 +416,14 @@ function InvitationContent() {
           </div>
 
           <div style={{ width: 48, height: 1.5, background: COLORS.gold, opacity: 0.5, borderRadius: 1, margin: "12px auto 16px" }} />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 48 }}>22 · 11 · 2026</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 48 }}>22 / 11 / 2026</p>
           <Divider className="mb-8" />
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.14em", color: "#A89078", textTransform: "uppercase", marginBottom: 18 }}>{t.footer_venue}</p>
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.1rem)", fontStyle: "italic", color: COLORS.midBrown, letterSpacing: "0.04em" }}>{t.footer_closing}</p>
         </motion.div>
       </footer>
+
+      </div>
     </div>
   );
 }
