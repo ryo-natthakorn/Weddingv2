@@ -42,6 +42,7 @@ export const translations = {
     countdown_label: "Counting Down To Our Special Day",
     countdown_subtitle: "We can't wait to celebrate with you",
     countdown_caption: "until we say I do",
+    gallery_label: "Gallery",
     story_label: "Our Story",
     story_subtitle: "A love written in moments",
     story_items: [
@@ -132,6 +133,7 @@ export const translations = {
     countdown_label: "นับถอยหลังสู่วันพิเศษของเรา",
     countdown_subtitle: "เราตั้งตารอที่จะได้เฉลิมฉลองร่วมกับคุณ",
     countdown_caption: "จนกว่าเราจะได้กล่าวคำสัญญารัก",
+    gallery_label: "แกลเลอรี",
     story_label: "เรื่องราวของเรา",
     story_subtitle: "ความรักที่เขียนขึ้นจากทุกช่วงเวลา",
     story_items: [

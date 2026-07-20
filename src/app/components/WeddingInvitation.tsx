@@ -272,8 +272,11 @@ function InvitationContent() {
       <GallerySection />
 
       {/* ═══ VENUE ═══ */}
-      <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto" }}>
+      <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
+
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
+          <Divider className="mb-8" />
 
           {/* BLOCK 1 — Full-width venue photo with name overlay */}
           <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)" }}>
@@ -329,7 +332,7 @@ function InvitationContent() {
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "48px 24px 56px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
@@ -354,7 +357,7 @@ function InvitationContent() {
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
+            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
             <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 44 }}>{t.dress_desc}</p>

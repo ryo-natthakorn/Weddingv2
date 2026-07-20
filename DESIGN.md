@@ -42,10 +42,10 @@ typography:
     lineHeight: 1.8
   label:
     fontFamily: "'TT Interphases', sans-serif"
-    fontSize: "0.7rem"
+    fontSize: "0.9rem"
     fontWeight: 400
     lineHeight: 1.4
-    letterSpacing: "0.24em"
+    letterSpacing: "0.28em"
 rounded:
   card: "12px"
   panel: "16px"
@@ -146,7 +146,7 @@ The palette is lifted directly from the couple's printed invitation card — the
 - **Headline** (500, clamp(2rem, 5vw, 3rem), 1.2): section titles ("Will You Join Us?").
 - **Title** (600, 1.05rem, 1.3): card titles inside program/venue blocks.
 - **Body** (300, 0.85–0.9rem, 1.7–1.9): prose. Ink or mid brown; max measure ~65ch.
-- **Label** (400, 0.68–0.72rem, letter-spacing 0.2–0.28em, UPPERCASE): section kickers, countdown labels, footer meta. Light brown. Always compensate trailing tracking with a negative margin on centered text.
+- **Label** (400, letter-spacing 0.2–0.28em, UPPERCASE): section kickers (0.9rem — the name/divider heading above each section: Gallery, Venue, Program of Events, Dress Code, RSVP, gift heading), countdown labels and footer meta (0.58–0.72rem, smaller and more incidental). Light brown. Always compensate trailing tracking with a negative margin on centered text.
 
 ### Named Rules
 **The One-Family Rule.** TT Interphases everywhere, both languages, no exceptions. Cormorant Garamond, Jost, and Great Vibes are banned by name.

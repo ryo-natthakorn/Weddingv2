@@ -101,9 +101,12 @@ export function NameIntroWithCountdown() {
   const { ref: namesRef, inView: namesInView } = useReveal("-40px");
   const { ref: dateRef, inView: dateInView } = useReveal("-40px");
 
-  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1.1rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.06em", marginBottom: 6 } as const;
   const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.15 } as const;
-  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.74rem, 1.9vw, 0.9rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.5, flex: 1, minWidth: 0 } as const;
+  // Title (Flt. Lt. / Mr.) now matches the name's own color and size — only
+  // weight and tracking stay lighter so it still reads as a lead-in, not a
+  // second name.
+  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 400, color: nameStyle.color, letterSpacing: "0.06em", marginBottom: 6 } as const;
+  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.15rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.5, flex: 1, minWidth: 0 } as const;
 
   return (
     <MotionConfig reducedMotion="user">

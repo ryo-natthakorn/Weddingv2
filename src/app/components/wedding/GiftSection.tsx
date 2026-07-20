@@ -237,7 +237,7 @@ export function GiftSection() {
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
         </p>
         <Divider className="mb-12" />
