@@ -104,12 +104,19 @@ export function NameIntroWithCountdown() {
   // Single-line guard shared by the parent names, titles, and bride/groom
   // names — nowrap keeps each on one line; overflow+ellipsis is a safety net
   // rather than an overlap/clip if a string ever runs wider than its box.
+  // lineHeight is generous (not the tight ~1.15 a Latin-only display face could
+  // use) because Thai vowels/tone marks stack above and below the consonant
+  // line (สระอือ, สระอุ) and some consonants (e.g. ฐ) have descenders — with
+  // overflow hidden below, a tight line box would clip them.
   const singleLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
-  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.15, ...singleLine } as const;
+  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.5, ...singleLine } as const;
   // Title (Flt. Lt. / Mr.) now fully matches the name's format — same color,
   // size, and weight — only the tracking stays slightly wider.
-  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", marginBottom: 6, ...singleLine } as const;
-  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.15rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.5, flex: 1, minWidth: 0, ...singleLine } as const;
+  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", lineHeight: 1.5, marginBottom: 6, ...singleLine } as const;
+  // Stacked full-width (not side-by-side columns) — a two-column split only
+  // gives each parent line ~45% of the content width, too narrow for the
+  // longer Thai strings at this font size without truncating.
+  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.15rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.6, textAlign: "center" as const, ...singleLine };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -136,15 +143,15 @@ export function NameIntroWithCountdown() {
           </p>
         </motion.div>
 
-        {/* 2. Parents — left / right columns */}
+        {/* 2. Parents — stacked, each on its own full-width line */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.25, duration: 0.8 }}
-          style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "clamp(16px, 6vw, 60px)", marginTop: 56 }}
+          style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 56 }}
         >
-          <span style={{ ...parentStyle, textAlign: "left" }}>{t.parents_groom}</span>
-          <span style={{ ...parentStyle, textAlign: "right" }}>{t.parents_bride}</span>
+          <span style={parentStyle}>{t.parents_groom}</span>
+          <span style={parentStyle}>{t.parents_bride}</span>
         </motion.div>
 
         {/* 3. Invite line — centered */}
