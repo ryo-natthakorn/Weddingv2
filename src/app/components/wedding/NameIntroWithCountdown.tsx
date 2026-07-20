@@ -101,12 +101,15 @@ export function NameIntroWithCountdown() {
   const { ref: namesRef, inView: namesInView } = useReveal("-40px");
   const { ref: dateRef, inView: dateInView } = useReveal("-40px");
 
-  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.15 } as const;
-  // Title (Flt. Lt. / Mr.) now matches the name's own color and size — only
-  // weight and tracking stay lighter so it still reads as a lead-in, not a
-  // second name.
-  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 400, color: nameStyle.color, letterSpacing: "0.06em", marginBottom: 6 } as const;
-  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.15rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.5, flex: 1, minWidth: 0 } as const;
+  // Single-line guard shared by the parent names, titles, and bride/groom
+  // names — nowrap keeps each on one line; overflow+ellipsis is a safety net
+  // rather than an overlap/clip if a string ever runs wider than its box.
+  const singleLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
+  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.15, ...singleLine } as const;
+  // Title (Flt. Lt. / Mr.) now fully matches the name's format — same color,
+  // size, and weight — only the tracking stays slightly wider.
+  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", marginBottom: 6, ...singleLine } as const;
+  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.15rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.5, flex: 1, minWidth: 0, ...singleLine } as const;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -209,10 +212,10 @@ export function NameIntroWithCountdown() {
           style={{ marginTop: 52 }}
         >
           <Divider className="mb-6" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.1rem, 3vw, 1.5rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.12em", marginBottom: 4 }}>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 3.8vw, 1.9rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.12em", marginBottom: 4 }}>
             {t.sunday}
           </p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.3rem, 3.5vw, 1.9rem)", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.1em" }}>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.65rem, 4.4vw, 2.4rem)", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.1em" }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 12 }}>

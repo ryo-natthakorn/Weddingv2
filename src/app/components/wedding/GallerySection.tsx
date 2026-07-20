@@ -535,7 +535,7 @@ export function GallerySection() {
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{t.gallery_label}</p>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{t.gallery_label}</p>
         <Divider className="mb-10" />
 
         {/* Roll 1 — Our Memories (canister left, drag rightward) */}

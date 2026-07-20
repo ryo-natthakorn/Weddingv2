@@ -155,7 +155,7 @@ export function RSVPSection() {
         transition={{ duration: 0.9 }}
         style={{ maxWidth: 560, margin: "0 auto", position: "relative", zIndex: 2 }}
       >
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
           {t.rsvp_label}
         </p>
         <Divider className="mb-6" />

@@ -275,41 +275,39 @@ function InvitationContent() {
       <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
 
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
           <Divider className="mb-8" />
 
-          {/* BLOCK 1 — Full-width venue photo with name overlay */}
-          <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)" }}>
-            <img src={FLORAL_IMAGE} alt={t.map_title} loading="lazy" style={{ width: "100%", height: "clamp(280px, 58vw, 440px)", objectFit: "cover", display: "block" }} />
-            {/* dark gradient for legibility */}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(42,26,10,0.7) 0%, rgba(42,26,10,0.15) 35%, transparent 60%)" }} />
-            {/* gold pill — top-left */}
-            <div style={{ position: "absolute", top: 16, left: 16, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, borderRadius: 100, padding: "7px 16px", boxShadow: "0 4px 12px rgba(138,112,48,0.35)" }}>
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", letterSpacing: "0.2em", color: COLORS.white, textTransform: "uppercase" }}>{t.venue_label}</span>
+          {/* BLOCK 1+2 — merged: venue photo and address/CTA share one card */}
+          <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)" }}>
+            <div style={{ position: "relative" }}>
+              <img src={FLORAL_IMAGE} alt={t.map_title} loading="lazy" style={{ width: "100%", height: "clamp(280px, 58vw, 440px)", objectFit: "cover", display: "block" }} />
+              {/* dark gradient for legibility */}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(42,26,10,0.7) 0%, rgba(42,26,10,0.15) 35%, transparent 60%)" }} />
+              {/* venue name — bottom-left */}
+              <div style={{ position: "absolute", bottom: 18, left: 20, right: 20 }}>
+                <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.5rem, 6vw, 2.4rem)", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
+              </div>
             </div>
-            {/* venue name — bottom-left */}
-            <div style={{ position: "absolute", bottom: 18, left: 20, right: 20 }}>
-              <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.5rem, 6vw, 2.4rem)", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
-            </div>
-          </div>
 
-          {/* BLOCK 2 — Address + CTA */}
-          <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em" }}>{t.map_address}</p>
-            <motion.a
-              href={MAPS_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
-                <circle cx="8" cy="6" r="1.5" stroke="#FFF8EE" strokeWidth="1.2"/>
-              </svg>
-              {t.map_btn}
-            </motion.a>
+            {/* Address + CTA — same card, below the photo */}
+            <div style={{ padding: "32px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
+              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em" }}>{t.map_address}</p>
+              <motion.a
+                href={MAPS_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
+                  <circle cx="8" cy="6" r="1.5" stroke="#FFF8EE" strokeWidth="1.2"/>
+                </svg>
+                {t.map_btn}
+              </motion.a>
+            </div>
           </div>
 
           {/* BLOCK 3 — Directions */}
@@ -332,7 +330,7 @@ function InvitationContent() {
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "48px 24px 56px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
@@ -357,7 +355,7 @@ function InvitationContent() {
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
+            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
             <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 44 }}>{t.dress_desc}</p>
