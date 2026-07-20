@@ -25,24 +25,27 @@ import {
    Roll 2 — Pre-Wedding  : canister RIGHT, grows LEFTWARD (mirror)
 ─────────────────────────────────────────────────────────────── */
 
-/* Personal photos — Roll 1 */
-const STORY_IMAGES = [
-  "https://images.unsplash.com/photo-1502389498275-fe50566c4c5a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjBwb3J0cmFpdCUyMHN1bnNldCUyMGdvbGRlbiUyMGhvdXIlMjBsb3ZlfGVufDF8fHx8MTc3ODQ2OTIxMHww&ixlib=rb-4.1.0&q=80&w=1080",
-  "https://images.unsplash.com/photo-1776957389179-b2388f2653ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjB3YWxraW5nJTIwaGFuZCUyMGluJTIwaGFuZCUyMG5hdHVyZSUyMHBhdGh8ZW58MXx8fHwxNzc4NDY5MjExfDA&ixlib=rb-4.1.0&q=80&w=1080",
-  "https://images.unsplash.com/photo-1768561715378-2de6d0fe4fb3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjBwcm9wb3NhbCUyMHJpbmclMjByb21hbnRpYyUyMG91dGRvb3J8ZW58MXx8fHwxNzc4NDY5MjExfDA&ixlib=rb-4.1.0&q=80&w=1080",
-  "https://images.unsplash.com/photo-1775441522523-317359de673f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3VwbGUlMjBsYXVnaGluZyUyMGhhcHB5JTIwcGljbmljJTIwb3V0ZG9vcnxlbnwxfHx8fDE3Nzg0NjkyMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-];
+/* Both rolls read straight from src/imports/ — drop image files in and they
+   appear automatically, no code changes needed. Sorted by filename, so
+   prefix with 01-, 02-, etc. if the order matters. Empty folder → the
+   FilmRoll's existing "coming soon" placeholder shows instead. */
+const MEMORIES_MODULES = import.meta.glob(
+  "../../imports/memories/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  { eager: true, query: "?url", import: "default" },
+) as Record<string, string>;
+const PRE_WEDDING_MODULES = import.meta.glob(
+  "../../imports/pre-wedding/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  { eager: true, query: "?url", import: "default" },
+) as Record<string, string>;
 
-/* Pre-Wedding shoot — Roll 2.
-   ►► CLIENT: replace these with the real pre-wedding photos.
-      The mechanic adapts to however many images you provide.
-      Leave the array empty ([]) to show a gentle placeholder. */
-const PRE_WEDDING_IMAGES = [
-  "https://images.unsplash.com/photo-1519741497674-611481863552?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  "https://images.unsplash.com/photo-1525258946800-98cfd641d0de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-];
+const sortedUrls = (modules: Record<string, string>) =>
+  Object.keys(modules).sort().map((key) => modules[key]);
+
+/* Personal photos — Roll 1. Drop files into src/imports/memories/ */
+const STORY_IMAGES = sortedUrls(MEMORIES_MODULES);
+
+/* Pre-Wedding shoot — Roll 2. Drop files into src/imports/pre-wedding/ */
+const PRE_WEDDING_IMAGES = sortedUrls(PRE_WEDDING_MODULES);
 
 const CANISTER_W = 46; // fixed canister width at the roll edge
 const TAB_W = 14; // pull-tab film-leader width
@@ -516,7 +519,9 @@ export function GallerySection() {
   const memoriesLabel = lang === "TH" ? "ความทรงจำของเรา" : "Our Memories";
   const preWeddingLabel = lang === "TH" ? "พรีเวดดิ้ง" : "Pre-Wedding";
   const swipeHint = lang === "TH" ? "ปัดเพื่อชม" : "Swipe to browse";
-  const emptyText =
+  const memoriesEmptyText =
+    lang === "TH" ? "ภาพความทรงจำกำลังจะมาเร็ว ๆ นี้" : "Memories photos coming soon";
+  const preWeddingEmptyText =
     lang === "TH" ? "ภาพพรีเวดดิ้งกำลังจะมาเร็ว ๆ นี้" : "Pre-wedding photos coming soon";
 
   return (
@@ -543,7 +548,7 @@ export function GallerySection() {
           images={STORY_IMAGES}
           label={memoriesLabel}
           swipeHint={swipeHint}
-          emptyText={emptyText}
+          emptyText={memoriesEmptyText}
           side="left"
         />
 
@@ -554,7 +559,7 @@ export function GallerySection() {
           images={PRE_WEDDING_IMAGES}
           label={preWeddingLabel}
           swipeHint={swipeHint}
-          emptyText={emptyText}
+          emptyText={preWeddingEmptyText}
           side="right"
         />
       </motion.div>

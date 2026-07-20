@@ -46,6 +46,16 @@ const ICON_MODULES = import.meta.glob(
   { eager: true, query: "?url", import: "default" },
 ) as Record<string, string>;
 
+/* Venue photo — client drops a file named "venue" (any common extension)
+   into src/imports/ and it replaces the stock placeholder automatically.
+   Falls back to the Unsplash placeholder until that file exists. */
+const VENUE_IMAGE_MODULES = import.meta.glob(
+  "../../imports/venue.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  { eager: true, query: "?url", import: "default" },
+) as Record<string, string>;
+const VENUE_IMAGE_FALLBACK =
+  "https://images.unsplash.com/photo-1634562984686-5e559a782117?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd2hpdGUlMjBmbG9yYWxzJTIwZ3JlZW5lcnklMjB3ZWRkaW5nJTIwdGFibGV8ZW58MXx8fHwxNzc4NDY4NTYxfDA&ixlib=rb-4.1.0&q=80&w=1080";
+
 const PROGRAM_ICONS = [
   { base: "ring", emoji: "💍" },
   { base: "camera", emoji: "📷" },
@@ -203,7 +213,7 @@ function InvitationContent() {
   const hashtagSec = useReveal("-80px");
   const footerSec = useReveal();
 
-  const FLORAL_IMAGE = "https://images.unsplash.com/photo-1634562984686-5e559a782117?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd2hpdGUlMjBmbG9yYWxzJTIwZ3JlZW5lcnklMjB3ZWRkaW5nJTIwdGFibGV8ZW58MXx8fHwxNzc4NDY4NTYxfDA&ixlib=rb-4.1.0&q=80&w=1080";
+  const FLORAL_IMAGE = Object.values(VENUE_IMAGE_MODULES)[0] ?? VENUE_IMAGE_FALLBACK;
 
   return (
     <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
