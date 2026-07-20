@@ -55,9 +55,19 @@ const PROGRAM_ICONS = [
   src: Object.entries(ICON_MODULES).find(([k]) => k.includes(`/${base}-icon.`))?.[1],
 }));
 
+/* Icon-backdrop tints — gold/sage/blush from the same printed-card palette,
+   alternated per card/item index so repeated icon rows (program cards,
+   direction items) read as more than one color. Ornament only — the text
+   these sit beside stays navy/ink-brown per the Two-Voices Rule. */
+const ICON_TINTS = [
+  "138,112,48", // gold
+  "107,138,90", // sage
+  "232,192,154", // blush
+];
+
 /* Program card icon — loads the PNG/SVG if present, otherwise (or on load
-   error) shows a gold circle with the matching emoji placeholder. */
-function ProgramIcon({ src, emoji }: { src?: string; emoji: string }) {
+   error) shows a tinted circle with the matching emoji placeholder. */
+function ProgramIcon({ src, emoji, tint = ICON_TINTS[0] }: { src?: string; emoji: string; tint?: string }) {
   const [failed, setFailed] = useState(false);
   if (src && !failed) {
     return (
@@ -75,8 +85,8 @@ function ProgramIcon({ src, emoji }: { src?: string; emoji: string }) {
       aria-hidden
       style={{
         width: 46, height: 46, borderRadius: "50%",
-        background: "linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))",
-        border: "1px solid rgba(138,112,48,0.3)",
+        background: `linear-gradient(135deg, rgba(${tint},0.18), rgba(${tint},0.08))`,
+        border: `1px solid rgba(${tint},0.3)`,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: "1.4rem",
       }}
@@ -272,7 +282,7 @@ function InvitationContent() {
       <GallerySection />
 
       {/* ═══ VENUE ═══ */}
-      <section ref={venueSec.ref} style={{ padding: "40px 24px 80px", maxWidth: 760, margin: "0 auto" }}>
+      <section ref={venueSec.ref} style={{ padding: "40px 24px 56px", maxWidth: 760, margin: "0 auto" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
 
           {/* BLOCK 1 — Full-width venue photo with name overlay */}
@@ -311,9 +321,9 @@ function InvitationContent() {
 
           {/* BLOCK 3 — Directions */}
           <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
-            {t.direction_items.map(({ icon, title, text }) => (
+            {t.direction_items.map(({ icon, title, text }, i) => (
               <div key={title} style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))`, border: "1px solid rgba(138,112,48,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(${ICON_TINTS[i % ICON_TINTS.length]},0.18), rgba(${ICON_TINTS[i % ICON_TINTS.length]},0.08))`, border: `1px solid rgba(${ICON_TINTS[i % ICON_TINTS.length]},0.3)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
                   {icon}
                 </div>
                 <div>
@@ -327,7 +337,7 @@ function InvitationContent() {
       </section>
 
       {/* ═══ PROGRAM ═══ */}
-      <section ref={programSec.ref} style={{ padding: "96px 24px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      <section ref={programSec.ref} style={{ padding: "72px 24px 84px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.68rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
@@ -339,7 +349,7 @@ function InvitationContent() {
                 whileHover={{ y: -6 }}
                 style={{ background: "rgba(255,248,240,0.6)", border: "1px solid rgba(138,107,75,0.15)", borderTop: `3px solid ${COLORS.gold}`, borderRadius: 16, padding: "36px 24px", boxShadow: "0 10px 30px rgba(61,34,21,0.1)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}
               >
-                <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} />
+                <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} tint={ICON_TINTS[i % ICON_TINTS.length]} />
                 <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
                 <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
                 <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, color: COLORS.lightBrown, lineHeight: 1.65 }}>{item.desc}</p>
@@ -350,7 +360,7 @@ function InvitationContent() {
       </section>
 
       {/* ═══ DRESS CODE + HASHTAG — one unified section ═══ */}
-      <section ref={dressSec.ref} style={{ padding: "96px 24px", textAlign: "center", maxWidth: 600, margin: "0 auto", position: "relative", overflow: "hidden" }}>
+      <section ref={dressSec.ref} style={{ padding: "72px 24px 64px", textAlign: "center", maxWidth: 600, margin: "0 auto", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
@@ -378,7 +388,10 @@ function InvitationContent() {
           </div>
 
           {/* Gentle gold separator — dress code flows into the hashtag */}
-          <div style={{ width: "60%", maxWidth: 320, height: 1, background: COLORS.gold, opacity: 0.4, margin: "48px auto 40px" }} />
+          <div style={{ position: "relative", width: "60%", maxWidth: 320, margin: "32px auto 28px" }}>
+            <div style={{ height: 1, background: COLORS.gold, opacity: 0.4 }} />
+            <LeafSvg style={{ position: "absolute", top: "50%", left: "50%", width: 22, height: 22, opacity: 0.4, transform: "translate(-50%, -50%) rotate(10deg)", pointerEvents: "none" }} />
+          </div>
 
           {/* Hashtag / social — own reveal so the typewriter fires on entry */}
           <div ref={hashtagSec.ref}>

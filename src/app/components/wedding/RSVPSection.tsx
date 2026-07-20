@@ -32,10 +32,11 @@ export function RSVPSection() {
     if (scrollTimerRef.current !== undefined) clearTimeout(scrollTimerRef.current);
   }, []);
 
-  // 14-particle gold/navy burst fired when "Joyfully Accept" is tapped.
+  // 14-particle burst fired when "Joyfully Accept" is tapped — gold/navy
+  // lead, with sage/blush mixed in at lower frequency for a richer sparkle.
   const fireBurst = () => {
     if (reduceMotion) return;
-    const palette = [COLORS.gold, COLORS.navy];
+    const palette = [COLORS.gold, COLORS.navy, COLORS.gold, COLORS.navy, COLORS.sage, COLORS.blush];
     const sparks: Spark[] = Array.from({ length: 14 }, (_, i) => {
       const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.45;
       const dist = 40 + Math.random() * 40; // 40–80px
@@ -142,7 +143,7 @@ export function RSVPSection() {
     <section
       ref={ref}
       style={{
-        padding: "96px 24px",
+        padding: "68px 24px 72px",
         background: "transparent",
         textAlign: "center",
         position: "relative",

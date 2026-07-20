@@ -4,6 +4,7 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   Divider,
+  LeafSvg,
   COLORS,
 } from "./shared";
 import ringImg from "../../../imports/Ring.svg";
@@ -112,11 +113,16 @@ export function NameIntroWithCountdown() {
       style={{
         position: "relative",
         background: "transparent",
-        padding: "110px 24px 100px",
+        padding: "84px 24px 64px",
         textAlign: "center",
         overflow: "hidden",
       }}
     >
+      {/* Small leaf flourishes — echo the Hero's corner motif at the next
+          section transition, so sage isn't confined to the opening screen. */}
+      <LeafSvg style={{ position: "absolute", top: "6%", left: -6, width: 30, height: 30, opacity: 0.28, transform: "rotate(-15deg)", pointerEvents: "none" }} />
+      <LeafSvg style={{ position: "absolute", top: "6%", right: -6, width: 30, height: 30, opacity: 0.28, transform: "rotate(195deg)", pointerEvents: "none" }} />
+
       <div style={{ position: "relative", zIndex: 3, maxWidth: 720, margin: "0 auto" }}>
         {/* 1. Countdown — moved to the top */}
         <motion.div

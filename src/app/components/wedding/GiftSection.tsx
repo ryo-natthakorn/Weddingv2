@@ -224,7 +224,7 @@ export function GiftSection() {
       id="gift-section"
       ref={ref}
       style={{
-        padding: "80px 24px 96px",
+        padding: "64px 24px 96px",
         background: "transparent",
         textAlign: "center",
         position: "relative",
