@@ -522,7 +522,7 @@ export function GallerySection() {
   return (
     <section
       style={{
-        padding: "76px 14px 88px",
+        padding: "48px 14px 56px",
         position: "relative",
         overflow: "hidden",
         background: "transparent",
@@ -546,7 +546,7 @@ export function GallerySection() {
           side="left"
         />
 
-        <div style={{ height: 40 }} />
+        <div style={{ height: 28 }} />
 
         {/* Roll 2 — Pre-Wedding (canister right, drag leftward) */}
         <FilmRoll
