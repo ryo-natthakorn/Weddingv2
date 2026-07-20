@@ -10,9 +10,16 @@ import {
 const ENV_W = "min(300px, 80vw)";
 const ENV_H = 220;
 
-/* Dummy QR placeholder — client swaps in the real PromptPay PNG later.
-   Drop the real file at src/imports/promptpay-qr.png and replace
-   <DummyQR /> with an <img>. */
+/* Real PromptPay QR — drop a file named "promptpay-qr" (any common image
+   extension) into src/imports/ and it replaces the dummy placeholder
+   automatically, no code changes needed. */
+const QR_IMAGE_MODULES = import.meta.glob(
+  "../../../imports/promptpay-qr.{png,jpg,jpeg,webp,PNG,JPG,JPEG,WEBP}",
+  { eager: true, query: "?url", import: "default" },
+) as Record<string, string>;
+const REAL_QR_URL = Object.values(QR_IMAGE_MODULES)[0];
+
+/* Dummy QR placeholder — shown until the real file above exists. */
 function DummyQR() {
   // A deterministic 9x9 pseudo-QR pattern so it reads as a QR at a glance.
   const cells = 9;
@@ -120,10 +127,20 @@ function Envelope() {
                 gap: 4,
               }}
             >
-              <DummyQR />
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
-                [ Replace with PromptPay QR ]
-              </span>
+              {REAL_QR_URL ? (
+                <img
+                  src={REAL_QR_URL}
+                  alt="PromptPay QR code"
+                  style={{ width: 108, height: 108, objectFit: "contain", display: "block" }}
+                />
+              ) : (
+                <>
+                  <DummyQR />
+                  <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
+                    [ Replace with PromptPay QR ]
+                  </span>
+                </>
+              )}
             </div>
             <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 500, color: COLORS.midBrown }}>
               {t.gift_account}

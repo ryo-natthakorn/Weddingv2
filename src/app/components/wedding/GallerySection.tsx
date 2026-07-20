@@ -30,11 +30,11 @@ import {
    prefix with 01-, 02-, etc. if the order matters. Empty folder → the
    FilmRoll's existing "coming soon" placeholder shows instead. */
 const MEMORIES_MODULES = import.meta.glob(
-  "../../imports/memories/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  "../../../imports/memories/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
   { eager: true, query: "?url", import: "default" },
 ) as Record<string, string>;
 const PRE_WEDDING_MODULES = import.meta.glob(
-  "../../imports/pre-wedding/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  "../../../imports/pre-wedding/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
   { eager: true, query: "?url", import: "default" },
 ) as Record<string, string>;
 
