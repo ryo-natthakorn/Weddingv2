@@ -592,3 +592,16 @@ DELETE if orphaned (no longer imported):
 
 Check imports before deleting — remove dead imports too.
 ```
+
+---
+
+## Design Context
+
+Strategic and visual context live at the repo root — read them before any design work:
+
+- **PRODUCT.md** — register (brand), platform (web), users, positioning, and the five design
+  principles: (1) handmade over templated, (2) warmth carries the brand, (3) elder-proof by
+  default, (4) one scroll one story, (5) delight is discovered, not announced.
+- **DESIGN.md** — the visual system ("The Garden House Welcome"): printed-card palette
+  (Monogram Gold #8A7030 / Card Teal #1B4A5C / cream ramp), TT Interphases-only typography,
+  warm-tinted shadows, named rules, and do's/don'ts.
