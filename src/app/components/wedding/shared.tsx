@@ -176,7 +176,7 @@ export const COLORS = {
   ivory: "#F2E8D2",       // deeper warm ivory
   warmBrown: "#2A1A0A",   // very dark warm (body text)
   midBrown: "#5A3E25",    // warm mid brown
-  lightBrown: "#7A5A38",  // warm light brown
+  lightBrown: "#664A2C",  // warm light brown — darkened so labels/captions clear 4.5:1 even at the gradient's darkest stop (#DBC59A)
   gold: "#8A7030",        // olive gold (PN monogram)
   goldLight: "#C4A840",   // lighter gold
   sage: "#6B8A5A",        // earthy sage green

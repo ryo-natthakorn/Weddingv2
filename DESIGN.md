@@ -13,7 +13,7 @@ colors:
   warm-white: "#FFF8F0"
   ink-brown: "#2A1A0A"
   mid-brown: "#5A3E25"
-  light-brown: "#7A5A38"
+  light-brown: "#664A2C"
   sage: "#6B8A5A"
   blush: "#E8C09A"
   paper-shadow: "#D4B896"
@@ -126,7 +126,7 @@ The palette is lifted directly from the couple's printed invitation card — the
 
 ### Neutral
 - **Ink Brown** (#2A1A0A): body text. Warm near-black, ≥4.5:1 on every cream in the ramp.
-- **Mid Brown** (#5A3E25): secondary prose; **Light Brown** (#7A5A38): labels and captions (large/spaced text only).
+- **Mid Brown** (#5A3E25): secondary prose; **Light Brown** (#664A2C): labels and captions — darkened from the printed card's lighter tint so it still clears 4.5:1 at the gradient's darkest stop (#DBC59A), not just its lightest.
 - **Peach Cream** (#F8F1E6) → **Warm Ivory** (#F2E8D2) → **Cream Deep** (#DBC59A): the page gradient ramp, top to bottom. **Warm White** (#FFF8F0): text on teal/gold, translucent card fills. **Paper Shadow** (#D4B896): paper-edge tone.
 
 ### Named Rules

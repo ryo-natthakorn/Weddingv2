@@ -25,6 +25,18 @@ const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok
 const POST_HERO_GRADIENT =
   "linear-gradient(180deg, #F8F1E6 0%, #F2E8D2 20%, #EBDDC4 50%, #E3D2B0 75%, #DBC59A 100%)";
 
+/* Paper grain — same fractal-noise texture as the body fallback in index.css.
+   The hero and post-hero wrapper both paint fully opaque backgrounds over the
+   body, which hid this texture across the entire card; layering it directly
+   into each gradient restores the "paper grain" surface DESIGN.md calls for. */
+const PAPER_GRAIN =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.42 0 0 0 0 0.22 0 0 0 0.25 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+const grainLayer = (gradient: string) => ({
+  backgroundImage: `${PAPER_GRAIN}, ${gradient}`,
+  backgroundSize: "300px 300px, 100% 100%",
+  backgroundRepeat: "repeat, no-repeat",
+});
+
 /* Program icons — client drops ring-icon / camera-icon / glasses-icon into
    src/imports/. import.meta.glob resolves only files that actually exist at
    build time, so a missing icon simply falls back to its emoji (no build
@@ -199,7 +211,7 @@ function InvitationContent() {
       {/* ═══ HERO ═══ */}
       <section
         ref={heroRef}
-        style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", overflow: "hidden", background: "linear-gradient(180deg, #EAC898 0%, #EDD8A8 40%, #F3E8CC 75%, #F8F1E6 100%)" }}
+        style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", overflow: "hidden", ...grainLayer("linear-gradient(180deg, #EAC898 0%, #EDD8A8 40%, #F3E8CC 75%, #F8F1E6 100%)") }}
       >
         <motion.div style={{ position: "absolute", inset: "-5% 0", y: springY, zIndex: 0 }}>
           <img src={heroIllustration} alt="Pantika & Natthakorn" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "bottom center", display: "block" }} />
@@ -251,7 +263,7 @@ function InvitationContent() {
       </section>
 
       {/* ═══ POST-HERO CONTENT — one shared gradient, no per-section backgrounds ═══ */}
-      <div style={{ background: POST_HERO_GRADIENT }}>
+      <div style={grainLayer(POST_HERO_GRADIENT)}>
 
       {/* ═══ NAME INTRODUCTION ═══ */}
       <NameIntroWithCountdown />
@@ -305,7 +317,7 @@ function InvitationContent() {
                   {icon}
                 </div>
                 <div>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
+                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", fontWeight: 600, letterSpacing: "0.16em", color: COLORS.midBrown, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
                   <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
                 </div>
               </div>
@@ -418,7 +430,7 @@ function InvitationContent() {
           <div style={{ width: 48, height: 1.5, background: COLORS.gold, opacity: 0.5, borderRadius: 1, margin: "12px auto 16px" }} />
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 48 }}>22 / 11 / 2026</p>
           <Divider className="mb-8" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.14em", color: "#A89078", textTransform: "uppercase", marginBottom: 18 }}>{t.footer_venue}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 18 }}>{t.footer_venue}</p>
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.1rem)", fontStyle: "italic", color: COLORS.midBrown, letterSpacing: "0.04em" }}>{t.footer_closing}</p>
         </motion.div>
       </footer>

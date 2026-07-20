@@ -121,14 +121,14 @@ function Envelope() {
               }}
             >
               <DummyQR />
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: COLORS.lightBrown }}>
                 [ Replace with PromptPay QR ]
               </span>
             </div>
             <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 500, color: COLORS.midBrown }}>
               {t.gift_account}
             </span>
-            <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase", color: COLORS.gold }}>
+            <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase", color: COLORS.midBrown }}>
               {t.gift_promptpay}
             </span>
           </motion.div>
