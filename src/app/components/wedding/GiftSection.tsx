@@ -7,8 +7,9 @@ import {
   COLORS,
 } from "./shared";
 
-const ENV_W = "min(300px, 80vw)";
-const ENV_H = 220;
+const ENV_W = "min(340px, 85vw)";
+const ENV_H = 260;
+const QR_SIZE = 124;
 
 /* Real PromptPay QR — drop a file named "promptpay-qr" (any common image
    extension) into src/imports/ and it replaces the dummy placeholder
@@ -23,7 +24,7 @@ const REAL_QR_URL = Object.values(QR_IMAGE_MODULES)[0];
 function DummyQR() {
   // A deterministic 9x9 pseudo-QR pattern so it reads as a QR at a glance.
   const cells = 9;
-  const size = 108;
+  const size = QR_SIZE;
   const unit = size / cells;
   const filled = (r: number, c: number) => {
     // three solid finder squares (top-left, top-right, bottom-left)
@@ -108,47 +109,63 @@ function Envelope() {
               position: "absolute",
               inset: 0,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 6,
-              padding: "14px 16px",
+              padding: "18px 20px",
               zIndex: 2,
             }}
           >
+            {/* Card tucked inside the envelope — visually distinct from the
+                envelope's own tan pocket so the QR reads as an object placed
+                inside it, not painted onto it. */}
             <div
               style={{
-                background: "#fff",
-                padding: 8,
-                borderRadius: 8,
-                boxShadow: "0 4px 14px rgba(61,34,21,0.18)",
+                width: "100%",
+                background: "rgba(255, 253, 247, 0.85)",
+                border: "1px solid rgba(138, 112, 48, 0.18)",
+                borderRadius: 14,
+                boxShadow: "0 6px 20px rgba(61,34,21,0.12)",
+                padding: "18px 16px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 4,
+                gap: 8,
               }}
             >
-              {REAL_QR_URL ? (
-                <img
-                  src={REAL_QR_URL}
-                  alt="PromptPay QR code"
-                  style={{ width: 108, height: 108, objectFit: "contain", display: "block" }}
-                />
-              ) : (
-                <>
-                  <DummyQR />
-                  <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
-                    [ Replace with PromptPay QR ]
-                  </span>
-                </>
-              )}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 8,
+                  borderRadius: 8,
+                  boxShadow: "0 4px 14px rgba(61,34,21,0.18)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                {REAL_QR_URL ? (
+                  <img
+                    src={REAL_QR_URL}
+                    alt="PromptPay QR code"
+                    style={{ width: QR_SIZE, height: QR_SIZE, objectFit: "contain", display: "block" }}
+                  />
+                ) : (
+                  <>
+                    <DummyQR />
+                    <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
+                      [ Replace with PromptPay QR ]
+                    </span>
+                  </>
+                )}
+              </div>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 500, color: COLORS.midBrown }}>
+                {t.gift_account}
+              </span>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase", color: COLORS.gold }}>
+                {t.gift_promptpay}
+              </span>
             </div>
-            <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 500, color: COLORS.midBrown }}>
-              {t.gift_account}
-            </span>
-            <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase", color: COLORS.gold }}>
-              {t.gift_promptpay}
-            </span>
           </motion.div>
 
           {/* Envelope front pocket (lower V) — sits over the card edges */}
@@ -195,10 +212,12 @@ function Envelope() {
               boxShadow: "0 4px 10px rgba(61,34,21,0.12)",
             }}
           />
-          {/* Heart seal at the flap tip — fades out as the flap lifts */}
-          <motion.div
-            animate={{ opacity: open ? 0 : 1, scale: open ? 0.8 : 1 }}
-            transition={{ duration: 0.2 }}
+          {/* Heart seal at the flap tip — fades out as the flap lifts.
+              Centering lives on this static wrapper, not the animated
+              motion.div below: Framer Motion owns the `transform` property
+              once scale/opacity are animated on an element and silently
+              drops any hand-written translate(-50%,-50%) on that same node. */}
+          <div
             style={{
               position: "absolute",
               left: "50%",
@@ -206,17 +225,31 @@ function Envelope() {
               transform: "translate(-50%, -50%)",
               width: 36,
               height: 36,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #A88030, #7A5520)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
               pointerEvents: "none",
             }}
           >
-            <span style={{ color: "#FFF8EE", fontSize: "1rem" }}>♥</span>
-          </motion.div>
+            <motion.div
+              animate={{ opacity: open ? 0 : 1, scale: open ? 0.8 : 1 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #A88030, #7A5520)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M10 17.5C10 17.5 2 11.8 2 6.8C2 3.9 4.4 1.5 7.3 1.5C8.9 1.5 10 2.6 10 2.6C10 2.6 11.1 1.5 12.7 1.5C15.6 1.5 18 3.9 18 6.8C18 11.8 10 17.5 10 17.5Z"
+                  fill="#FFF8EE"
+                />
+              </svg>
+            </motion.div>
+          </div>
         </motion.div>
       </motion.div>
 
@@ -256,7 +289,7 @@ export function GiftSection() {
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
         </p>
         <Divider className="mb-12" />
