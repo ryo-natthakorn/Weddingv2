@@ -113,6 +113,7 @@ function Envelope() {
               justifyContent: "center",
               gap: 6,
               padding: "14px 16px",
+              zIndex: 2,
             }}
           >
             <div
@@ -164,6 +165,7 @@ function Envelope() {
               pointerEvents: "none",
               opacity: open ? 0.55 : 1,
               transition: "opacity 0.5s",
+              zIndex: 1,
             }}
           />
         </div>
@@ -259,7 +261,7 @@ export function GiftSection() {
         </p>
         <Divider className="mb-12" />
 
-        <div style={{ marginTop: 8, marginBottom: 40 }}>
+        <div style={{ marginTop: 36, marginBottom: 40 }}>
           <Envelope />
         </div>
 
