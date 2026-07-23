@@ -116,7 +116,10 @@ export function NameIntroWithCountdown() {
   // Stacked full-width (not side-by-side columns) — a two-column split only
   // gives each parent line ~45% of the content width, too narrow for the
   // longer Thai strings at this font size without truncating.
-  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.15rem)", color: COLORS.midBrown, letterSpacing: "0.04em", lineHeight: 1.6, textAlign: "center" as const, ...singleLine };
+  // Quieted a step further than before — these recede as setup so the
+  // names/ring hero and the closing date read as the section's two peaks,
+  // not three elements of similar weight.
+  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.1vw, 1rem)", color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.6, textAlign: "center" as const, ...singleLine };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -210,22 +213,26 @@ export function NameIntroWithCountdown() {
           </ClipReveal>
         </div>
 
-        {/* 7-8. Date + venue */}
+        {/* 7-8. Date + venue — the section's closing beat. "Sunday" recedes
+            to a true label (DESIGN.md Label tier) so the date itself can
+            commit to Headline-tier scale instead of the two competing at
+            similar weight. Entrance echoes the ring's confident scale-in
+            rather than the plain fade used by the setup elements above. */}
         <motion.div
           ref={dateRef}
-          initial={{ opacity: 0, y: 12 }}
-          animate={dateInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.15, duration: 0.9 }}
-          style={{ marginTop: 52 }}
+          initial={{ opacity: 0, y: 20, scale: 0.97 }}
+          animate={dateInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+          transition={{ delay: 0.2, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          style={{ marginTop: 64 }}
         >
           <Divider className="mb-6" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 3.8vw, 1.9rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.12em", marginBottom: 4 }}>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.32em", marginRight: "-0.32em", textTransform: "uppercase", marginBottom: 10 }}>
             {t.sunday}
           </p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.65rem, 4.4vw, 2.4rem)", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.1em" }}>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 6.5vw, 3rem)", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.03em", lineHeight: 1.15 }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 12 }}>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
             {t.map_title}
           </p>
         </motion.div>
