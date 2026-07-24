@@ -4,8 +4,175 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { useReducedMotion } from "motion/react";
 import { COLORS } from "./shared";
 
-/* Batch 1 — bare scene: ground, warm lights, drag-to-rotate / pinch-to-zoom
-   camera. Building, parking, road and MRT marker land in later batches. */
+type Disposable = { dispose: () => void };
+
+/* Low-poly gable roof: a triangular-prism wedge built from an extruded 2D
+   shape, so the ridge and slope angle are fully explicit (no fighting
+   THREE.CylinderGeometry's default vertex angles). The shape's local X/Y
+   plane is the front gable face; extruding along Z gives the roof depth. */
+function createGableRoof(width: number, rise: number, depth: number, overhangX: number, overhangZ: number) {
+  const halfSpan = width / 2 + overhangX;
+  const shape = new THREE.Shape();
+  shape.moveTo(-halfSpan, 0);
+  shape.lineTo(halfSpan, 0);
+  shape.lineTo(0, rise);
+  shape.closePath();
+  const fullDepth = depth + overhangZ * 2;
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: fullDepth, bevelEnabled: false });
+  geo.translate(0, 0, -fullDepth / 2);
+  return geo;
+}
+
+/* Gold arched front door — a rectangle capped with a semicircle, extruded thin. */
+function createArchedDoor(width: number, height: number, thickness: number) {
+  const r = width / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(-r, 0);
+  shape.lineTo(-r, height - r);
+  shape.absarc(0, height - r, r, Math.PI, 0, true);
+  shape.lineTo(r, 0);
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false });
+  geo.translate(0, 0, -thickness / 2);
+  return geo;
+}
+
+function buildVenue(disposables: Disposable[]) {
+  const group = new THREE.Group();
+
+  const wallHeight = 1.7;
+  const houseWidth = 2.6;
+  const houseDepth = 2.0;
+  const roofRise = 1.15;
+
+  const wallMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.white), roughness: 0.9, flatShading: true });
+  const roofMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.blush), roughness: 0.85, flatShading: true });
+  const sageMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.sage), roughness: 0.8, flatShading: true });
+  const goldMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.gold), roughness: 0.5, metalness: 0.2, flatShading: true });
+  const brownMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.midBrown), roughness: 0.9, flatShading: true });
+  const glassMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.tealDark), roughness: 0.3, flatShading: true });
+  disposables.push(wallMat, roofMat, sageMat, goldMat, brownMat, glassMat);
+
+  // Main two-story block
+  const wallGeo = new THREE.BoxGeometry(houseWidth, wallHeight, houseDepth);
+  disposables.push(wallGeo);
+  const wall = new THREE.Mesh(wallGeo, wallMat);
+  wall.position.y = wallHeight / 2;
+  group.add(wall);
+
+  // Steep front-facing gable roof (ridge along X, gable end faces +Z — the
+  // photo's signature silhouette)
+  const roofGeo = createGableRoof(houseWidth, roofRise, houseDepth, 0.22, 0.22);
+  disposables.push(roofGeo);
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.position.y = wallHeight;
+  group.add(roof);
+
+  // Round porthole window set into the gable end
+  const windowGeo = new THREE.CircleGeometry(0.16, 20);
+  disposables.push(windowGeo);
+  const gableWindow = new THREE.Mesh(windowGeo, glassMat);
+  gableWindow.position.set(0, wallHeight + roofRise * 0.32, houseDepth / 2 + 0.24);
+  group.add(gableWindow);
+
+  // Sage tiled accent panel on the upper facade, clear of the door (tops out
+  // at y≈0.95) and the gable window (bottoms out at y≈1.91) below/above it
+  const panelGeo = new THREE.BoxGeometry(1.1, 0.7, 0.05);
+  disposables.push(panelGeo);
+  const panel = new THREE.Mesh(panelGeo, sageMat);
+  panel.position.set(0, wallHeight * 0.84, houseDepth / 2 + 0.03);
+  group.add(panel);
+
+  // Gold arched front door, centered at ground level
+  const doorGeo = createArchedDoor(0.5, 0.95, 0.08);
+  disposables.push(doorGeo);
+  const door = new THREE.Mesh(doorGeo, goldMat);
+  door.position.set(0, 0, houseDepth / 2 + 0.02);
+  group.add(door);
+
+  // A small shuttered window beside the door
+  const paneGeo = new THREE.BoxGeometry(0.42, 0.5, 0.04);
+  const shutterGeo = new THREE.BoxGeometry(0.12, 0.5, 0.05);
+  disposables.push(paneGeo, shutterGeo);
+  const windowX = 0.85;
+  const paneY = 0.55;
+  const pane = new THREE.Mesh(paneGeo, glassMat);
+  pane.position.set(windowX, paneY, houseDepth / 2 + 0.02);
+  group.add(pane);
+  const shutterL = new THREE.Mesh(shutterGeo, brownMat);
+  shutterL.position.set(windowX - 0.28, paneY, houseDepth / 2 + 0.02);
+  group.add(shutterL);
+  const shutterR = new THREE.Mesh(shutterGeo, brownMat);
+  shutterR.position.set(windowX + 0.28, paneY, houseDepth / 2 + 0.02);
+  group.add(shutterR);
+
+  // Lower single-story wing on the right, with its own smaller roof
+  const wingWidth = 1.3;
+  const wingDepth = 1.5;
+  const wingWallHeight = 1.0;
+  const wingRoofRise = 0.55;
+  const wingX = houseWidth / 2 + wingWidth / 2 - 0.15;
+
+  const wingWallGeo = new THREE.BoxGeometry(wingWidth, wingWallHeight, wingDepth);
+  disposables.push(wingWallGeo);
+  const wingWall = new THREE.Mesh(wingWallGeo, wallMat);
+  wingWall.position.set(wingX, wingWallHeight / 2, 0);
+  group.add(wingWall);
+
+  const wingRoofGeo = createGableRoof(wingWidth, wingRoofRise, wingDepth, 0.15, 0.15);
+  disposables.push(wingRoofGeo);
+  const wingRoof = new THREE.Mesh(wingRoofGeo, roofMat);
+  wingRoof.position.set(wingX, wingWallHeight, 0);
+  group.add(wingRoof);
+
+  // Flanking trees
+  const trunkGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6);
+  const canopyGeo = new THREE.IcosahedronGeometry(0.55, 0);
+  disposables.push(trunkGeo, canopyGeo);
+  const makeTree = (x: number, z: number, scale: number) => {
+    const tree = new THREE.Group();
+    const trunk = new THREE.Mesh(trunkGeo, brownMat);
+    trunk.position.y = 0.25;
+    tree.add(trunk);
+    const canopy = new THREE.Mesh(canopyGeo, sageMat);
+    canopy.position.y = 0.75;
+    tree.add(canopy);
+    tree.position.set(x, 0, z);
+    tree.scale.setScalar(scale);
+    return tree;
+  };
+  group.add(makeTree(-(houseWidth / 2 + 1.5), 0.4, 1.15));
+  group.add(makeTree(wingX + wingWidth / 2 + 1.1, 0.7, 0.85));
+
+  return group;
+}
+
+function buildGroundAndPath(disposables: Disposable[]) {
+  const group = new THREE.Group();
+
+  const groundGeo = new THREE.CircleGeometry(9, 48);
+  const groundMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.sage), roughness: 0.95 });
+  disposables.push(groundGeo, groundMat);
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  group.add(ground);
+
+  // Straight path from the approach edge up to the front door
+  const pathLength = 5.5;
+  const pathGeo = new THREE.PlaneGeometry(0.6, pathLength);
+  const pathMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.white), roughness: 0.9 });
+  disposables.push(pathGeo, pathMat);
+  const path = new THREE.Mesh(pathGeo, pathMat);
+  path.rotation.x = -Math.PI / 2;
+  path.position.set(0, 0.01, 1 + pathLength / 2);
+  group.add(path);
+
+  return group;
+}
+
+/* Batch 2 — the SailomSangdad building (matched to the real photo's
+   silhouette) plus the sage lawn and approach path. Parking, road and the
+   MRT marker land in Batch 3. */
 export function VenueDiorama() {
   const containerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -14,6 +181,7 @@ export function VenueDiorama() {
     const container = containerRef.current;
     if (!container) return;
 
+    const disposables: Disposable[] = [];
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
@@ -39,19 +207,12 @@ export function VenueDiorama() {
     sun.position.set(6, 10, 4);
     scene.add(sun);
 
-    // Ground — sage lawn placeholder; building/road/parking land in Batch 2-3
-    const groundGeo = new THREE.CircleGeometry(9, 48);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(COLORS.sage),
-      roughness: 0.95,
-    });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
+    scene.add(buildGroundAndPath(disposables));
+    scene.add(buildVenue(disposables));
 
     // Drag-to-rotate / pinch-to-zoom, clamped so guests can't get lost
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1, 0);
+    controls.target.set(0, 1.2, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.enablePan = false;
@@ -119,8 +280,7 @@ export function VenueDiorama() {
       controls.dispose();
       renderer.domElement.removeEventListener("webglcontextlost", onContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", onContextRestored);
-      groundGeo.dispose();
-      groundMat.dispose();
+      disposables.forEach((d) => d.dispose());
       renderer.dispose();
       if (renderer.domElement.parentElement === container) {
         container.removeChild(renderer.domElement);
