@@ -189,17 +189,23 @@ export const COLORS = {
 };
 
 /* Feature-detect WebGL before mounting any three.js canvas — LINE's in-app
-   iOS browser and older devices can lack or restrict it. */
+   iOS browser and older devices can lack or restrict it. Memoized: creating
+   a canvas and negotiating a real WebGL context is a genuine GPU round-trip,
+   slow/contentious on embedded WebViews, so it must run once per page load —
+   not on every re-render of the caller. */
+let cachedHasWebGL: boolean | null = null;
 export function hasWebGL(): boolean {
+  if (cachedHasWebGL !== null) return cachedHasWebGL;
   try {
     const canvas = document.createElement("canvas");
-    return !!(
+    cachedHasWebGL = !!(
       window.WebGLRenderingContext &&
       (canvas.getContext("webgl2") || canvas.getContext("webgl"))
     );
   } catch {
-    return false;
+    cachedHasWebGL = false;
   }
+  return cachedHasWebGL;
 }
 
 /* Generic error boundary — guards a risky child (e.g. a WebGL scene) so a
