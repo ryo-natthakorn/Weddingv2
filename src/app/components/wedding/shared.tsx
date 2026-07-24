@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import type { CSSProperties } from "react";
+import { useRef, Component } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { motion, useInView } from "motion/react";
 
 export function useReveal(margin = "-60px") {
@@ -187,3 +187,35 @@ export const COLORS = {
   white: "#FFF8F0",       // warm white
   paperShadow: "#D4B896", // paper shadow tone
 };
+
+/* Feature-detect WebGL before mounting any three.js canvas — LINE's in-app
+   iOS browser and older devices can lack or restrict it. */
+export function hasWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext("webgl2") || canvas.getContext("webgl"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/* Generic error boundary — guards a risky child (e.g. a WebGL scene) so a
+   runtime crash there falls back silently instead of white-screening the page. */
+export class ErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("[ErrorBoundary]", error);
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
