@@ -14,18 +14,17 @@ import {
   LeafSvg,
   COLORS,
   ErrorBoundary,
-  hasWebGL,
 } from "./wedding/shared";
 
-// Three.js is heavy — lazy-load it so it never touches the initial mobile
+// Leaflet is heavy — lazy-load it so it never touches the initial mobile
 // bundle; only fetched once a guest scrolls the venue into view.
-const VenueDiorama = lazy(() =>
-  import("./wedding/VenueDiorama").then((m) => ({ default: m.VenueDiorama })),
+const VenueMap = lazy(() =>
+  import("./wedding/VenueMap").then((m) => ({ default: m.VenueMap })),
 );
 
-/* Fixed-height cream placeholder shown while the three.js chunk downloads —
+/* Fixed-height cream placeholder shown while the map chunk downloads —
    matches the venue card so there's no layout jump when it swaps in. */
-function DioramaLoadingPlaceholder() {
+function MapLoadingPlaceholder() {
   return (
     <div
       style={{
@@ -352,19 +351,19 @@ function InvitationContent() {
             </div>
           </div>
 
-          {/* Interactive 3D diorama — venue, parking, nearest MRT. Lazy-loaded
-              and only mounted once this section is in view; WebGL-detected
-              and error-bounded so a failure here never breaks the page. */}
-          {venueSec.inView && hasWebGL() && (
+          {/* Real interactive map — venue + nearest MRT. Lazy-loaded and only
+              mounted once this section is in view; error-bounded so a tile or
+              script failure falls back silently to the photo card above. */}
+          {venueSec.inView && (
             <div style={{ marginTop: 20 }}>
-              <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(260px, 62vw, 380px)" }}>
+              <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(300px, 66vw, 420px)" }}>
                 <ErrorBoundary fallback={null}>
-                  <Suspense fallback={<DioramaLoadingPlaceholder />}>
-                    <VenueDiorama labels={{ venue: t.diorama_venue, parking: t.diorama_parking, mrt: t.diorama_mrt }} />
+                  <Suspense fallback={<MapLoadingPlaceholder />}>
+                    <VenueMap />
                   </Suspense>
                 </ErrorBoundary>
               </div>
-              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.08em", color: COLORS.lightBrown, fontStyle: "italic", marginTop: 10 }}>{t.diorama_hint}</p>
+              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.08em", color: COLORS.lightBrown, fontStyle: "italic", marginTop: 10 }}>{t.map_hint}</p>
             </div>
           )}
 
