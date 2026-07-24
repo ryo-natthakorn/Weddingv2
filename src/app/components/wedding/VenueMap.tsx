@@ -96,6 +96,7 @@ export type VenueMapLabels = {
   venue: string;
   mrt: string;
   openInMaps: string;
+  gestureHint: string;
 };
 
 /* Teardrop map pin as a plain DOM element for maplibregl.Marker — inline SVG
@@ -113,7 +114,7 @@ function pinElement(fill: string): HTMLDivElement {
 export function VenueMap({ labels }: { labels: VenueMapLabels }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
-  const { venue: venueLabel, mrt: mrtLabel, openInMaps } = labels;
+  const { venue: venueLabel, mrt: mrtLabel, openInMaps, gestureHint } = labels;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -127,6 +128,17 @@ export function VenueMap({ labels }: { labels: VenueMapLabels }) {
       pitch: 55, // tilted 3D angle, like Google Maps' 3D mode
       bearing: -12,
       attributionControl: { compact: true },
+      // A single finger on a touch device should scroll the PAGE past the
+      // map, not drag the map itself — the classic "embedded map eats my
+      // scroll gesture" problem. MapLibre's built-in cooperative-gestures
+      // mode requires two fingers to pan/rotate the map on touch (one
+      // finger passes straight through to page scroll), showing a brief
+      // bilingual hint if a guest tries the wrong gesture. Its desktop
+      // counterpart (Ctrl/Cmd+scroll to zoom) never surfaces here since
+      // scrollZoom is fully disabled below — only the mobile string needs
+      // localizing.
+      cooperativeGestures: true,
+      locale: { "CooperativeGesturesHandler.MobileHelpText": gestureHint },
     });
 
     // Don't hijack page scroll on desktop; keep touch pinch/rotate/tilt.
@@ -257,6 +269,12 @@ export function VenueMap({ labels }: { labels: VenueMapLabels }) {
         }
         .venue-maplibre .maplibregl-ctrl-attrib a {
           color: #5A3E25;
+        }
+        .venue-maplibre .maplibregl-cooperative-gesture-screen {
+          background: rgba(42,26,10,0.55);
+          font-family: 'TT Interphases', sans-serif;
+          font-size: 0.95rem;
+          font-weight: 500;
         }
       `}</style>
       <div
