@@ -58,6 +58,10 @@ export const translations = {
     map_address: "Ram Intra 40, Bangkok",
     map_note: "Please confirm the exact address upon RSVP — we will send you full directions.",
     map_btn: "Open in Google Maps",
+    diorama_hint: "Drag to rotate · pinch to zoom",
+    diorama_venue: "Venue",
+    diorama_parking: "Parking",
+    diorama_mrt: "Ram Inthra Kor Mor 6 (Pink Line)",
     dress_label: "Dress Code",
     dress_title: "Garden Chic",
     dress_desc:
@@ -149,6 +153,10 @@ export const translations = {
     map_address: "รามอินทรา 40 กรุงเทพมหานคร",
     map_note: "กรุณายืนยันที่อยู่ที่แน่นอนเมื่อตอบรับคำเชิญ — เราจะส่งเส้นทางเดินทางให้คุณ",
     map_btn: "เปิดใน Google Maps",
+    diorama_hint: "ลากเพื่อหมุน · บีบเพื่อซูม",
+    diorama_venue: "สถานที่จัดงาน",
+    diorama_parking: "ที่จอดรถ",
+    diorama_mrt: "MRT รามอินทรา กม.6 (สายสีชมพู)",
     dress_label: "การแต่งกาย",
     dress_title: "สวนชิค",
     dress_desc:

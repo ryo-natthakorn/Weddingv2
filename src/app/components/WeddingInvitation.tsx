@@ -356,12 +356,15 @@ function InvitationContent() {
               and only mounted once this section is in view; WebGL-detected
               and error-bounded so a failure here never breaks the page. */}
           {venueSec.inView && hasWebGL() && (
-            <div style={{ marginTop: 20, borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(260px, 62vw, 380px)" }}>
-              <ErrorBoundary fallback={null}>
-                <Suspense fallback={<DioramaLoadingPlaceholder />}>
-                  <VenueDiorama />
-                </Suspense>
-              </ErrorBoundary>
+            <div style={{ marginTop: 20 }}>
+              <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(260px, 62vw, 380px)" }}>
+                <ErrorBoundary fallback={null}>
+                  <Suspense fallback={<DioramaLoadingPlaceholder />}>
+                    <VenueDiorama labels={{ venue: t.diorama_venue, parking: t.diorama_parking, mrt: t.diorama_mrt }} />
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
+              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.08em", color: COLORS.lightBrown, fontStyle: "italic", marginTop: 10 }}>{t.diorama_hint}</p>
             </div>
           )}
 

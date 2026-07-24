@@ -6,6 +6,87 @@ import { COLORS } from "./shared";
 
 type Disposable = { dispose: () => void };
 
+// MRT Pink Line branding — the one sanctioned off-palette accent, used only
+// for wayfinding (the station pin and its label).
+const MRT_PINK = "#E0538A";
+
+/* Small always-facing-camera pill label, baked as a canvas texture. Plain
+   sans-serif rather than TT Interphases — these are tiny in-scene wayfinding
+   tags, not page typography, and baking a texture shouldn't race font load. */
+function createLabelSprite(disposables: Disposable[], text: string, textColor: string, bgColor: string) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  const fontSize = 40;
+  ctx.font = `600 ${fontSize}px sans-serif`;
+  const paddingX = 26;
+  const textWidth = ctx.measureText(text).width;
+  canvas.width = Math.ceil(textWidth + paddingX * 2);
+  canvas.height = fontSize + 26;
+  ctx.font = `600 ${fontSize}px sans-serif`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+
+  const r = canvas.height / 2;
+  ctx.fillStyle = bgColor;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(canvas.width - r, 0);
+  ctx.arcTo(canvas.width, 0, canvas.width, r, r);
+  ctx.lineTo(canvas.width, canvas.height - r);
+  ctx.arcTo(canvas.width, canvas.height, canvas.width - r, canvas.height, r);
+  ctx.lineTo(r, canvas.height);
+  ctx.arcTo(0, canvas.height, 0, canvas.height - r, r);
+  ctx.lineTo(0, r);
+  ctx.arcTo(0, 0, r, 0, r);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = textColor;
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  disposables.push(texture, material);
+  const sprite = new THREE.Sprite(material);
+  const aspect = canvas.width / canvas.height;
+  const height = 0.4;
+  sprite.scale.set(height * aspect, height, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+/* Straight flat strip between two ground points — used for the road. The
+   flatten rotation is baked into the geometry itself (not the mesh), so the
+   mesh's own rotation.y can be a clean, unambiguous yaw toward the target. */
+function createGroundStrip(disposables: Disposable[], from: [number, number], to: [number, number], width: number, color: string) {
+  const dx = to[0] - from[0];
+  const dz = to[1] - from[1];
+  const length = Math.hypot(dx, dz);
+  const geo = new THREE.PlaneGeometry(width, length);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.9 });
+  disposables.push(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.y = Math.atan2(dx, dz);
+  mesh.position.set((from[0] + to[0]) / 2, 0.008, (from[1] + to[1]) / 2);
+  return mesh;
+}
+
+function createCar(disposables: Disposable[], color: string) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.5, metalness: 0.15, flatShading: true });
+  const bodyGeo = new THREE.BoxGeometry(0.42, 0.16, 0.22);
+  const cabinGeo = new THREE.BoxGeometry(0.24, 0.14, 0.19);
+  disposables.push(mat, bodyGeo, cabinGeo);
+  const body = new THREE.Mesh(bodyGeo, mat);
+  body.position.y = 0.1;
+  group.add(body);
+  const cabin = new THREE.Mesh(cabinGeo, mat);
+  cabin.position.set(-0.02, 0.21, 0);
+  group.add(cabin);
+  return group;
+}
+
 /* Low-poly gable roof: a triangular-prism wedge built from an extruded 2D
    shape, so the ridge and slope angle are fully explicit (no fighting
    THREE.CylinderGeometry's default vertex angles). The shape's local X/Y
@@ -37,7 +118,7 @@ function createArchedDoor(width: number, height: number, thickness: number) {
   return geo;
 }
 
-function buildVenue(disposables: Disposable[]) {
+function buildVenue(disposables: Disposable[], label: string) {
   const group = new THREE.Group();
 
   const wallHeight = 1.7;
@@ -144,13 +225,71 @@ function buildVenue(disposables: Disposable[]) {
   group.add(makeTree(-(houseWidth / 2 + 1.5), 0.4, 1.15));
   group.add(makeTree(wingX + wingWidth / 2 + 1.1, 0.7, 0.85));
 
+  const venueLabel = createLabelSprite(disposables, label, COLORS.white, COLORS.navy);
+  venueLabel.position.set(0, wallHeight + roofRise + 0.35, 0);
+  group.add(venueLabel);
+
+  return group;
+}
+
+const PARKING_CENTER: [number, number] = [-5.25, 0];
+
+function buildParking(disposables: Disposable[], label: string) {
+  const group = new THREE.Group();
+  const [px, pz] = PARKING_CENTER;
+
+  const lotGeo = new THREE.PlaneGeometry(2.6, 3.0);
+  const lotMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.paperShadow), roughness: 0.95 });
+  disposables.push(lotGeo, lotMat);
+  const lot = new THREE.Mesh(lotGeo, lotMat);
+  lot.rotation.x = -Math.PI / 2;
+  lot.position.set(px, 0.005, pz);
+  group.add(lot);
+
+  const carColors = [COLORS.navy, COLORS.gold, COLORS.midBrown];
+  const carOffsets = [-0.85, 0, 0.85];
+  carOffsets.forEach((offset, i) => {
+    const car = createCar(disposables, carColors[i]);
+    car.position.set(px + offset, 0, pz + 0.7);
+    car.rotation.y = Math.PI;
+    group.add(car);
+  });
+
+  const parkingLabel = createLabelSprite(disposables, label, COLORS.white, COLORS.gold);
+  parkingLabel.position.set(px, 1.1, pz);
+  group.add(parkingLabel);
+
+  return group;
+}
+
+const MRT_MARKER: [number, number] = [-6, 6];
+
+function buildMrtMarker(disposables: Disposable[], label: string) {
+  const group = new THREE.Group();
+  const [mx, mz] = MRT_MARKER;
+
+  const pinMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(MRT_PINK), roughness: 0.4, flatShading: true });
+  const stemGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
+  const headGeo = new THREE.SphereGeometry(0.13, 16, 12);
+  disposables.push(pinMat, stemGeo, headGeo);
+  const stem = new THREE.Mesh(stemGeo, pinMat);
+  stem.position.set(mx, 0.25, mz);
+  group.add(stem);
+  const head = new THREE.Mesh(headGeo, pinMat);
+  head.position.set(mx, 0.55, mz);
+  group.add(head);
+
+  const mrtLabel = createLabelSprite(disposables, label, COLORS.white, MRT_PINK);
+  mrtLabel.position.set(mx, 1.05, mz);
+  group.add(mrtLabel);
+
   return group;
 }
 
 function buildGroundAndPath(disposables: Disposable[]) {
   const group = new THREE.Group();
 
-  const groundGeo = new THREE.CircleGeometry(9, 48);
+  const groundGeo = new THREE.CircleGeometry(11, 48);
   const groundMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(COLORS.sage), roughness: 0.95 });
   disposables.push(groundGeo, groundMat);
   const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -167,15 +306,26 @@ function buildGroundAndPath(disposables: Disposable[]) {
   path.position.set(0, 0.01, 1 + pathLength / 2);
   group.add(path);
 
+  // Road from the parking lot out to the MRT marker
+  const road = createGroundStrip(disposables, [PARKING_CENTER[0], PARKING_CENTER[1] + 1.5], MRT_MARKER, 0.5, COLORS.paperShadow);
+  group.add(road);
+
   return group;
 }
 
-/* Batch 2 — the SailomSangdad building (matched to the real photo's
-   silhouette) plus the sage lawn and approach path. Parking, road and the
-   MRT marker land in Batch 3. */
-export function VenueDiorama() {
+export type VenueDioramaLabels = {
+  venue: string;
+  parking: string;
+  mrt: string;
+};
+
+/* The SailomSangdad building (matched to the real photo's silhouette), the
+   sage lawn and approach path, a parking area with a few cars, a road out to
+   the nearest MRT station, and always-facing-camera wayfinding labels. */
+export function VenueDiorama({ labels }: { labels: VenueDioramaLabels }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
+  const { venue: venueLabel, parking: parkingLabel, mrt: mrtLabel } = labels;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -185,7 +335,7 @@ export function VenueDiorama() {
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-    camera.position.set(9, 7, 11);
+    camera.position.set(7, 8, 13);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -208,7 +358,9 @@ export function VenueDiorama() {
     scene.add(sun);
 
     scene.add(buildGroundAndPath(disposables));
-    scene.add(buildVenue(disposables));
+    scene.add(buildVenue(disposables, venueLabel));
+    scene.add(buildParking(disposables, parkingLabel));
+    scene.add(buildMrtMarker(disposables, mrtLabel));
 
     // Drag-to-rotate / pinch-to-zoom, clamped so guests can't get lost
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -217,7 +369,7 @@ export function VenueDiorama() {
     controls.dampingFactor = 0.08;
     controls.enablePan = false;
     controls.minDistance = 6;
-    controls.maxDistance = 16;
+    controls.maxDistance = 25;
     controls.minPolarAngle = Math.PI * 0.15;
     controls.maxPolarAngle = Math.PI * 0.48;
     controls.autoRotate = !reduceMotion;
@@ -286,7 +438,7 @@ export function VenueDiorama() {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, venueLabel, parkingLabel, mrtLabel]);
 
   return (
     <div
