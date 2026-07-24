@@ -36,6 +36,62 @@ const MRT_PINK = "#E0538A";
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const BUILDING_LAYER_ID = "building-3d";
 
+/* The stock "liberty" style is tuned to read as generic web-map chrome:
+   saturated sky-blue water, orange/yellow/white road hierarchy, bright
+   green parks. Retint every visible base layer into the card's own
+   cream/gold/sage/teal world on load — this replaces the earlier approach
+   of a blanket CSS filter on the canvas, which only muddied those same
+   saturated colors instead of actually changing them. */
+const MAP_TINTS = {
+  background: COLORS.cream,
+  water: "#D7E1DC", // dusty sage-teal, deliberately nowhere near "Google blue"
+  green: "#DCE3C4", // parks / woods / grass
+  greenOutline: "rgba(107,138,90,0.3)", // COLORS.sage at low opacity
+  tan: "#E7DCB9", // pitches / tracks
+  school: "#F0E9D6",
+  hospital: "#F3E3DE",
+  cemetery: "#DCD8C0",
+  building: "#E7DCC4", // flat building fill beneath the 3D extrusion layer
+  buildingOutline: "hsla(35,20%,55%,0.3)",
+  motorway: COLORS.gold,
+  motorwayCasing: COLORS.midBrown,
+  trunkPrimary: COLORS.goldLight,
+  trunkPrimaryCasing: COLORS.gold,
+  secondaryTertiary: "#E9D9AE",
+  secondaryTertiaryCasing: "#B89968",
+  minorRoad: COLORS.white,
+  minorRoadCasing: "#D9CBB0",
+  labelText: COLORS.midBrown,
+  labelHalo: COLORS.cream,
+} as const;
+
+/* Stock POI icons (shops, restaurants, transit stops) and secondary
+   place-name labels (neighborhoods, water names, route shields) — noise on
+   a map whose only job is "find this one venue and the nearest MRT stop",
+   not a general-purpose business directory. */
+const CLUTTER_LAYERS = [
+  "poi_r20",
+  "poi_r7",
+  "poi_r1",
+  "poi_transit",
+  "label_other",
+  "label_village",
+  "label_town",
+  "label_city",
+  "label_city_capital",
+  "waterway_line_label",
+  "water_name_point_label",
+  "water_name_line_label",
+  "airport",
+  "road_shield_us",
+  "highway-shield-us-interstate",
+  "highway-shield-non-us",
+];
+
+function tint(map: MapLibreMap, id: string, prop: string, value: string) {
+  if (map.getLayer(id)) map.setPaintProperty(id, prop as any, value as any);
+}
+
 export type VenueMapLabels = {
   venue: string;
   mrt: string;
@@ -76,9 +132,6 @@ export function VenueMap({ labels }: { labels: VenueMapLabels }) {
     // Don't hijack page scroll on desktop; keep touch pinch/rotate/tilt.
     map.scrollZoom.disable();
 
-    // Warm the canvas so the map sits in the cream/gold palette.
-    map.getCanvas().style.filter = "saturate(0.9) sepia(0.1) brightness(1.02) contrast(0.98)";
-
     map.addControl(new NavigationControl({ showCompass: true, visualizePitch: true }), "top-left");
 
     // A failed tile/style fetch surfaces as an 'error' event, not a throw —
@@ -91,6 +144,40 @@ export function VenueMap({ labels }: { labels: VenueMapLabels }) {
       if (map.getLayer(BUILDING_LAYER_ID)) {
         map.setPaintProperty(BUILDING_LAYER_ID, "fill-extrusion-color", COLORS.paperShadow);
         map.setPaintProperty(BUILDING_LAYER_ID, "fill-extrusion-opacity", 0.9);
+      }
+
+      // Retint the rest of the base map (see MAP_TINTS for why).
+      tint(map, "background", "background-color", MAP_TINTS.background);
+      tint(map, "water", "fill-color", MAP_TINTS.water);
+      tint(map, "park", "fill-color", MAP_TINTS.green);
+      tint(map, "park", "fill-outline-color", MAP_TINTS.greenOutline);
+      tint(map, "park_outline", "line-color", MAP_TINTS.greenOutline);
+      tint(map, "landcover_wood", "fill-color", MAP_TINTS.green);
+      tint(map, "landcover_grass", "fill-color", MAP_TINTS.green);
+      tint(map, "landuse_pitch", "fill-color", MAP_TINTS.tan);
+      tint(map, "landuse_track", "fill-color", MAP_TINTS.tan);
+      tint(map, "landuse_school", "fill-color", MAP_TINTS.school);
+      tint(map, "landuse_hospital", "fill-color", MAP_TINTS.hospital);
+      tint(map, "landuse_cemetery", "fill-color", MAP_TINTS.cemetery);
+      tint(map, "building", "fill-color", MAP_TINTS.building);
+      tint(map, "building", "fill-outline-color", MAP_TINTS.buildingOutline);
+      tint(map, "road_motorway", "line-color", MAP_TINTS.motorway);
+      tint(map, "road_motorway_casing", "line-color", MAP_TINTS.motorwayCasing);
+      tint(map, "road_trunk_primary", "line-color", MAP_TINTS.trunkPrimary);
+      tint(map, "road_trunk_primary_casing", "line-color", MAP_TINTS.trunkPrimaryCasing);
+      tint(map, "road_secondary_tertiary", "line-color", MAP_TINTS.secondaryTertiary);
+      tint(map, "road_secondary_tertiary_casing", "line-color", MAP_TINTS.secondaryTertiaryCasing);
+      tint(map, "road_minor", "line-color", MAP_TINTS.minorRoad);
+      tint(map, "road_minor_casing", "line-color", MAP_TINTS.minorRoadCasing);
+      tint(map, "road_path_pedestrian", "line-color", MAP_TINTS.minorRoad);
+      tint(map, "highway-name-major", "text-color", MAP_TINTS.labelText);
+      tint(map, "highway-name-major", "text-halo-color", MAP_TINTS.labelHalo);
+      tint(map, "highway-name-minor", "text-color", MAP_TINTS.labelText);
+      tint(map, "highway-name-minor", "text-halo-color", MAP_TINTS.labelHalo);
+
+      // Declutter: hide stock POI icons + secondary place-name labels.
+      for (const id of CLUTTER_LAYERS) {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
       }
 
       const venuePopup = new Popup({ offset: 28, closeButton: true }).setHTML(
@@ -122,11 +209,63 @@ export function VenueMap({ labels }: { labels: VenueMapLabels }) {
   }, [reduceMotion, venueLabel, mrtLabel, openInMaps]);
 
   return (
-    <div
-      ref={containerRef}
-      role="application"
-      aria-label="Interactive 3D map showing the venue and the nearest MRT station"
-      style={{ width: "100%", height: "100%", borderRadius: 20 }}
-    />
+    <>
+      {/* MapLibre's own UI chrome (zoom/compass controls, popups,
+          attribution) ships as stark white Material-style boxes in a
+          generic sans font — the biggest remaining "this looks like Google
+          Maps" tell once the tile colors themselves are on-palette. Retint
+          it to match the card instead of fighting maplibre-gl.css's
+          specificity with inline styles. */}
+      <style>{`
+        .venue-maplibre .maplibregl-ctrl-group {
+          background: rgba(255,248,240,0.92);
+          border: 1px solid rgba(138,112,48,0.2);
+          border-radius: 12px;
+          box-shadow: 0 6px 16px rgba(61,34,21,0.14);
+          overflow: hidden;
+        }
+        .venue-maplibre .maplibregl-ctrl-group button {
+          background: transparent;
+        }
+        .venue-maplibre .maplibregl-ctrl-icon {
+          filter: sepia(1) saturate(3) hue-rotate(-15deg) brightness(0.65);
+        }
+        .venue-maplibre .maplibregl-popup-content {
+          background: #FFF8F0;
+          color: #2A1A0A;
+          font-family: 'TT Interphases', sans-serif;
+          font-size: 0.85rem;
+          border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(61,34,21,0.2);
+          padding: 12px 14px;
+        }
+        .venue-maplibre .maplibregl-popup-tip {
+          border-top-color: #FFF8F0;
+          border-bottom-color: #FFF8F0;
+        }
+        .venue-maplibre .maplibregl-popup-content a {
+          color: #8A7030;
+        }
+        .venue-maplibre .maplibregl-popup-close-button {
+          color: #7A5A38;
+          font-size: 1rem;
+        }
+        .venue-maplibre .maplibregl-ctrl-attrib {
+          background: rgba(255,248,240,0.78);
+          color: #5A3E25;
+          font-family: 'TT Interphases', sans-serif;
+        }
+        .venue-maplibre .maplibregl-ctrl-attrib a {
+          color: #5A3E25;
+        }
+      `}</style>
+      <div
+        ref={containerRef}
+        className="venue-maplibre"
+        role="application"
+        aria-label="Interactive 3D map showing the venue and the nearest MRT station"
+        style={{ width: "100%", height: "100%", borderRadius: 20 }}
+      />
+    </>
   );
 }
