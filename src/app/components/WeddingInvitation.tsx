@@ -14,10 +14,11 @@ import {
   LeafSvg,
   COLORS,
   ErrorBoundary,
+  hasWebGL,
 } from "./wedding/shared";
 
-// Leaflet is heavy — lazy-load it so it never touches the initial mobile
-// bundle; only fetched once a guest scrolls the venue into view.
+// MapLibre (WebGL) is heavy — lazy-load it so it never touches the initial
+// mobile bundle; only fetched once a guest scrolls the venue into view.
 const VenueMap = lazy(() =>
   import("./wedding/VenueMap").then((m) => ({ default: m.VenueMap })),
 );
@@ -351,10 +352,11 @@ function InvitationContent() {
             </div>
           </div>
 
-          {/* Real interactive map — venue + nearest MRT. Lazy-loaded and only
-              mounted once this section is in view; error-bounded so a tile or
-              script failure falls back silently to the photo card above. */}
-          {venueSec.inView && (
+          {/* Real interactive 3D map — venue + nearest MRT. Lazy-loaded and
+              only mounted once this section is in view; WebGL-detected and
+              error-bounded so a failure here falls back silently to the
+              photo card above. */}
+          {venueSec.inView && hasWebGL() && (
             <div style={{ marginTop: 20 }}>
               <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(300px, 66vw, 420px)" }}>
                 <ErrorBoundary fallback={null}>
