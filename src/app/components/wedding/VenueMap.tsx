@@ -1,8 +1,21 @@
 import { useEffect, useRef } from "react";
-import { Map as MapLibreMap, Marker, Popup, NavigationControl } from "maplibre-gl";
+import { Map as MapLibreMap, Marker, Popup, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useReducedMotion } from "motion/react";
 import { COLORS } from "./shared";
+
+/* MapLibre parses vector tiles in a separate worker script that itself
+   imports a second ~470KB "shared" chunk via a hardcoded relative path
+   (`./maplibre-gl-shared.mjs`) baked into the worker file at publish time.
+   Vite's bundler has no way to see that nested import (it's not a static
+   `import` statement Rollup can trace), so it never gets copied into the
+   build output — the worker script loads, but its own internal import
+   404s (or, worse, silently gets the SPA-fallback index.html and fails to
+   parse), so the worker crashes immediately and tile fetching never
+   starts. Both files are copied byte-for-byte (unhashed, so their
+   relative reference to each other keeps working) into public/maplibre/ —
+   see that folder's contents. */
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 /* Real coordinates, MapLibre order [lng, lat] (the reverse of Leaflet's
    [lat, lng] — the single easiest thing to get backwards in this rewrite).
