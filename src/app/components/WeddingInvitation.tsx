@@ -359,7 +359,7 @@ function InvitationContent() {
               <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(300px, 66vw, 420px)" }}>
                 <ErrorBoundary fallback={null}>
                   <Suspense fallback={<MapLoadingPlaceholder />}>
-                    <VenueMap />
+                    <VenueMap labels={{ venue: t.map_venue_pin, mrt: t.map_mrt_pin, openInMaps: t.map_btn }} />
                   </Suspense>
                 </ErrorBoundary>
               </div>
