@@ -239,7 +239,7 @@ function InvitationContent() {
 
         {/* PN Monogram + date — centered in the hero viewport */}
         <motion.div
-          style={{ position: "absolute", top: "calc(50% - 90px)", left: "50%", transform: "translate(-50%, -50%)", zIndex: 3, opacity: heroOpacity, textAlign: "center", width: "100%", pointerEvents: "none" }}
+          style={{ position: "absolute", top: "calc(50% - 140px)", left: "50%", transform: "translate(-50%, -50%)", zIndex: 3, opacity: heroOpacity, textAlign: "center", width: "100%", pointerEvents: "none" }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
@@ -318,21 +318,21 @@ function InvitationContent() {
                 {t.map_btn}
               </motion.a>
             </div>
-          </div>
 
-          {/* BLOCK 3 — Directions */}
-          <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
-            {t.direction_items.map(({ icon, title, text }) => (
-              <div key={title} style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))`, border: "1px solid rgba(138,112,48,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
-                  {icon}
+            {/* Directions — same card, below the address/CTA, separated by a hairline */}
+            <div style={{ borderTop: "1px solid rgba(138,107,75,0.18)", padding: "28px 28px 32px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
+              {t.direction_items.map(({ icon, title, text }) => (
+                <div key={title} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))`, border: "1px solid rgba(138,112,48,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
+                    {icon}
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
+                    <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
-                  <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </motion.div>
       </section>
