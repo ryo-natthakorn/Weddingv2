@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "motion/react";
 import { LangProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
@@ -13,39 +13,7 @@ import {
   Divider,
   LeafSvg,
   COLORS,
-  ErrorBoundary,
-  hasWebGL,
 } from "./wedding/shared";
-
-// MapLibre (WebGL) is heavy — lazy-load it so it never touches the initial
-// mobile bundle; only fetched once a guest scrolls the venue into view.
-const VenueMap = lazy(() =>
-  import("./wedding/VenueMap").then((m) => ({ default: m.VenueMap })),
-);
-
-/* Fixed-height cream placeholder shown while the map chunk downloads —
-   matches the venue card so there's no layout jump when it swaps in. */
-function MapLoadingPlaceholder() {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <motion.div
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase" }}
-      >
-        Loading view…
-      </motion.div>
-    </div>
-  );
-}
 import heroIllustration from "../../imports/Hero.jpg";
 import pnLogo from "../../imports/Logo.svg";
 
@@ -351,23 +319,6 @@ function InvitationContent() {
               </motion.a>
             </div>
           </div>
-
-          {/* Real interactive 3D map — venue + nearest MRT. Lazy-loaded and
-              only mounted once this section is in view; WebGL-detected and
-              error-bounded so a failure here falls back silently to the
-              photo card above. */}
-          {venueSec.inView && hasWebGL() && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 50px rgba(27,74,92,0.12)", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", height: "clamp(300px, 66vw, 420px)" }}>
-                <ErrorBoundary fallback={null}>
-                  <Suspense fallback={<MapLoadingPlaceholder />}>
-                    <VenueMap labels={{ venue: t.map_venue_pin, mrt: t.map_mrt_pin, openInMaps: t.map_btn, gestureHint: t.map_gesture_hint }} />
-                  </Suspense>
-                </ErrorBoundary>
-              </div>
-              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.08em", color: COLORS.lightBrown, fontStyle: "italic", marginTop: 10 }}>{t.map_hint}</p>
-            </div>
-          )}
 
           {/* BLOCK 3 — Directions */}
           <div style={{ marginTop: 20, background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,107,75,0.18)", borderRadius: 20, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>

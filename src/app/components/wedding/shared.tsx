@@ -1,5 +1,5 @@
-import { useRef, Component } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import { useRef } from "react";
+import type { CSSProperties } from "react";
 import { motion, useInView } from "motion/react";
 
 export function useReveal(margin = "-60px") {
@@ -188,40 +188,3 @@ export const COLORS = {
   paperShadow: "#D4B896", // paper shadow tone
 };
 
-/* Feature-detect WebGL before mounting the 3D map — LINE's in-app iOS
-   browser and older devices can lack or restrict it. Memoized: creating a
-   canvas and negotiating a real WebGL context is a genuine GPU round-trip,
-   slow/contentious on embedded WebViews, so it must run once per page load —
-   not on every re-render of the caller. */
-let cachedHasWebGL: boolean | null = null;
-export function hasWebGL(): boolean {
-  if (cachedHasWebGL !== null) return cachedHasWebGL;
-  try {
-    const canvas = document.createElement("canvas");
-    cachedHasWebGL = !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl2") || canvas.getContext("webgl"))
-    );
-  } catch {
-    cachedHasWebGL = false;
-  }
-  return cachedHasWebGL;
-}
-
-/* Generic error boundary — guards a risky child (e.g. the map) so a runtime
-   crash there falls back silently instead of white-screening the page. */
-export class ErrorBoundary extends Component<
-  { fallback: ReactNode; children: ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: unknown) {
-    console.error("[ErrorBoundary]", error);
-  }
-  render() {
-    return this.state.hasError ? this.props.fallback : this.props.children;
-  }
-}
