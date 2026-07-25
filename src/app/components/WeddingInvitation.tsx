@@ -431,18 +431,7 @@ function InvitationContent() {
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
           <Divider className="mb-10" />
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote}</p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 44 }}>{t.quote_author}</p>
-
-          {/* PN Logo in footer — SVG โปร่งใส */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <img src={pnLogo} alt="PN" style={{ width: 64, height: "auto" }} />
-          </div>
-
-          <div style={{ width: 48, height: 1.5, background: COLORS.gold, opacity: 0.5, borderRadius: 1, margin: "12px auto 16px" }} />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.2em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 48 }}>22 / 11 / 2026</p>
-          <Divider className="mb-8" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.14em", color: "#A89078", textTransform: "uppercase", marginBottom: 18 }}>{t.footer_venue}</p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.4vw, 1.1rem)", fontStyle: "italic", color: COLORS.midBrown, letterSpacing: "0.04em" }}>{t.footer_closing}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>
 
