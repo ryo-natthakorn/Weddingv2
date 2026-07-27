@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -67,10 +67,60 @@ function DummyQR() {
   );
 }
 
+/* Hand the QR to the phone's own "save/share" sheet.
+
+   There is deliberately no deep link into a banking app. Thai banking apps
+   (SCB Easy, K PLUS, KMA, Bualuang…) each expose their own private URL
+   schemes, none documented or guaranteed stable, and we cannot know which
+   bank a guest uses — a wrong scheme just dead-ends on a blank page. What
+   every one of them does support is scanning a PromptPay QR out of the photo
+   library, so getting the image into the guest's photos is the reliable path.
+
+   navigator.share with a file opens the native sheet, where "Save Image" sits
+   next to the banking apps themselves — often a single tap into the app with
+   the QR attached. Falls back to a plain download where that isn't supported
+   (notably desktop browsers). */
+function downloadQr(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "promptpay-qr.jpg";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 function Envelope() {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
+  const [qrFile, setQrFile] = useState<File | null>(null);
   const reduceMotion = useReducedMotion();
+
+  /* Fetch the QR as a File as soon as the envelope opens, not on click: iOS
+     Safari revokes the user-gesture grant across an await, so navigator.share
+     has to be reachable synchronously from the handler below. */
+  useEffect(() => {
+    if (!open || !REAL_QR_URL || qrFile) return;
+    let cancelled = false;
+    fetch(REAL_QR_URL)
+      .then((r) => r.blob())
+      .then((b) => {
+        if (!cancelled) setQrFile(new File([b], "promptpay-qr.jpg", { type: b.type || "image/jpeg" }));
+      })
+      .catch(() => {
+        /* stays null — the handler falls back to a plain download */
+      });
+    return () => { cancelled = true; };
+  }, [open, qrFile]);
+
+  const handleSave = () => {
+    if (qrFile && navigator.canShare?.({ files: [qrFile] })) {
+      // Rejection here is almost always the guest dismissing the sheet, which
+      // is a completed interaction — firing a download after it would surprise.
+      navigator.share({ files: [qrFile], title: t.gift_save }).catch(() => {});
+      return;
+    }
+    downloadQr(REAL_QR_URL);
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -224,16 +274,54 @@ function Envelope() {
         </motion.div>
       </motion.div>
 
-      {/* Tap hint — stays mounted and fades on open, so the closing line
-          below never jumps up */}
-      <motion.p
-        animate={open ? { opacity: 0 } : reduceMotion ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5] }}
-        transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-        aria-hidden={open}
-        style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em", marginTop: 22 }}
-      >
-        {t.gift_tap}
-      </motion.p>
+      {/* Tap hint and save button share one fixed-height slot, both absolutely
+          positioned, so swapping between them can't shift the closing line. */}
+      <div style={{ position: "relative", width: "100%", height: 76, marginTop: 18 }}>
+        <motion.p
+          animate={open ? { opacity: 0 } : reduceMotion ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5] }}
+          transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+          aria-hidden={open}
+          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em" }}
+        >
+          {t.gift_tap}
+        </motion.p>
+
+        {REAL_QR_URL && (
+          <motion.div
+            initial={false}
+            animate={{ opacity: open ? 1 : 0 }}
+            transition={{ delay: open ? 0.5 : 0, duration: 0.4 }}
+            aria-hidden={!open}
+            style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, pointerEvents: open ? "auto" : "none" }}
+          >
+            <motion.button
+              type="button"
+              onClick={handleSave}
+              tabIndex={open ? 0 : -1}
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`,
+                border: "none", borderRadius: 100, padding: "12px 26px",
+                fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem",
+                letterSpacing: "0.16em", textTransform: "uppercase", color: "#FFF8EE",
+                cursor: "pointer", boxShadow: "0 8px 24px rgba(138,112,48,0.3)",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M8 1.5V10.5M8 10.5L4.5 7M8 10.5L11.5 7" stroke="#FFF8EE" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M2 12.5V13.5C2 14.05 2.45 14.5 3 14.5H13C13.55 14.5 14 14.05 14 13.5V12.5" stroke="#FFF8EE" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+              {t.gift_save}
+            </motion.button>
+            <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.66rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.4, padding: "0 12px" }}>
+              {t.gift_save_hint}
+            </span>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }

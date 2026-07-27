@@ -263,7 +263,12 @@ export function NameIntroWithCountdown() {
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.32em", marginRight: "-0.32em", textTransform: "uppercase", marginBottom: 10 }}>
             {t.sunday}
           </p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 6.5vw, 3rem)", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.03em", lineHeight: 1.15 }}>
+          {/* Same geometry trick as NAME_FONT_SIZE: "22 พฤศจิกายน 2569" and
+              "22 November 2026" both measure at most 9.09em wide (across the
+              webfont and both fallbacks) at this weight and tracking, so
+              dividing the content box by 10 keeps either on one line with ~10%
+              to spare. The old clamp() floor of 2rem overflowed 320px. */}
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "min(3rem, calc((100vw - 48px) / 10))", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
