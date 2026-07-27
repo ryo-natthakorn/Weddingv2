@@ -444,7 +444,8 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               phone — that's ordinary text wrapping, not the break this is
               guarding against. */}
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8 }}>{t.quote_line2}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>
 
