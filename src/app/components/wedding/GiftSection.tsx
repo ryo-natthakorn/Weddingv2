@@ -10,22 +10,28 @@ import {
 /* 100% keeps the envelope inside the section's content box at any width, so it
    can never overflow the way a fixed vw value can.
 
-   Landscape proportions (1.5:1 at the 420px cap) rather than the previous
-   257x340 — taller than it was wide, which read as an odd portrait shape
-   rather than an envelope. Height is a fixed px (not aspect-ratio) because
-   the flap below is sized off ENV_H/2 in JS; switching to aspect-ratio would
-   decouple the flap from the body's actual rendered height. */
+   Landscape proportions rather than the original 257x340 — taller than it was
+   wide, which read as an odd portrait shape rather than an envelope. Height
+   grew from 280 to 300 to make room for a bigger QR (below) while keeping the
+   width:height ratio close to where it was (0.92 -> 0.91 at the 320px floor,
+   1.5 -> 1.4 at the 420px cap) — still landscape-at-rest, still near-square
+   rather than portrait at the narrowest width. Height is a fixed px (not
+   aspect-ratio) because the flap below is sized off ENV_H/2 in JS; switching
+   to aspect-ratio would decouple the flap from the body's actual rendered
+   height. */
 const ENV_W = "min(420px, 100%)";
-const ENV_H = 280;
-/* QR display size, sized to clear both dimensions at every width. Available
-   space inside the envelope is width-40 / height-36 (18px/20px padding on the
-   content layer below). Height is the binding constraint since it's fixed:
-   280 − 36 = 244, comfortably above the 210 cap. Width only gets tighter than
-   that below ~354px viewport, where 60vw already caps QR_SIZE under the
-   remaining room (checked at 320px: available width 232 vs. 60vw≈192). */
-const QR_SIZE = "min(210px, 60vw)";
+const ENV_H = 300;
+/* QR display size, sized to clear both dimensions at every width. Content-
+   layer padding (below) was trimmed from 18px/20px to 12px/16px specifically
+   to free up more of this room without growing the envelope further. Available
+   space inside the envelope is now width-32 / height-24. Height is the
+   binding constraint since it's fixed: 300 − 24 = 276, comfortably above the
+   250 cap (26px to spare). Width only gets tighter than that below ~390px
+   viewport, where 64vw already caps QR_SIZE under the remaining room (checked
+   at 320px: available width 240 vs. 64vw≈205). */
+const QR_SIZE = "min(250px, 64vw)";
 /* Placeholder QR is drawn as a fixed-size SVG grid, so it needs a number. */
-const DUMMY_QR_PX = 210;
+const DUMMY_QR_PX = 250;
 
 /* Real PromptPay QR — drop a file named "promptpay-qr" (any common image
    extension) into src/imports/ and it replaces the dummy placeholder
@@ -182,7 +188,7 @@ function Envelope() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "18px 20px",
+              padding: "12px 16px",
               zIndex: 2,
             }}
           >

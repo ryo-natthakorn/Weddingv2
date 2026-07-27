@@ -13,7 +13,7 @@ type Spark = { id: number; x: number; y: number; size: number; color: string };
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL as string | undefined;
 
 const GUEST_MIN = 1;
-const GUEST_MAX = 10;
+const GUEST_MAX = 5;
 
 /* Round 48px control for the guest stepper — comfortably past the 44px touch
    target floor, so it stays easy for older guests to hit. */

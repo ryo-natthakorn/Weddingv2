@@ -434,8 +434,17 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
           <Divider className="mb-10" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote}</p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
+          {/* Two real paragraph blocks — not one reflowing string — so the
+              break always lands exactly between the two clauses ("...gives
+              you strength," / "while loving...") at any viewport, rather than
+              wherever the browser happens to wrap a single long paragraph.
+              The attribution is part of line 2's text rather than a separate
+              styled line, per the requested quote/attribution pairing. Each
+              paragraph still wraps normally if it's too long for a narrow
+              phone — that's ordinary text wrapping, not the break this is
+              guarding against. */}
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8 }}>{t.quote_line2}</p>
         </motion.div>
       </footer>
 
