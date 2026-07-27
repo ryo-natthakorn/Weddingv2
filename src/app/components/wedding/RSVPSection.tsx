@@ -377,8 +377,19 @@ export function RSVPSection() {
                           label={lang === "TH" ? "ลดจำนวนผู้เข้าร่วม" : "One guest fewer"}
                         />
                         {/* Digit rolls like the countdown tiles; the box is fixed
-                            so stepping never nudges the buttons sideways. */}
-                        <div style={{ minWidth: 48, height: "1.3em", overflow: "hidden", textAlign: "center" }}>
+                            so stepping never nudges the buttons sideways.
+
+                            Height was previously "1.3em", which resolved against
+                            this div's INHERITED font-size (the browser default
+                            16px, since nothing sets a root font-size) rather
+                            than the digit's own larger one — a 20.8px box
+                            clipping a ~33px-tall digit. Flex-centering plus a
+                            fixed height with real headroom (not just line-height
+                            matched) fixes it properly: a hairline-exact box
+                            would have left the digit one webfont-swap away from
+                            clipping again, the same failure mode that broke the
+                            names and date earlier in this project. */}
+                        <div style={{ minWidth: 48, height: 40, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <motion.span
                             key={guests}
                             initial={reduceMotion ? false : { y: "-100%", opacity: 0 }}

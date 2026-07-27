@@ -8,16 +8,24 @@ import {
 } from "./shared";
 
 /* 100% keeps the envelope inside the section's content box at any width, so it
-   can never overflow the way a fixed vw value can. */
-const ENV_W = "min(360px, 100%)";
-const ENV_H = 340;
-/* QR display size. The envelope grew with it so the code still sits in a
-   comfortable margin rather than crowding the edges: 340 tall − 36 padding
-   leaves 304, and at 320px the envelope is 272 wide − 40 padding = 232, which
-   clears 68vw (218). */
-const QR_SIZE = "min(260px, 68vw)";
+   can never overflow the way a fixed vw value can.
+
+   Landscape proportions (1.5:1 at the 420px cap) rather than the previous
+   257x340 — taller than it was wide, which read as an odd portrait shape
+   rather than an envelope. Height is a fixed px (not aspect-ratio) because
+   the flap below is sized off ENV_H/2 in JS; switching to aspect-ratio would
+   decouple the flap from the body's actual rendered height. */
+const ENV_W = "min(420px, 100%)";
+const ENV_H = 280;
+/* QR display size, sized to clear both dimensions at every width. Available
+   space inside the envelope is width-40 / height-36 (18px/20px padding on the
+   content layer below). Height is the binding constraint since it's fixed:
+   280 − 36 = 244, comfortably above the 210 cap. Width only gets tighter than
+   that below ~354px viewport, where 60vw already caps QR_SIZE under the
+   remaining room (checked at 320px: available width 232 vs. 60vw≈192). */
+const QR_SIZE = "min(210px, 60vw)";
 /* Placeholder QR is drawn as a fixed-size SVG grid, so it needs a number. */
-const DUMMY_QR_PX = 260;
+const DUMMY_QR_PX = 210;
 
 /* Real PromptPay QR — drop a file named "promptpay-qr" (any common image
    extension) into src/imports/ and it replaces the dummy placeholder
