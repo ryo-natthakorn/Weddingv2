@@ -8,8 +8,13 @@ import {
 } from "./shared";
 
 const ENV_W = "min(340px, 85vw)";
-const ENV_H = 260;
-const QR_SIZE = 124;
+const ENV_H = 300;
+/* QR display size. The envelope grew with it so the code still sits in a
+   comfortable margin rather than crowding the edges: 300 tall − 36 padding
+   leaves 264, and the width floor (85vw − 40 at 320px ≈ 232) clears 62vw. */
+const QR_SIZE = "min(216px, 62vw)";
+/* Placeholder QR is drawn as a fixed-size SVG grid, so it needs a number. */
+const DUMMY_QR_PX = 216;
 
 /* Real PromptPay QR — drop a file named "promptpay-qr" (any common image
    extension) into src/imports/ and it replaces the dummy placeholder
@@ -24,7 +29,7 @@ const REAL_QR_URL = Object.values(QR_IMAGE_MODULES)[0];
 function DummyQR() {
   // A deterministic 9x9 pseudo-QR pattern so it reads as a QR at a glance.
   const cells = 9;
-  const size = QR_SIZE;
+  const size = DUMMY_QR_PX;
   const unit = size / cells;
   const filled = (r: number, c: number) => {
     // three solid finder squares (top-left, top-right, bottom-left)
@@ -35,8 +40,10 @@ function DummyQR() {
   };
 
   return (
-    <div style={{ position: "relative", width: size, height: size, background: "#fff", borderRadius: 6, padding: 0 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+    <div style={{ position: "relative", width: QR_SIZE, aspectRatio: "1", background: "#fff", borderRadius: 6, padding: 0 }}>
+      {/* viewBox does the scaling — the grid math stays in fixed units while
+          the rendered box follows the same responsive size as the real QR. */}
+      <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
         <rect width={size} height={size} fill="#fff" />
         {Array.from({ length: cells }).map((_, r) =>
           Array.from({ length: cells }).map((_, c) =>
@@ -122,7 +129,7 @@ function Envelope() {
               <img
                 src={REAL_QR_URL}
                 alt="PromptPay QR code"
-                style={{ width: QR_SIZE, height: QR_SIZE, objectFit: "contain", display: "block" }}
+                style={{ width: QR_SIZE, aspectRatio: "1", objectFit: "contain", display: "block" }}
               />
             ) : (
               <DummyQR />

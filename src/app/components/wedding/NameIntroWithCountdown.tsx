@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { motion, MotionConfig, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -93,6 +93,53 @@ function ClipReveal({
   );
 }
 
+/* Measures the two name lines and returns the one scale that keeps BOTH on a
+   single line inside `wrapRef`. offsetWidth/offsetHeight are layout values —
+   CSS transforms don't affect them — so the natural (unscaled) size stays
+   readable even while a scale is already applied, and no reset/re-measure
+   dance is needed. */
+function useNameFit(
+  wrapRef: RefObject<HTMLElement | null>,
+  lineRefs: RefObject<HTMLElement | null>[],
+  deps: unknown[],
+) {
+  const [fit, setFit] = useState({ scale: 1, height: 0 });
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    const measure = () => {
+      const avail = wrap.clientWidth;
+      const lines = lineRefs.map((r) => r.current).filter(Boolean) as HTMLElement[];
+      if (!avail || lines.length === 0) return;
+
+      let scale = 1;
+      let height = 0;
+      for (const el of lines) {
+        height = Math.max(height, el.offsetHeight);
+        // 0.995 leaves a hair of slack so sub-pixel rounding can't re-wrap.
+        if (el.offsetWidth > avail) scale = Math.min(scale, (avail / el.offsetWidth) * 0.995);
+      }
+      // Bail out when nothing moved — pinning the row height changes `wrap`'s
+      // own height, which re-fires the observer; without this it never settles.
+      setFit((prev) =>
+        Math.abs(prev.scale - scale) < 0.001 && prev.height === height ? prev : { scale, height },
+      );
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
+    // Webfont metrics differ from the fallback — re-fit once the real face lands.
+    document.fonts?.ready.then(measure).catch(() => {});
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return fit;
+}
+
 export function NameIntroWithCountdown() {
   const { t, lang } = useLang();
   // Three independent triggers — the section is ~2 phone screens tall, so a
@@ -101,27 +148,50 @@ export function NameIntroWithCountdown() {
   const { ref: namesRef, inView: namesInView } = useReveal("-40px");
   const { ref: dateRef, inView: dateInView } = useReveal("-40px");
 
+  // Scale-to-fit for the two name lines — see nameStyle below.
+  const fitWrapRef = useRef<HTMLDivElement>(null);
+  const brideLineRef = useRef<HTMLSpanElement>(null);
+  const groomLineRef = useRef<HTMLSpanElement>(null);
+  const nameFit = useNameFit(fitWrapRef, [brideLineRef, groomLineRef], [
+    t.bride_title, t.bride_name, t.groom_title, t.groom_name,
+  ]);
+
   // Single-line guard for the parent names only — nowrap keeps each on one
   // line; overflow+ellipsis is a safety net rather than an overlap/clip if a
   // string ever runs wider than its box.
   const singleLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
-  // Title + name render as one wrapping line (see nameLineStyle) rather than
-  // a hard single line — at 320px the combined title+name string (e.g. "Mr.
-  // Natthakorn Suppasuesanguan") is wider than the viewport at display size,
-  // so nowrap+ellipsis would silently cut the name off. Wrapping instead
-  // guarantees the full name is always readable, never clipped with "...".
+  // Title + name are one unbreakable line (see useNameFit): never wrapped,
+  // never ellipsised. The longest string ("Mr. Natthakorn Suppasuesanguan")
+  // is far wider than a 320px viewport at this display size, so instead of
+  // breaking or truncating it we measure the real rendered width and scale
+  // the whole line down just enough to fit. Guessing a vw-based size from
+  // character counts can't work here — Thai and Latin have different
+  // metrics, so only measurement is reliable for both languages.
   // lineHeight is generous (not the tight ~1.15 a Latin-only display face could
   // use) because Thai vowels/tone marks stack above and below the consonant
   // line (สระอือ, สระอุ) and some consonants (e.g. ฐ) have descenders —
   // ClipReveal's wrapper keeps overflow:hidden for its wipe animation, so a
   // tight line box would clip them.
-  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.5, overflowWrap: "anywhere" } as const;
+  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.5 } as const;
   // Title (Flt. Lt. / Mr.) now fully matches the name's format — same color,
   // size, and weight — only the tracking stays slightly wider.
-  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", lineHeight: 1.5, overflowWrap: "anywhere" } as const;
-  // Title and name sit as two flex items on the same row, wrapping onto a
-  // second (still centered) line only if the combined string can't fit.
-  const nameLineStyle = { display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "baseline", columnGap: "0.32em", rowGap: 2 } as const;
+  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", lineHeight: 1.5 } as const;
+  // Title and name sit on one nowrap row, separated by a real space character
+  // rather than a flex gap — a CSS gap looks right but leaves the words jammed
+  // together ("Mr.Natthakorn") for screen readers and copy-paste. Both name
+  // lines share a single scale (the smaller of the two) so bride and groom
+  // always render at matching size rather than each shrinking independently.
+  const nameLineStyle = {
+    display: "inline-block",
+    whiteSpace: "nowrap",
+    transform: `scale(${nameFit.scale})`,
+    transformOrigin: "center top",
+  } as const;
+  // Transforms don't shrink the layout box, so a scaled line would leave dead
+  // space below it — pin the row to the height the line actually paints.
+  const nameRowStyle = {
+    height: nameFit.scale < 1 && nameFit.height ? nameFit.height * nameFit.scale : undefined,
+  } as const;
   // Stacked full-width (not side-by-side columns) — a two-column split only
   // gives each parent line ~45% of the content width, too narrow for the
   // longer Thai strings at this font size without truncating.
@@ -177,40 +247,47 @@ export function NameIntroWithCountdown() {
         </motion.p>
 
         {/* 4-6. Bride · Ring · Groom — title + name reveal together as one
-            wrapping line (left-to-right clip-wipe). Bride wipes first
+            single line (left-to-right clip-wipe). Bride wipes first
             (1.8s); groom follows after 0.3s (2.2s). Both triggered together
             when the section enters the viewport. */}
+        {/* fitWrapRef is the width the two name lines must fit inside. */}
         <div ref={namesRef} style={{ marginTop: 40 }}>
-          {/* Bride */}
-          <ClipReveal active={namesInView} duration={1.8}>
-            <div style={nameLineStyle}>
-              <span style={titleStyle}>{t.bride_title}</span>
-              <span style={nameStyle}>{t.bride_name}</span>
-            </div>
-          </ClipReveal>
+          <div ref={fitWrapRef}>
+            {/* Bride */}
+            <ClipReveal active={namesInView} duration={1.8}>
+              <div style={nameRowStyle}>
+                <span ref={brideLineRef} style={nameLineStyle}>
+                  <span style={titleStyle}>{t.bride_title}</span>{" "}
+                  <span style={nameStyle}>{t.bride_name}</span>
+                </span>
+              </div>
+            </ClipReveal>
 
-          {/* Ring — large focal point */}
-          <motion.img
-            src={ringImg}
-            alt=""
-            aria-hidden
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={namesInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
-              display: "block", margin: "26px auto",
-              filter: "drop-shadow(0 3px 10px rgba(27,74,92,0.2))",
-            }}
-          />
+            {/* Ring — large focal point */}
+            <motion.img
+              src={ringImg}
+              alt=""
+              aria-hidden
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={namesInView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
+                display: "block", margin: "26px auto",
+                filter: "drop-shadow(0 3px 10px rgba(27,74,92,0.2))",
+              }}
+            />
 
-          {/* Groom */}
-          <ClipReveal active={namesInView} duration={2.2} delay={0.3}>
-            <div style={nameLineStyle}>
-              <span style={titleStyle}>{t.groom_title}</span>
-              <span style={nameStyle}>{t.groom_name}</span>
-            </div>
-          </ClipReveal>
+            {/* Groom */}
+            <ClipReveal active={namesInView} duration={2.2} delay={0.3}>
+              <div style={nameRowStyle}>
+                <span ref={groomLineRef} style={nameLineStyle}>
+                  <span style={titleStyle}>{t.groom_title}</span>{" "}
+                  <span style={nameStyle}>{t.groom_name}</span>
+                </span>
+              </div>
+            </ClipReveal>
+          </div>
         </div>
 
         {/* 7-8. Date + venue — the section's closing beat. "Sunday" recedes
