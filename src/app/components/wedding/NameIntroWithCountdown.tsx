@@ -101,18 +101,27 @@ export function NameIntroWithCountdown() {
   const { ref: namesRef, inView: namesInView } = useReveal("-40px");
   const { ref: dateRef, inView: dateInView } = useReveal("-40px");
 
-  // Single-line guard shared by the parent names, titles, and bride/groom
-  // names — nowrap keeps each on one line; overflow+ellipsis is a safety net
-  // rather than an overlap/clip if a string ever runs wider than its box.
+  // Single-line guard for the parent names only — nowrap keeps each on one
+  // line; overflow+ellipsis is a safety net rather than an overlap/clip if a
+  // string ever runs wider than its box.
+  const singleLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
+  // Title + name render as one wrapping line (see nameLineStyle) rather than
+  // a hard single line — at 320px the combined title+name string (e.g. "Mr.
+  // Natthakorn Suppasuesanguan") is wider than the viewport at display size,
+  // so nowrap+ellipsis would silently cut the name off. Wrapping instead
+  // guarantees the full name is always readable, never clipped with "...".
   // lineHeight is generous (not the tight ~1.15 a Latin-only display face could
   // use) because Thai vowels/tone marks stack above and below the consonant
-  // line (สระอือ, สระอุ) and some consonants (e.g. ฐ) have descenders — with
-  // overflow hidden below, a tight line box would clip them.
-  const singleLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
-  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.5, ...singleLine } as const;
+  // line (สระอือ, สระอุ) and some consonants (e.g. ฐ) have descenders —
+  // ClipReveal's wrapper keeps overflow:hidden for its wipe animation, so a
+  // tight line box would clip them.
+  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.7rem, 7vw, 3rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.5, overflowWrap: "anywhere" } as const;
   // Title (Flt. Lt. / Mr.) now fully matches the name's format — same color,
   // size, and weight — only the tracking stays slightly wider.
-  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", lineHeight: 1.5, marginBottom: 6, ...singleLine } as const;
+  const titleStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: nameStyle.fontSize, fontWeight: 600, color: nameStyle.color, letterSpacing: "0.06em", lineHeight: 1.5, overflowWrap: "anywhere" } as const;
+  // Title and name sit as two flex items on the same row, wrapping onto a
+  // second (still centered) line only if the combined string can't fit.
+  const nameLineStyle = { display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "baseline", columnGap: "0.32em", rowGap: 2 } as const;
   // Stacked full-width (not side-by-side columns) — a two-column split only
   // gives each parent line ~45% of the content width, too narrow for the
   // longer Thai strings at this font size without truncating.
@@ -167,21 +176,17 @@ export function NameIntroWithCountdown() {
           {t.invite_line}
         </motion.p>
 
-        {/* 4-6. Bride · Ring · Groom — names reveal left-to-right (clip-wipe).
-            Bride wipes first (1.8s); groom follows after 0.3s (2.2s). Both
-            triggered together when the section enters the viewport. */}
+        {/* 4-6. Bride · Ring · Groom — title + name reveal together as one
+            wrapping line (left-to-right clip-wipe). Bride wipes first
+            (1.8s); groom follows after 0.3s (2.2s). Both triggered together
+            when the section enters the viewport. */}
         <div ref={namesRef} style={{ marginTop: 40 }}>
           {/* Bride */}
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={namesInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.1, duration: 0.8 }}
-            style={titleStyle}
-          >
-            {t.bride_title}
-          </motion.p>
           <ClipReveal active={namesInView} duration={1.8}>
-            <p style={nameStyle}>{t.bride_name}</p>
+            <div style={nameLineStyle}>
+              <span style={titleStyle}>{t.bride_title}</span>
+              <span style={nameStyle}>{t.bride_name}</span>
+            </div>
           </ClipReveal>
 
           {/* Ring — large focal point */}
@@ -200,16 +205,11 @@ export function NameIntroWithCountdown() {
           />
 
           {/* Groom */}
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={namesInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.35, duration: 0.8 }}
-            style={titleStyle}
-          >
-            {t.groom_title}
-          </motion.p>
           <ClipReveal active={namesInView} duration={2.2} delay={0.3}>
-            <p style={nameStyle}>{t.groom_name}</p>
+            <div style={nameLineStyle}>
+              <span style={titleStyle}>{t.groom_title}</span>
+              <span style={nameStyle}>{t.groom_name}</span>
+            </div>
           </ClipReveal>
         </div>
 

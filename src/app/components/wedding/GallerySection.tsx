@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, animate } from "motion/react";
+import { createPortal } from "react-dom";
+import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "motion/react";
 import type { PanInfo, MotionValue } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -76,10 +77,88 @@ function ArrowButton({
   );
 }
 
+/* Full-screen tap-to-zoom viewer for a carousel photo. Portaled to
+   document.body so its `position: fixed` always covers the real viewport —
+   nesting it under the section's own reveal animation would otherwise put
+   it inside a transformed ancestor (Framer Motion's animated `y` becomes an
+   inline transform), which turns "fixed" into "fixed to that ancestor". */
+function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(42,26,10,0.92)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        padding: 24,
+      }}
+    >
+      <motion.img
+        src={src}
+        alt=""
+        initial={{ scale: 0.94, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.96, opacity: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: "92vw", maxHeight: "86vh", objectFit: "contain", borderRadius: 12, boxShadow: "0 24px 60px rgba(42,26,10,0.55)", display: "block" }}
+      />
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        style={{
+          position: "absolute",
+          top: "max(16px, env(safe-area-inset-top))",
+          right: 16,
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          border: "1px solid rgba(255,248,240,0.4)",
+          background: "rgba(255,248,240,0.14)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 2L14 14M14 2L2 14" stroke="#FFF8F0" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      </button>
+    </motion.div>,
+    document.body,
+  );
+}
+
 /* Each card owns its own scale/opacity transform derived from the shared
    drag position — keeps the "active card pops, neighbours recede" effect
-   without re-rendering every card on every drag frame. */
-function CarouselCard({ src, i, x, step }: { src: string; i: number; x: MotionValue<number>; step: number }) {
+   without re-rendering every card on every drag frame. Tapping (not
+   dragging — Framer's onTap only fires when the pointer barely moved)
+   opens the full-screen Lightbox. */
+function CarouselCard({ src, i, x, step, onZoom }: { src: string; i: number; x: MotionValue<number>; step: number; onZoom: (src: string) => void }) {
   const scale = useTransform(x, (xv) => {
     if (!step) return 1;
     const dist = Math.abs(xv + i * step) / step;
@@ -94,6 +173,7 @@ function CarouselCard({ src, i, x, step }: { src: string; i: number; x: MotionVa
   return (
     <motion.div
       data-card
+      onTap={() => onZoom(src)}
       style={{
         scale,
         opacity,
@@ -102,8 +182,7 @@ function CarouselCard({ src, i, x, step }: { src: string; i: number; x: MotionVa
         borderRadius: 20,
         overflow: "hidden",
         background: COLORS.ivory,
-        boxShadow: "0 18px 44px rgba(61,34,21,0.24)",
-        border: "1px solid rgba(138,112,48,0.22)",
+        cursor: "zoom-in",
       }}
     >
       <img
@@ -122,6 +201,7 @@ function Carousel({ images, emptyText }: { images: string[]; emptyText: string }
   const trackRef = useRef<HTMLDivElement>(null);
   const [cardPx, setCardPx] = useState(0);
   const [index, setIndex] = useState(0);
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
   const x = useMotionValue(0);
 
   const maxIndex = Math.max(0, images.length - 1);
@@ -221,10 +301,14 @@ function Carousel({ images, emptyText }: { images: string[]; emptyText: string }
           whileTap={images.length > 1 ? { cursor: "grabbing" } : undefined}
         >
           {images.map((src, i) => (
-            <CarouselCard key={src} src={src} i={i} x={x} step={step} />
+            <CarouselCard key={src} src={src} i={i} x={x} step={step} onZoom={setZoomSrc} />
           ))}
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {zoomSrc && <Lightbox key={zoomSrc} src={zoomSrc} onClose={() => setZoomSrc(null)} />}
+      </AnimatePresence>
 
       {images.length > 1 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, marginTop: 22 }}>

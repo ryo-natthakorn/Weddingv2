@@ -100,7 +100,10 @@ function Envelope() {
             overflow: "visible",
           }}
         >
-          {/* QR + details tucked inside the envelope body */}
+          {/* QR tucked inside the envelope body — just the picture, no card
+              frame or labels: the QR image already carries its own white
+              quiet-zone margin, so an extra white card behind it is
+              redundant. */}
           <motion.div
             initial={false}
             animate={open ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.9, y: 12 }}
@@ -115,57 +118,15 @@ function Envelope() {
               zIndex: 2,
             }}
           >
-            {/* Card tucked inside the envelope — visually distinct from the
-                envelope's own tan pocket so the QR reads as an object placed
-                inside it, not painted onto it. */}
-            <div
-              style={{
-                width: "100%",
-                background: "rgba(255, 253, 247, 0.85)",
-                border: "1px solid rgba(138, 112, 48, 0.18)",
-                borderRadius: 14,
-                boxShadow: "0 6px 20px rgba(61,34,21,0.12)",
-                padding: "18px 16px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  background: "#fff",
-                  padding: 8,
-                  borderRadius: 8,
-                  boxShadow: "0 4px 14px rgba(61,34,21,0.18)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                {REAL_QR_URL ? (
-                  <img
-                    src={REAL_QR_URL}
-                    alt="PromptPay QR code"
-                    style={{ width: QR_SIZE, height: QR_SIZE, objectFit: "contain", display: "block" }}
-                  />
-                ) : (
-                  <>
-                    <DummyQR />
-                    <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.04em", color: "#A89078" }}>
-                      [ Replace with PromptPay QR ]
-                    </span>
-                  </>
-                )}
-              </div>
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 500, color: COLORS.midBrown }}>
-                {t.gift_account}
-              </span>
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase", color: COLORS.gold }}>
-                {t.gift_promptpay}
-              </span>
-            </div>
+            {REAL_QR_URL ? (
+              <img
+                src={REAL_QR_URL}
+                alt="PromptPay QR code"
+                style={{ width: QR_SIZE, height: QR_SIZE, objectFit: "contain", display: "block" }}
+              />
+            ) : (
+              <DummyQR />
+            )}
           </motion.div>
 
           {/* Envelope front pocket (lower V) — sits over the card edges */}
