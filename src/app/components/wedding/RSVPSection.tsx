@@ -12,6 +12,55 @@ type Spark = { id: number; x: number; y: number; size: number; color: string };
 
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL as string | undefined;
 
+const GUEST_MIN = 1;
+const GUEST_MAX = 10;
+
+/* Round 48px control for the guest stepper — comfortably past the 44px touch
+   target floor, so it stays easy for older guests to hit. */
+function StepButton({
+  sign,
+  onClick,
+  disabled,
+  label,
+}: {
+  sign: "minus" | "plus";
+  onClick: () => void;
+  disabled: boolean;
+  label: string;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      whileHover={disabled ? {} : { scale: 1.06 }}
+      whileTap={disabled ? {} : { scale: 0.94 }}
+      style={{
+        width: 48,
+        height: 48,
+        flexShrink: 0,
+        borderRadius: "50%",
+        border: `1px solid ${disabled ? "rgba(138,107,75,0.18)" : "rgba(138,112,48,0.45)"}`,
+        background: disabled ? "rgba(255,255,255,0.4)" : "rgba(255,248,240,0.9)",
+        color: disabled ? "rgba(138,107,75,0.35)" : COLORS.gold,
+        cursor: disabled ? "default" : "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: disabled ? "none" : "0 4px 14px rgba(138,112,48,0.18)",
+        transition: "background 0.25s, border-color 0.25s, color 0.25s",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+        <path d="M3 8H13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        {sign === "plus" && <path d="M8 3V13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
+      </svg>
+    </motion.button>
+  );
+}
+
 export function RSVPSection() {
   const { t, lang } = useLang();
   const { ref, inView } = useReveal();
@@ -65,7 +114,7 @@ export function RSVPSection() {
     const payload = {
       name: name.trim(),
       attending,
-      guests: attending === "yes" ? Math.min(10, Math.max(1, Number(guests) || 1)) : 0,
+      guests: attending === "yes" ? Math.min(GUEST_MAX, Math.max(GUEST_MIN, guests)) : 0,
     };
 
     try {
@@ -97,6 +146,9 @@ export function RSVPSection() {
       setError(true);
     }
   };
+
+  const stepGuests = (delta: number) =>
+    setGuests((g) => Math.min(GUEST_MAX, Math.max(GUEST_MIN, g + delta)));
 
   const resetForm = () => {
     // Going back inside the 2.5s window must also cancel the pending glide.
@@ -287,19 +339,63 @@ export function RSVPSection() {
                     transition={{ duration: 0.4 }}
                   >
                     <div>
-                      <label htmlFor="rsvp-guests" style={labelStyle}>{t.rsvp_guests}</label>
-                      <input
-                        id="rsvp-guests"
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        max={10}
-                        value={guests}
-                        onChange={(e) => setGuests(Number(e.target.value))}
+                      <label id="rsvp-guests-label" style={labelStyle}>{t.rsvp_guests}</label>
+                      {/* Stepper rather than a number field: on mobile a numeric
+                          input summons the keypad and covers the form, and the
+                          native spinners are far too small to hit. */}
+                      <div
+                        role="spinbutton"
+                        aria-labelledby="rsvp-guests-label"
+                        aria-valuenow={guests}
+                        aria-valuemin={GUEST_MIN}
+                        aria-valuemax={GUEST_MAX}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); stepGuests(1); }
+                          if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); stepGuests(-1); }
+                        }}
                         onFocus={() => setFocused("guests")}
                         onBlur={() => setFocused(null)}
-                        style={inputStyle("guests")}
-                      />
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 20,
+                          background: focused === "guests" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.7)",
+                          border: `1px solid ${focused === "guests" ? COLORS.navy : "rgba(27,74,92,0.15)"}`,
+                          borderRadius: 12,
+                          padding: "10px 16px",
+                          outline: "none",
+                          transition: "all 0.3s",
+                          boxShadow: focused === "guests" ? "0 0 0 3px rgba(27,42,74,0.08)" : "none",
+                        }}
+                      >
+                        <StepButton
+                          sign="minus"
+                          onClick={() => stepGuests(-1)}
+                          disabled={guests <= GUEST_MIN}
+                          label={lang === "TH" ? "ลดจำนวนผู้เข้าร่วม" : "One guest fewer"}
+                        />
+                        {/* Digit rolls like the countdown tiles; the box is fixed
+                            so stepping never nudges the buttons sideways. */}
+                        <div style={{ minWidth: 48, height: "1.3em", overflow: "hidden", textAlign: "center" }}>
+                          <motion.span
+                            key={guests}
+                            initial={reduceMotion ? false : { y: "-100%", opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            style={{ display: "block", fontFamily: "'TT Interphases', sans-serif", fontSize: "1.6rem", fontWeight: 500, color: COLORS.navy, lineHeight: 1.3 }}
+                          >
+                            {guests}
+                          </motion.span>
+                        </div>
+                        <StepButton
+                          sign="plus"
+                          onClick={() => stepGuests(1)}
+                          disabled={guests >= GUEST_MAX}
+                          label={lang === "TH" ? "เพิ่มจำนวนผู้เข้าร่วม" : "One guest more"}
+                        />
+                      </div>
                       <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", marginTop: 6 }}>
                         {t.rsvp_guests_help}
                       </p>

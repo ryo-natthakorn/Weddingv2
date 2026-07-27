@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallba
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 
-export type MusicPlayerHandle = { play: () => void };
+export type MusicPlayerHandle = { play: () => void; open: () => void };
 
 const YT_VIDEO_ID = (import.meta.env.VITE_YOUTUBE_VIDEO_ID as string) || "p8iVeHphD3c";
 const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
@@ -109,15 +109,25 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
 
   /* Autoplay entry point — exposed to WeddingInvitation, which calls it the
      moment the invitation fades in after the guest slides to open. */
+  const startPlayback = useCallback(() => {
+    if (playerRef.current && ready) {
+      try { playerRef.current.playVideo(); } catch {}
+    } else {
+      autoplayWantedRef.current = true; // play as soon as the API is ready
+    }
+  }, [ready]);
+
   useImperativeHandle(ref, () => ({
-    play: () => {
-      if (playerRef.current && ready) {
-        try { playerRef.current.playVideo(); } catch {}
-      } else {
-        autoplayWantedRef.current = true; // play as soon as the API is ready
-      }
+    play: startPlayback,
+    /* Used by the "Our Song" section. Unlike autoplay-on-entry, this follows a
+       deliberate tap partway down the page, so the card is expanded too —
+       otherwise sound simply starts from a corner button with no visible
+       cause. Expanding also retires the petal trail (see the effect below). */
+    open: () => {
+      setExpanded(true);
+      startPlayback();
     },
-  }), [ready]);
+  }), [startPlayback]);
 
   /* ── Init YouTube IFrame API ── */
   const initPlayer = useCallback(() => {

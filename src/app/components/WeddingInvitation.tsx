@@ -6,6 +6,7 @@ import { MusicPlayer, type MusicPlayerHandle } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
 import { RSVPSection } from "./wedding/RSVPSection";
 import { GiftSection } from "./wedding/GiftSection";
+import { SongSection } from "./wedding/SongSection";
 import { IntroAnimation } from "./wedding/IntroAnimation";
 import { NameIntroWithCountdown } from "./wedding/NameIntroWithCountdown";
 import {
@@ -198,7 +199,7 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent() {
+function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
   const { t } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
@@ -426,6 +427,9 @@ function InvitationContent() {
       {/* ═══ GIFT / ใส่ซอง ═══ */}
       <GiftSection />
 
+      {/* ═══ OUR SONG ═══ */}
+      <SongSection onPlay={onPlaySong} />
+
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
@@ -443,12 +447,43 @@ function InvitationContent() {
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
+
+  /* The invitation is laid out behind the intro overlay (it is only faded to
+     opacity 0), so without this the guest can scroll the hidden card while the
+     intro is still up — then sliding the ring open reveals whatever they had
+     scrolled to, typically the gift section, instead of the hero.
+     touchAction covers iOS, where overflow:hidden alone doesn't stop a drag.
+     Restoration is disabled outright because a refresh always replays the
+     intro, so the card must always start at the top. */
+  useEffect(() => {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  }, []);
+
+  useEffect(() => {
+    if (!showIntro) return;
+    const html = document.documentElement;
+    const prevHtml = html.style.overflow;
+    const prevOverflow = document.body.style.overflow;
+    const prevTouch = document.body.style.touchAction;
+    html.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    return () => {
+      html.style.overflow = prevHtml;
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouch;
+    };
+  }, [showIntro]);
+
   return (
     <LangProvider>
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
             onComplete={() => {
+              // Belt-and-braces against a restored/nonzero offset surviving the
+              // lock — the card must open on the hero.
+              window.scrollTo(0, 0);
               setShowIntro(false);
               // Autoplay the song the moment the invitation fades in.
               musicRef.current?.play();
@@ -464,7 +499,7 @@ export function WeddingInvitation() {
         <MusicPlayer ref={musicRef} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent />
+        <InvitationContent onPlaySong={() => musicRef.current?.open()} />
       </motion.div>
     </LangProvider>
   );
