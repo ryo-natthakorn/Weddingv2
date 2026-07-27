@@ -29,12 +29,15 @@ function CountdownTimer() {
     return () => { if (id !== undefined) clearInterval(id); };
   }, []);
   return (
-    <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+    // Four equal columns rather than a wrapping flex row: a fixed 4-track grid
+    // can't drop "Sec" onto a second line at 320px, and minmax(0, 1fr) lets the
+    // tiles shrink to whatever the viewport allows instead of overflowing.
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "clamp(6px, 2vw, 12px)", maxWidth: 420, margin: "0 auto" }}>
       {[{ label: "Days", v: time.days }, { label: "Hours", v: time.hours }, { label: "Min", v: time.minutes }, { label: "Sec", v: time.seconds }].map(({ label, v }) => (
-        <motion.div key={label} whileHover={{ scale: 1.05, y: -4 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 64 }}>
+        <motion.div key={label} whileHover={{ scale: 1.05, y: -4 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
           {/* Static tile — only the digit animates, so the blur/border/shadow
               never re-render and the tile never collapses between ticks */}
-          <div style={{ background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "14px 16px", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.6rem, 5vw, 2.2rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, minWidth: 60, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}>
+          <div style={{ width: "100%", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "clamp(10px, 3vw, 14px) clamp(6px, 2vw, 16px)", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.2rem, 5.6vw, 2.2rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}>
             <div style={{ height: "1em", overflow: "hidden" }}>
               <motion.span
                 key={v}
@@ -47,7 +50,9 @@ function CountdownTimer() {
               </motion.span>
             </div>
           </div>
-          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.58rem", letterSpacing: "0.2em", color: COLORS.lightBrown, marginTop: 8, textTransform: "uppercase" }}>{label}</span>
+          {/* nowrap + trimmed tracking at the small end so "HOURS" stays on one
+              line inside a ~63px column at 320px */}
+          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.58rem", letterSpacing: "clamp(0.06em, 0.5vw, 0.2em)", color: COLORS.lightBrown, marginTop: 8, textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
         </motion.div>
       ))}
     </div>
@@ -129,11 +134,37 @@ function useNameFit(
     };
 
     measure();
+
+    // The webfont is ~140KB per face. On a slow connection the text first lays
+    // out in the fallback face, gets measured, and only later swaps to TT
+    // Interphases and grows — widening the line without resizing its container.
+    // A single measurement therefore leaves a stale, too-large scale and the
+    // name overflows (this shipped once). None of the signals below is
+    // sufficient alone, so subscribe to all of them:
+    //   • the container resizing (viewport / orientation change)
+    //   • each line resizing (the swap itself; transforms don't change layout
+    //     size, so observing the lines can't feed back into itself)
+    //   • each font-load batch finishing
+    //   • an explicit load of the exact face we render in — plain
+    //     `fonts.ready` resolves as soon as nothing is pending, which in a
+    //     layout effect is usually BEFORE these glyphs are ever requested
+    //   • a few deferred passes, for swaps that surface no observable record
     const ro = new ResizeObserver(measure);
     ro.observe(wrap);
-    // Webfont metrics differ from the fallback — re-fit once the real face lands.
-    document.fonts?.ready.then(measure).catch(() => {});
-    return () => ro.disconnect();
+    for (const r of lineRefs) if (r.current) ro.observe(r.current);
+
+    const fonts = document.fonts;
+    fonts?.addEventListener("loadingdone", measure);
+    fonts?.load("600 2rem 'TT Interphases'").then(measure).catch(() => {});
+    fonts?.ready.then(measure).catch(() => {});
+
+    const timers = [150, 500, 1500, 3000].map((ms) => window.setTimeout(measure, ms));
+
+    return () => {
+      ro.disconnect();
+      fonts?.removeEventListener("loadingdone", measure);
+      timers.forEach(clearTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
