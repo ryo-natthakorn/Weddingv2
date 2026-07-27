@@ -7,14 +7,17 @@ import {
   COLORS,
 } from "./shared";
 
-const ENV_W = "min(340px, 85vw)";
-const ENV_H = 300;
+/* 100% keeps the envelope inside the section's content box at any width, so it
+   can never overflow the way a fixed vw value can. */
+const ENV_W = "min(360px, 100%)";
+const ENV_H = 340;
 /* QR display size. The envelope grew with it so the code still sits in a
-   comfortable margin rather than crowding the edges: 300 tall − 36 padding
-   leaves 264, and the width floor (85vw − 40 at 320px ≈ 232) clears 62vw. */
-const QR_SIZE = "min(216px, 62vw)";
+   comfortable margin rather than crowding the edges: 340 tall − 36 padding
+   leaves 304, and at 320px the envelope is 272 wide − 40 padding = 232, which
+   clears 68vw (218). */
+const QR_SIZE = "min(260px, 68vw)";
 /* Placeholder QR is drawn as a fixed-size SVG grid, so it needs a number. */
-const DUMMY_QR_PX = 216;
+const DUMMY_QR_PX = 260;
 
 /* Real PromptPay QR — drop a file named "promptpay-qr" (any common image
    extension) into src/imports/ and it replaces the dummy placeholder
