@@ -1,4 +1,11 @@
-node_modules/
+# Local tool state — not part of the invitation.
+.claude/
+.impeccable/
+
+# Build output
 dist/
+node_modules/
+
+# Local env (holds the Apps Script URL and YouTube key)
 .env
 .env.local

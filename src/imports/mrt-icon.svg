@@ -1,0 +1,8 @@
+<!-- Bangkok MRT mark, cropped from MRT_(Bangkok)_Pink_logo_with_name.svg.
+     Only the viewBox changes: the original is 200x240 and carries an "MRT"
+     wordmark below the mark, which is illegible at the 48px this renders at
+     (and the row already reads "By MRT"). The original file is kept intact. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="176" viewBox="0 0 200 176">
+  <path fill="#e55f86" d="M163.95,174.21c22.03-18.07,36.05-45.28,36.05-75.72C200,44.1,155.23,0,100,0S0,44.1,0,98.49c0,30.41,14,57.61,36,75.68l127.93.04h.02Z"/>
+  <polygon fill="#fff" points="166.01 153.6 129.62 153.6 129.62 90.89 111.41 128.18 87.04 128.18 68.7 91.24 68.7 153.6 33.99 153.6 33.99 40.22 74.29 40.22 100.02 90.38 125.82 40.22 166.01 40.22 166.01 153.6"/>
+</svg>

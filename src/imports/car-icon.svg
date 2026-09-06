@@ -1,0 +1,12 @@
+<!-- Parking mark for the "By Car" row. Drawn to match the two brand logos it
+     sits beside: a solid coloured disc with a white symbol on it, same as
+     Grab's green circle and the MRT's pink mark. The disc uses Monogram Gold
+     (#8A7030) so the one non-brand row still belongs to this card's palette.
+     200x200 viewBox to match the MRT mark's scale. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <circle cx="100" cy="100" r="100" fill="#8A7030"/>
+  <!-- car body -->
+  <path fill="#fff" d="M46 118a6 6 0 0 1 .5-2.4l9.4-22a13 13 0 0 1 12-7.9h64.2a13 13 0 0 1 12 7.9l9.4 22a6 6 0 0 1 .5 2.4v20a7 7 0 0 1-7 7h-4.6a15 15 0 0 0-29.8 0H86.8a15 15 0 0 0-29.8 0H53a7 7 0 0 1-7-7v-20Zm18.6-6.6h70.8l-6.7-15.7a4 4 0 0 0-3.6-2.4H74.9a4 4 0 0 0-3.6 2.4l-6.7 15.7Z"/>
+  <circle cx="71.9" cy="145" r="9.6" fill="#fff"/>
+  <circle cx="128.1" cy="145" r="9.6" fill="#fff"/>
+</svg>

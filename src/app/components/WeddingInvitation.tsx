@@ -17,6 +17,14 @@ import {
 } from "./wedding/shared";
 import heroIllustration from "../../imports/Hero.jpg";
 import pnLogo from "../../imports/Logo.svg";
+import carIcon from "../../imports/car-icon.svg";
+import mrtIcon from "../../imports/mrt-icon.svg";
+import grabIcon from "../../imports/grab-icon.png";
+
+/* Transport marks, keyed by the `key` on each item in t.direction_items.
+   The mapping lives here rather than in the translations so the copy stays
+   plain data while the assets stay imports Vite can hash and bundle. */
+const DIRECTION_LOGOS: Record<string, string> = { car: carIcon, mrt: mrtIcon, grab: grabIcon };
 
 const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok";
 
@@ -226,8 +234,19 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
         ref={heroRef}
         style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", overflow: "hidden", ...grainLayer("linear-gradient(180deg, #EAC898 0%, #EDD8A8 40%, #F3E8CC 75%, #F8F1E6 100%)") }}
       >
+        {/* Hero.jpg is a 768x1024 portrait with the couple in the lower half.
+            On a wide desktop viewport object-fit:cover scales it to ~1920px
+            tall against a ~900px window and shows only the bottom half, which
+            cuts their heads off and drops the monogram onto the busiest part of
+            the painting. Desktop therefore shows the whole illustration
+            (object-fit:contain) with a blurred over-scaled copy behind it, so
+            the letterbox edges dissolve into the paper instead of ending on a
+            hard rectangle. Mobile is portrait already and keeps its crop.
+            A media query rather than the useIsMobile hook: that hook starts
+            undefined and would flash the wrong crop on first paint. */}
         <motion.div style={{ position: "absolute", inset: "-5% 0", y: springY, zIndex: 0 }}>
-          <img src={heroIllustration} alt="Pantika & Natthakorn" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "bottom center", display: "block" }} />
+          <img className="hero-art hero-art--blur" src={heroIllustration} alt="" aria-hidden />
+          <img className="hero-art hero-art--main" src={heroIllustration} alt="Pantika & Natthakorn" />
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "20%", background: "linear-gradient(to bottom, transparent, #F8F1E6)" }} />
         </motion.div>
 
@@ -249,6 +268,13 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
           >
+            {/* Cream scrim. The monogram and date sit over painted sky and
+                foliage, which is exactly where thin gold strokes disappear.
+                Radial so it has no visible edge against the paper. */}
+            <div
+              aria-hidden
+              style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(420px, 92vw)", height: "min(320px, 62vw)", background: "radial-gradient(ellipse at center, rgba(248,241,230,0.92) 0%, rgba(248,241,230,0.65) 45%, rgba(248,241,230,0) 72%)", pointerEvents: "none", zIndex: -1 }}
+            />
             <img
               src={pnLogo}
               alt="PN"
@@ -299,7 +325,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(42,26,10,0.7) 0%, rgba(42,26,10,0.15) 35%, transparent 60%)" }} />
               {/* venue name — bottom-left */}
               <div style={{ position: "absolute", bottom: 18, left: 20, right: 20 }}>
-                <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.5rem, 6vw, 2.4rem)", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
+                <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "min(2.4rem, calc((100vw - 88px) / 15.9))", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, whiteSpace: "nowrap", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
               </div>
             </div>
 
@@ -324,11 +350,17 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
 
             {/* Directions — same card, below the address/CTA, separated by a hairline */}
             <div style={{ borderTop: "1px solid rgba(138,107,75,0.18)", padding: "28px 28px 32px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
-              {t.direction_items.map(({ icon, title, text }) => (
-                <div key={title} style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                  <div style={{ width: 44, height: 44, background: `linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))`, border: "1px solid rgba(138,112,48,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.15rem", flexShrink: 0 }}>
-                    {icon}
-                  </div>
+              {t.direction_items.map(({ key, title, text }) => (
+                <div key={key} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  {/* The marks are the tiles: each is already a coloured disc
+                      with a white symbol, so the gold circle that used to hold
+                      an emoji would only box them in. */}
+                  <img
+                    src={DIRECTION_LOGOS[key]}
+                    alt=""
+                    aria-hidden
+                    style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0, boxShadow: "0 3px 10px rgba(61,34,21,0.18)" }}
+                  />
                   <div>
                     <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
                     <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
@@ -369,6 +401,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
             <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
+            <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
             <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
           </motion.div>
 

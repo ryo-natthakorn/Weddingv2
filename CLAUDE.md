@@ -380,11 +380,20 @@ BLOCK 2 — Address + CTA
   • One button: "Open in Google Maps" → links to Google Maps URL
   • No iframe, no embedded map
 
-BLOCK 3 — Directions (3 items, icon + text)
-  • 🚗 By Car — 25 min from Siam, free parking on site
-  • 🚇 By BTS/MRT — Take BTS to On Nut, then 10 min by taxi
-  • 🛺 By Grab — Search 'SailomSangdad Homey Studio'
-  Each item: icon in gold circle + one short line of text
+BLOCK 3 — Directions (3 items, logo + text)
+  • By Car — Free parking on site
+  • By MRT — Pink Line · Ram Inthra Kor Mor 6 station (PK22)
+            TH: สายสีชมพู สถานีรามอินทรา กม.6 (PK22)
+  • By Grab — Search 'SailomSangdad Homey Studio'
+  Each item: 48px brand mark + one short line of text.
+  The marks are car-icon.svg / mrt-icon.svg / grab-icon.png,
+  mapped by the `key` on each t.direction_items entry. All three
+  are a coloured disc with a white symbol so the row reads as one
+  system; the car is drawn in Monogram Gold to match the two real
+  brand logos. No gold circle wrapper — the marks are the tiles.
+
+  Venue name overlay is one line at every width (geometry-derived
+  font-size + nowrap), not a clamp.
 
 Stacks vertically on mobile, clean and fast to load.
 
@@ -445,10 +454,14 @@ Keep the existing dress code arch-swatch layout.
 
 The nine swatch colours come from the printed invitation and are
 fixed: #3d2500 #7a6200 #9f6816 / #cca300 #ffd21f #ffeb99 /
-#28564b #7c8745 #2e6417. The printed card shows no title and no
-swatch captions, so the site has neither — swatch colour names
-exist only as screen-reader text. One short line above the
-swatches tells guests what to wear.
+#28564b #7c8745 #2e6417. Swatches carry no visible captions (the
+printed card has none) — colour names exist only as screen-reader
+text.
+
+Heading: "Garden Wedding" / "งานแต่งในสวน"
+Description: "ขอเชิญแต่งกายด้วยโทนสีน้ำตาล ทอง เหลือง ครีม เขียว"
+             EN: "Please dress in tones of brown, gold, yellow,
+             cream and green."
 
 CHANGES:
 1. Hashtag — change text from "#PNEst221126" to "#PNEST221126"
@@ -477,9 +490,11 @@ swatches, no longer appears as a standalone section.
 RSVP FORM:
   - Keep the styled form on the card (do not redirect away)
   - Fields: Name / Attending (Yes/No) / Number of Guests
+  - Guest count: 1 to 4 (GUEST_MAX in RSVPSection.tsx)
   - REMOVE the "Dietary Preferences / Notes" field entirely
   - Yes/No buttons keep warm labels:
-      "Joyfully Accept" / "Regretfully Decline"
+      EN: "Joyfully Accept" / "Regretfully Decline"
+      TH: "ยินดีไปร่วมงาน" / "ขออภัย ไม่สะดวกไปร่วมงาน"
   - Show a warm confirmation message after submit
   - Reply-by date: "Kindly reply by 31 October 2026"
     (TH: "กรุณาตอบรับภายใน 31 ตุลาคม 2569")
