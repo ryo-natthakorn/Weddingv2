@@ -51,6 +51,14 @@
   src: url('../imports/fonts/TTInterphasesPro-DemiBold.ttf') format('truetype');
 }
 
+@font-face {
+  font-family: 'Noto Sans Thai';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../imports/fonts/NotoSansThai-Variable.woff2') format('woff2');
+}
+
 /* Weight 700 — NOT SHIPPED.
    The printed invitation sets the couple's names in TT Interphases with Canva's
    Bold (700) applied, but only Light/Regular/Medium/DemiBold are licensed into

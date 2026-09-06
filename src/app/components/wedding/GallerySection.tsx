@@ -76,32 +76,41 @@ const MOSAIC_CSS = `
    filter instead, which follows the scalloped alpha outline the way the
    reference's does rather than drawing a rectangle behind it. */
 .pw-stamp {
-  --pitch: 11px;
-  --hole: 3.1px;
-  --edge: calc(var(--hole) + 0.6px);
+  --stamp-pitch: 15px;
+  --stamp-notch: 2.2px;
+  --stamp-edge: calc(var(--stamp-notch) + 0.7px);
   display: block;
-  padding: 7px;
-  background: #FFF8F0;
+  padding: 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.74), rgba(255,248,240,0.98) 46%, rgba(242,232,210,0.92)),
+    #FFF8F0;
+  box-shadow:
+    inset 0 0 0 1px rgba(138,112,48,0.2),
+    inset 0 0 18px rgba(138,112,48,0.08);
   -webkit-mask-image:
-    radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
-    radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--hole), #000 var(--edge)),
-    radial-gradient(circle at 0 50%,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
-    radial-gradient(circle at 100% 50%, rgba(0,0,0,0) var(--hole), #000 var(--edge));
-  -webkit-mask-size: var(--pitch) 100%, var(--pitch) 100%, 100% var(--pitch), 100% var(--pitch);
+    radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
+    radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
+    radial-gradient(circle at 0 50%,    rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
+    radial-gradient(circle at 100% 50%, rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge));
+  -webkit-mask-size: var(--stamp-pitch) 100%, var(--stamp-pitch) 100%, 100% var(--stamp-pitch), 100% var(--stamp-pitch);
   -webkit-mask-position: 0 0, 0 100%, 0 0, 100% 0;
   -webkit-mask-repeat: round no-repeat, round no-repeat, no-repeat round, no-repeat round;
   -webkit-mask-composite: source-in;
   mask-image:
-    radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
-    radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--hole), #000 var(--edge)),
-    radial-gradient(circle at 0 50%,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
-    radial-gradient(circle at 100% 50%, rgba(0,0,0,0) var(--hole), #000 var(--edge));
-  mask-size: var(--pitch) 100%, var(--pitch) 100%, 100% var(--pitch), 100% var(--pitch);
+    radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
+    radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
+    radial-gradient(circle at 0 50%,    rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
+    radial-gradient(circle at 100% 50%, rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge));
+  mask-size: var(--stamp-pitch) 100%, var(--stamp-pitch) 100%, 100% var(--stamp-pitch), 100% var(--stamp-pitch);
   mask-position: 0 0, 0 100%, 0 0, 100% 0;
   mask-repeat: round no-repeat, round no-repeat, no-repeat round, no-repeat round;
   mask-composite: intersect;
 }
-@media (min-width: 640px) { .pw-stamp { --pitch: 12px; --hole: 3.4px; padding: 8px; } }
+.pw-stamp img {
+  border: 1px solid rgba(90,62,37,0.18);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.55);
+}
+@media (min-width: 640px) { .pw-stamp { --stamp-pitch: 17px; --stamp-notch: 2.4px; padding: 11px; } }
 `;
 
 /* A degree or so either way, deterministic per position so the layout is
@@ -337,7 +346,7 @@ function Print({
         border: "none",
         /* drop-shadow, not box-shadow: the mat is masked into a scalloped
            outline and a box-shadow would draw a rectangle behind it. */
-        filter: "drop-shadow(0 5px 12px rgba(61,34,21,0.22))",
+        filter: "drop-shadow(0 9px 18px rgba(61,34,21,0.18)) drop-shadow(0 2px 5px rgba(138,112,48,0.14))",
         cursor: "zoom-in",
         WebkitTapHighlightColor: "transparent",
         position: "relative",

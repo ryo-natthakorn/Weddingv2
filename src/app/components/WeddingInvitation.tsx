@@ -46,6 +46,63 @@ const grainLayer = (gradient: string) => ({
   backgroundRepeat: "repeat, no-repeat",
 });
 
+const HERO_CSS = `
+.wedding-hero-art {
+  position: absolute;
+  inset: -5% 0;
+  z-index: 0;
+}
+.wedding-hero-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 62%;
+  display: block;
+}
+.wedding-hero-mark {
+  position: absolute;
+  top: calc(50% - 140px);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  text-align: center;
+  width: 100%;
+  pointer-events: none;
+}
+@media (min-width: 900px) {
+  .wedding-hero-art {
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 0 clamp(28px, 6vw, 86px) 0 clamp(260px, 28vw, 430px);
+  }
+  .wedding-hero-art img {
+    width: auto;
+    height: min(94dvh, 980px);
+    max-width: min(62vw, 760px);
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 18px 34px rgba(61,34,21,0.12));
+  }
+  .wedding-hero-mark {
+    top: 48%;
+    left: clamp(34px, 10vw, 128px);
+    transform: translateY(-50%);
+    width: min(280px, 24vw);
+    text-align: left;
+  }
+  .wedding-hero-mark img {
+    width: min(150px, 15vw) !important;
+    margin: 0 !important;
+  }
+  .wedding-hero-mark p {
+    font-size: clamp(1.15rem, 2vw, 1.55rem) !important;
+    letter-spacing: 0.32em !important;
+  }
+}
+`;
+
 /* Program icons — client drops ring-icon / camera-icon / glasses-icon into
    src/imports/. import.meta.glob resolves only files that actually exist at
    build time, so a missing icon simply falls back to its emoji (no build
@@ -228,14 +285,15 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
+      <style>{HERO_CSS}</style>
 
       {/* ═══ HERO ═══ */}
       <section
         ref={heroRef}
         style={{ position: "relative", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", overflow: "hidden", ...grainLayer("linear-gradient(180deg, #EAC898 0%, #EDD8A8 40%, #F3E8CC 75%, #F8F1E6 100%)") }}
       >
-        <motion.div style={{ position: "absolute", inset: "-5% 0", y: springY, zIndex: 0 }}>
-          <img src={heroIllustration} alt="Pantika & Natthakorn" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "bottom center", display: "block" }} />
+        <motion.div className="wedding-hero-art" style={{ y: springY }}>
+          <img src={heroIllustration} alt="Pantika & Natthakorn sitting together on a garden bench" />
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "20%", background: "linear-gradient(to bottom, transparent, #F8F1E6)" }} />
         </motion.div>
 
@@ -250,7 +308,8 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
 
         {/* PN Monogram + date — centered in the hero viewport */}
         <motion.div
-          style={{ position: "absolute", top: "calc(50% - 140px)", left: "50%", transform: "translate(-50%, -50%)", zIndex: 3, opacity: heroOpacity, textAlign: "center", width: "100%", pointerEvents: "none" }}
+          className="wedding-hero-mark"
+          style={{ opacity: heroOpacity }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
