@@ -7,17 +7,6 @@
    continuous page and the teal edge bleed on tablets is gone at every
    viewport size. These unlayered rules intentionally override the
    Tailwind base `bg-background`. */
-/* One family for the whole card, set once.
-   Form controls (input, button, select, textarea) do NOT inherit font-family
-   from their ancestors -- that is a UA-stylesheet rule, not something the
-   cascade fixes -- so without naming them here the RSVP fields and every
-   button silently render in the platform UI font. There was no body-level
-   rule at all before this, so anything that missed its inline fontFamily fell
-   back too. Inline styles in the components still win; this is the floor. */
-html, body, input, button, select, textarea, optgroup {
-  font-family: 'TT Interphases', 'Noto Sans Thai', sans-serif;
-}
-
 html {
   background-color: #F2E8D2;
 }
@@ -33,46 +22,4 @@ body {
   0%   { transform: scale(1);    opacity: 0.6; }
   50%  { transform: scale(1.45); opacity: 0;   }
   100% { transform: scale(1);    opacity: 0.6; }
-}
-
-/* ── Hero artwork ──────────────────────────────────────────────────────────
-   Hero.jpg is a 768x1024 portrait watercolour: cream paper on top, the couple
-   painted across the lower half. Filling a wide desktop viewport with
-   object-fit:cover scales it to roughly 1920px tall behind a ~900px window and
-   shows only the bottom ~47% — which lands right at head height and cuts the
-   couple off, and puts the monogram over the busiest paint on the canvas.
-
-   So on desktop the whole illustration is shown (contain, bottom-anchored) and
-   a blurred, over-scaled copy sits behind it to carry the letterbox margins
-   into the paper tone. Phones are portrait already, where cover is right, and
-   they keep the original crop untouched.
-
-   A media query, not the useIsMobile hook: that hook returns undefined on the
-   first render and would flash the mobile crop on a desktop load. */
-.hero-art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: bottom center;
-  display: block;
-}
-
-/* The backdrop copy only exists where the sharp one is letterboxed. */
-.hero-art--blur { display: none; }
-
-@media (min-width: 768px) {
-  .hero-art--main {
-    object-fit: contain;
-    object-position: bottom center;
-  }
-  .hero-art--blur {
-    display: block;
-    object-fit: cover;
-    /* scaled past the frame so the blur has no hard edge of its own */
-    transform: scale(1.15);
-    filter: blur(36px) saturate(1.08);
-    opacity: 0.7;
-  }
 }

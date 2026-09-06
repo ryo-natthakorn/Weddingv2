@@ -5,11 +5,6 @@ import pnLogo from "../../../imports/Logo.svg";
 
 interface Props {
   onComplete: () => void;
-  /* Fired SYNCHRONOUSLY inside the pointerup / keydown that opens the card.
-     iOS only honours a play() request made inside the user-gesture call stack,
-     and onComplete runs 1.6s and two setTimeouts later — long after the gesture
-     is gone, which is why autoplay never worked on iPhone. */
-  onUnlockGesture?: () => void;
 }
 
 const Petal = memo(function Petal({ x, delay, size, duration }: { x: number; delay: number; size: number; duration: number }) {
@@ -44,7 +39,7 @@ const THUMB_W = 72;
 const UNLOCK_AT = 88;
 const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
+export function IntroAnimation({ onComplete }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [pos, setPos] = useState(0);
@@ -92,10 +87,6 @@ export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
 
   const handlePointerUp = () => {
     setIsDragging(false);
-    /* The unlock is DETECTED in pointermove, but pointermove is not a user
-       activation event on iOS — pointerup is. So the hand-off has to happen
-       here, on release, while the gesture is still live. */
-    if (unlocked || pos >= UNLOCK_AT) onUnlockGesture?.();
     if (!unlocked && pos < UNLOCK_AT) setPos(0);
   };
 
@@ -120,8 +111,6 @@ export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
       case "Enter":
       case " ":
         e.preventDefault();
-        // keydown is itself an activation event, so the gesture is live here.
-        onUnlockGesture?.();
         triggerUnlock();
         break;
     }
@@ -212,7 +201,7 @@ export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", marginRight: "-0.25em", color: "#8A7030", marginTop: 28 }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", marginRight: "-0.25em", color: "#8A7030", marginTop: 28 }}
             >
               22 · 11 · 26
             </motion.p>
@@ -220,7 +209,7 @@ export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.8rem", letterSpacing: "0.2em", marginRight: "-0.2em", color: "rgba(27,74,92,0.72)", textTransform: "uppercase", marginTop: 8 }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.8rem", letterSpacing: "0.2em", marginRight: "-0.2em", color: "rgba(27,74,92,0.72)", textTransform: "uppercase", marginTop: 8 }}
             >
               SailomSangdad · Bangkok
             </motion.p>
@@ -252,7 +241,7 @@ export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
               animate={showHint ? { opacity: 1, y: 0 } : { opacity: 0, y: reduceMotion ? 0 : 8 }}
               transition={{ duration: 0.7 }}
               aria-hidden={!showHint}
-              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.78)", letterSpacing: "0.05em" }}
+              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.78)", letterSpacing: "0.05em" }}
             >
               Slide to open
             </motion.p>

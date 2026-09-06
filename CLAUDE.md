@@ -96,21 +96,6 @@ REPLACE all of these font families wherever they appear:
 
 LOAD the font in src/styles/fonts.css (via @font-face or CDN).
 
-THAI: TT Interphases contains NO Thai glyphs (verified by parsing its cmap —
-U+0E00-0E7F is empty), and TypeType do not sell a Thai cut. Thai is served by
-self-hosted Noto Sans Thai, declared as its OWN family and listed second in
-every stack: 'TT Interphases', 'Noto Sans Thai', sans-serif.
-
-Do NOT try to fold the Thai face into the 'TT Interphases' family with a
-unicode-range — that was tried and measurably fails. When the face the browser
-picks has no glyph for a character it falls through to the next FAMILY, not to
-another face in the same family, so Thai silently rendered in the device font
-(Thonburi/Leelawadee) and looked different on every phone.
-
-src/styles/index.css also sets the stack on html, body, input, button, select,
-textarea and optgroup. Form controls do not inherit font-family, so without
-that rule the RSVP fields render in the platform UI font.
-
 CHECK every single section — this was missed before:
   - Intro Animation
   - Hero
@@ -179,24 +164,6 @@ Everything else stays the same.
 **Primary (H — Petal Trail):** Floating gold particles in the Hero section drift toward the music button, drawing the eye naturally. Button has a subtle warm glow. No sound, no popups, no text.
 
 **Fallback (Autoplay on Entry):** If H is removed, music starts softly as invitation fades in after sliding open. Player shows pause icon. No toast, no popup. Subtitle line does all the communication.
-
-**iOS autoplay — do not "simplify" this back.** play() must be called
-SYNCHRONOUSLY inside the pointerup/keydown that opens the card. iOS only
-honours a playback request made inside the user-gesture call stack, and
-onComplete fires ~1.6s and two setTimeouts later, by which point the gesture
-has expired — that is why autoplay silently failed on iPhone. IntroAnimation
-therefore takes an onUnlockGesture prop and fires it on RELEASE (pointermove,
-where the unlock is detected, is not an activation event). playerVars also
-needs playsinline:1, or iOS routes the hidden player to fullscreen video.
-Some in-app browsers (LINE on iOS) are stricter than Safari and may still
-require a tap; no technique overrides that.
-
-**Docking into Our Song.** While the Our Song section is on screen the corner
-button stands down (MusicPlayer `docked` prop) and that section's button
-becomes the single control, toggling play/pause rather than reopening the
-card. Otherwise a guest sees two play buttons for the same track and has to
-guess which is live. The section reports visibility via onDockChange; the
-player reports playback via onPlayingChange; WeddingInvitation holds both.
 
 ## Global: Background Continuity — CRITICAL — `WeddingInvitation.tsx + all section files`
 

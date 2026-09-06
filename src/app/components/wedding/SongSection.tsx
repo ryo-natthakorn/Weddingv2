@@ -1,5 +1,4 @@
-import { useEffect, useRef } from "react";
-import { motion, useInView, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 import { useReveal, Divider, COLORS } from "./shared";
 
@@ -10,11 +9,6 @@ import { useReveal, Divider, COLORS } from "./shared";
    handles playback, so this section's job is not to be a second
    player — it is the dedication. It hands the tap off to the
    existing player via onPlay.
-
-   While this section is on screen the floating corner player stands
-   down and this button becomes the single control for the song —
-   otherwise a guest is looking at two play buttons for the same
-   track and has to guess which one is live.
 
    The staff is drawn in the same hand-inked language as
    HandDrawnDivider (wavy strokes revealed by pathLength) rather
@@ -102,31 +96,12 @@ function StaffOfNotes({ inView }: { inView: boolean }) {
   );
 }
 
-export function SongSection({
-  onPlay,
-  playing = false,
-  onDockChange,
-}: {
-  onPlay: () => void;
-  playing?: boolean;
-  onDockChange?: (docked: boolean) => void;
-}) {
+export function SongSection({ onPlay }: { onPlay: () => void }) {
   const { t } = useLang();
   const { ref, inView } = useReveal("-80px");
 
-  /* Deliberately NOT useReveal: that one is once-only, and the corner button
-     has to come back when the guest scrolls away again. amount 0.4 means the
-     hand-off happens when the section is properly on screen, not the instant
-     its top edge appears. */
-  const dockRef = useRef<HTMLDivElement>(null);
-  const docked = useInView(dockRef, { amount: 0.4 });
-  useEffect(() => { onDockChange?.(docked); }, [docked, onDockChange]);
-  // Release the corner button again if this section unmounts mid-scroll.
-  useEffect(() => () => { onDockChange?.(false); }, [onDockChange]);
-
   return (
     <section
-      ref={dockRef}
       style={{
         padding: "44px 24px 56px",
         background: "transparent",
@@ -142,31 +117,25 @@ export function SongSection({
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", marginRight: "-0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", marginRight: "-0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
           {t.music_label}
         </p>
         <Divider className="mb-10" />
 
         <StaffOfNotes inView={inView} />
 
-        <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.2, marginTop: 26 }}>
+        <h3 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.2, marginTop: 26 }}>
           {t.song_title}
         </h3>
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
           {t.song_dedication}
         </p>
 
         <motion.button
           type="button"
           onClick={onPlay}
-          aria-label={playing ? "Pause the song" : "Play the song"}
           whileHover={{ scale: 1.04, y: -2 }}
           whileTap={{ scale: 0.97 }}
-          /* Lifts as it takes over from the corner button, so the swap reads
-             as the control moving here rather than one thing vanishing and an
-             unrelated thing appearing. */
-          animate={docked ? { scale: 1, y: 0 } : { scale: 0.97, y: 4 }}
-          transition={{ type: "spring", stiffness: 300, damping: 24 }}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -176,7 +145,7 @@ export function SongSection({
             border: "none",
             borderRadius: 100,
             padding: "14px 32px",
-            fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
+            fontFamily: "'TT Interphases', sans-serif",
             fontSize: "0.75rem",
             letterSpacing: "0.2em",
             textTransform: "uppercase",
@@ -186,16 +155,9 @@ export function SongSection({
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          {playing ? (
-            <svg width="13" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-              <rect x="2.5" y="1.5" width="3.5" height="11" rx="1.5" fill="#FFF8EE" />
-              <rect x="8" y="1.5" width="3.5" height="11" rx="1.5" fill="#FFF8EE" />
-            </svg>
-          ) : (
-            <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
-              <path d="M1.5 1.6C1.5 1.1 2 0.8 2.4 1.05L11.4 6.45C11.8 6.7 11.8 7.3 11.4 7.55L2.4 12.95C2 13.2 1.5 12.9 1.5 12.4V1.6Z" fill="#FFF8EE" />
-            </svg>
-          )}
+          <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
+            <path d="M1.5 1.6C1.5 1.1 2 0.8 2.4 1.05L11.4 6.45C11.8 6.7 11.8 7.3 11.4 7.55L2.4 12.95C2 13.2 1.5 12.9 1.5 12.4V1.6Z" fill="#FFF8EE" />
+          </svg>
           {t.song_play}
         </motion.button>
       </motion.div>

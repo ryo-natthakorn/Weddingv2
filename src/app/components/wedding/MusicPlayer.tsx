@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallba
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 
-export type MusicPlayerHandle = { play: () => void; open: () => void; toggle: () => void };
+export type MusicPlayerHandle = { play: () => void; open: () => void };
 
 const YT_VIDEO_ID = (import.meta.env.VITE_YOUTUBE_VIDEO_ID as string) || "p8iVeHphD3c";
 const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
@@ -90,13 +90,7 @@ function PetalTrail() {
   );
 }
 
-export const MusicPlayer = forwardRef<MusicPlayerHandle, {
-  /* True while the Our Song section is on screen. The corner button stands
-     down there and that section's own button becomes the control, so the guest
-     is never looking at two play buttons for the same song. */
-  docked?: boolean;
-  onPlayingChange?: (playing: boolean) => void;
-}>(({ docked = false, onPlayingChange }, ref) => {
+export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
   const { t } = useLang();
   const reduceMotion = useReducedMotion();
   const playerRef = useRef<any>(null);
@@ -125,15 +119,6 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
 
   useImperativeHandle(ref, () => ({
     play: startPlayback,
-    /* Play/pause without opening the card — what the Our Song button needs
-       once it has taken over from the corner button. */
-    toggle: () => {
-      if (!playerRef.current) { autoplayWantedRef.current = true; return; }
-      try {
-        if (playing) playerRef.current.pauseVideo();
-        else playerRef.current.playVideo();
-      } catch {}
-    },
     /* Used by the "Our Song" section. Unlike autoplay-on-entry, this follows a
        deliberate tap partway down the page, so the card is expanded too —
        otherwise sound simply starts from a corner button with no visible
@@ -142,10 +127,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       setExpanded(true);
       startPlayback();
     },
-  }), [startPlayback, playing]);
-
-  /* Mirror playback state up so the Our Song button can show the right icon. */
-  useEffect(() => { onPlayingChange?.(playing); }, [playing, onPlayingChange]);
+  }), [startPlayback]);
 
   /* ── Init YouTube IFrame API ── */
   const initPlayer = useCallback(() => {
@@ -154,7 +136,6 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       videoId: YT_VIDEO_ID,
       playerVars: {
         autoplay: 0,            // discovery is the petal trail, not autoplay
-        playsinline: 1,         // iOS routes a non-inline player to fullscreen video
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -315,14 +296,12 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
 
       {/* COLLAPSED — 56px gold circle, bottom-right */}
       <AnimatePresence>
-        {!expanded && !docked && (
+        {!expanded && (
           <motion.div
             key="collapsed"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            /* Sinks toward the section rather than just vanishing, so handing
-               control to the Our Song button reads as one movement. */
-            exit={{ scale: 0.4, opacity: 0, y: 14 }}
+            exit={{ scale: 0, opacity: 0 }}
             transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56 }}
           >
@@ -398,10 +377,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
                 style={{ width: 42, height: 42, borderRadius: 10, objectFit: "cover", flexShrink: 0, boxShadow: "0 2px 8px rgba(61,34,21,0.2)" }}
               />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.95rem", fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.2 }}>
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.95rem", fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.2 }}>
                   {TITLE}
                 </p>
-                <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", fontStyle: "italic", color: TEXT_MUTED, lineHeight: 1.35, marginTop: 2 }}>
+                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", fontStyle: "italic", color: TEXT_MUTED, lineHeight: 1.35, marginTop: 2 }}>
                   {SUBTITLE}
                 </p>
               </div>
@@ -424,7 +403,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.5 }}
-                    style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontStyle: "italic", color: ACCENT, lineHeight: 1.4 }}
+                    style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontStyle: "italic", color: ACCENT, lineHeight: 1.4 }}
                   >
                     {currentLyric}
                   </motion.p>
@@ -457,8 +436,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
 
             {/* Time */}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, marginBottom: 8 }}>
-              <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{formatTime(currentTime)}</span>
-              <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{duration > 0 ? formatTime(duration) : "--:--"}</span>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{formatTime(currentTime)}</span>
+              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{duration > 0 ? formatTime(duration) : "--:--"}</span>
             </div>
 
             {/* Controls: back 10 · play/pause · forward 10 */}
@@ -501,7 +480,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
                 background: "transparent",
                 color: ACCENT,
                 textDecoration: "none",
-                fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
+                fontFamily: "'TT Interphases', sans-serif",
                 fontSize: "0.72rem",
                 letterSpacing: "0.08em",
                 boxSizing: "border-box",
