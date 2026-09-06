@@ -5,6 +5,15 @@ The files in this folder are the WEB-OPTIMISED versions that actually ship
 automatically by filename order — the leading 01-, 02-, ... sets the order
 in the mosaic.
 
+The order is deliberate and was chosen by the couple:
+  01-02  the ring photos          (the proposal, then the rings)
+  03-06  the Saphan Phut set      (Memorial Bridge, Chao Phraya)
+  07-11  the Suan Benjakitti set  (the park and its skywalk)
+
+Note the mosaic lays out in masonry COLUMNS, so a reader goes down the
+first column before starting the second. The groups stay contiguous in
+that order, but they are not read strictly left-to-right.
+
 The full-size files they were made from live in _originals/. That folder is
 deliberately NOT matched by the import glob in GallerySection.tsx (the glob
 is non-recursive), so nothing in it is ever bundled or downloaded by guests.

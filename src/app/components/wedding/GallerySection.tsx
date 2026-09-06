@@ -13,8 +13,9 @@ import {
    GALLERY — PRE-WEDDING ALBUM
    ----------------------------------------------------------------
    A scattered mosaic of the pre-wedding shoot: photos laid out in
-   masonry columns, each one matted like a physical print and tilted
-   a degree or two off square, straightening when you touch it.
+   masonry columns, each one mounted like a postage stamp -- off-white
+   mat, perforated edge -- and tilted a degree or two off square,
+   straightening when you touch it.
    Tapping any print opens a full-screen viewer you can page through.
 
    Replaced a one-at-a-time swipe carousel. With eleven photos a
@@ -26,7 +27,8 @@ import {
 
    Reads straight from src/imports/pre-wedding/ — drop image files
    in and they appear automatically, no code changes needed. Sorted
-   by filename, so prefix with 01-, 02-, etc. The glob is
+   by filename. The order is deliberate: the ring photos open the
+   album, then the Saphan Phut set, then Suan Benjakitti. The glob is
    deliberately non-recursive, which is what keeps the full-size
    originals in _originals/ out of the bundle.
 ─────────────────────────────────────────────────────────────── */
@@ -58,6 +60,48 @@ const MOSAIC_CSS = `
   margin: 0 0 12px;
 }
 @media (min-width: 640px) { .pw-mosaic > * { margin-bottom: 14px; } }
+
+/* Postage-stamp edge, matching the couple's reference: an off-white mat with
+   semicircular notches punched along all four sides.
+
+   Four radial-gradient mask layers, one per edge. Each tiles ALONG its own edge
+   only -- pitch-wide and full-height for top/bottom, full-width and pitch-tall
+   for left/right -- with the hole centred on the edge line, and the four are
+   combined with mask-composite so a pixel survives only where every layer keeps
+   it. "round" rather than "repeat" so the browser fits a whole number of
+   notches per side and no half-notch lands in a corner.
+
+   The mask is on this inner element and never on the button, because a mask
+   clips box-shadow: the paper shadow lives on the button as a drop-shadow
+   filter instead, which follows the scalloped alpha outline the way the
+   reference's does rather than drawing a rectangle behind it. */
+.pw-stamp {
+  --pitch: 11px;
+  --hole: 3.1px;
+  --edge: calc(var(--hole) + 0.6px);
+  display: block;
+  padding: 7px;
+  background: #FFF8F0;
+  -webkit-mask-image:
+    radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
+    radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--hole), #000 var(--edge)),
+    radial-gradient(circle at 0 50%,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
+    radial-gradient(circle at 100% 50%, rgba(0,0,0,0) var(--hole), #000 var(--edge));
+  -webkit-mask-size: var(--pitch) 100%, var(--pitch) 100%, 100% var(--pitch), 100% var(--pitch);
+  -webkit-mask-position: 0 0, 0 100%, 0 0, 100% 0;
+  -webkit-mask-repeat: round no-repeat, round no-repeat, no-repeat round, no-repeat round;
+  -webkit-mask-composite: source-in;
+  mask-image:
+    radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
+    radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--hole), #000 var(--edge)),
+    radial-gradient(circle at 0 50%,    rgba(0,0,0,0) var(--hole), #000 var(--edge)),
+    radial-gradient(circle at 100% 50%, rgba(0,0,0,0) var(--hole), #000 var(--edge));
+  mask-size: var(--pitch) 100%, var(--pitch) 100%, 100% var(--pitch), 100% var(--pitch);
+  mask-position: 0 0, 0 100%, 0 0, 100% 0;
+  mask-repeat: round no-repeat, round no-repeat, no-repeat round, no-repeat round;
+  mask-composite: intersect;
+}
+@media (min-width: 640px) { .pw-stamp { --pitch: 12px; --hole: 3.4px; padding: 8px; } }
 `;
 
 /* A degree or so either way, deterministic per position so the layout is
@@ -288,29 +332,32 @@ function Print({
       whileHover={{ rotate: 0, scale: 1.03, zIndex: 2 }}
       whileTap={{ rotate: 0, scale: 0.985 }}
       style={{
-        padding: 6,
-        background: COLORS.white,
-        border: "1px solid rgba(138,107,75,0.18)",
-        borderRadius: 4,
-        boxShadow: "0 6px 18px rgba(61,34,21,0.16)",
+        padding: 0,
+        background: "none",
+        border: "none",
+        /* drop-shadow, not box-shadow: the mat is masked into a scalloped
+           outline and a box-shadow would draw a rectangle behind it. */
+        filter: "drop-shadow(0 5px 12px rgba(61,34,21,0.22))",
         cursor: "zoom-in",
         WebkitTapHighlightColor: "transparent",
         position: "relative",
       }}
     >
-      <img
-        src={src}
-        alt=""
-        draggable={false}
-        loading="lazy"
-        decoding="async"
-        /* "auto 3 / 4" reserves a portrait box before the file arrives and then
-           defers to the real intrinsic ratio once it has. Without it, eleven
-           lazy-loaded images each lay out at zero height and the masonry
-           columns visibly reshuffle as they arrive. Eight of the eleven are
-           exactly 3:4, so most settle with no shift at all. */
-        style={{ width: "100%", height: "auto", aspectRatio: "auto 3 / 4", display: "block", borderRadius: 2 }}
-      />
+      <span className="pw-stamp">
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          loading="lazy"
+          decoding="async"
+          /* "auto 3 / 4" reserves a portrait box before the file arrives and
+             then defers to the real intrinsic ratio once it has. Without it,
+             eleven lazy-loaded images each lay out at zero height and the
+             masonry columns visibly reshuffle as they arrive. Eight of the
+             eleven are exactly 3:4, so most settle with no shift at all. */
+          style={{ width: "100%", height: "auto", aspectRatio: "auto 3 / 4", display: "block" }}
+        />
+      </span>
     </motion.button>
   );
 }
