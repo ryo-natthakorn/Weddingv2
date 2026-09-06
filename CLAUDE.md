@@ -389,15 +389,23 @@ Replace with 3 large centered time cards.
 LAYOUT — 3 cards in a row on desktop, stacked on mobile:
 
   ┌──────────┐  ┌──────────┐  ┌──────────┐
-  │  16:09   │  │  17:00   │  │  17:30   │
-  │Engagement│  │  Photos  │  │  Dinner  │
-  │ Ceremony │  │ & Drinks │  │& Dancing │
+  │  16:09   │  │  17:00   │  │  18:00   │
+  │Engagement│  │ Welcome  │  │Celebra-  │
+  │          │  │ & Photos │  │  tion    │
   └──────────┘  └──────────┘  └──────────┘
 
+  TH: พิธีหมั้น / ลงทะเบียนและถ่ายภาพ / งานเลี้ยงฉลอง
+
+  Times and event names are taken verbatim from the printed
+  invitation (src/imports/Printed card/). Do not reword them —
+  if they ever disagree, the printed card wins.
+
 Each card contains:
+  • Icon — the couple's own line art (ring / camera / glasses),
+    trimmed to transparent PNG and tinted gold
   • Large time — TT Interphases, prominent (no exceptions — global font rule applies here too)
   • Event name — bold, one line
-  • One short description line — light weight
+  • NO description line — the printed card has none
   • Subtle gold top border accent
 
 Card style:
@@ -418,7 +426,14 @@ stack to single column on mobile.
 ## Section 7: Dress Code + Hashtag — `WeddingInvitation.tsx`
 
 ```
-Keep existing dress code layout and color swatches.
+Keep the existing dress code arch-swatch layout.
+
+The nine swatch colours come from the printed invitation and are
+fixed: #3d2500 #7a6200 #9f6816 / #cca300 #ffd21f #ffeb99 /
+#28564b #7c8745 #2e6417. The printed card shows no title and no
+swatch captions, so the site has neither — swatch colour names
+exist only as screen-reader text. One short line above the
+swatches tells guests what to wear.
 
 CHANGES:
 1. Hashtag — change text from "#PNEst221126" to "#PNEST221126"
@@ -451,7 +466,8 @@ RSVP FORM:
   - Yes/No buttons keep warm labels:
       "Joyfully Accept" / "Regretfully Decline"
   - Show a warm confirmation message after submit
-  - Reply-by date: "Kindly reply by October 1, 2026"
+  - Reply-by date: "Kindly reply by 31 October 2026"
+    (TH: "กรุณาตอบรับภายใน 31 ตุลาคม 2569")
 
 SUBMISSION METHOD — Google Sheets via Apps Script (CONFIRMED)
   Data flows: Card form → Google Apps Script → Google Sheet

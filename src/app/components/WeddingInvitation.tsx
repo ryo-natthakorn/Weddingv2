@@ -77,7 +77,7 @@ function ProgramIcon({ src, emoji }: { src?: string; emoji: string }) {
         alt=""
         aria-hidden
         onError={() => setFailed(true)}
-        style={{ width: 46, height: 46, objectFit: "contain", display: "block" }}
+        style={{ width: 56, height: 56, objectFit: "contain", display: "block" }}
       />
     );
   }
@@ -85,7 +85,7 @@ function ProgramIcon({ src, emoji }: { src?: string; emoji: string }) {
     <div
       aria-hidden
       style={{
-        width: 46, height: 46, borderRadius: "50%",
+        width: 56, height: 56, borderRadius: "50%",
         background: "linear-gradient(135deg, rgba(138,112,48,0.18), rgba(138,112,48,0.08))",
         border: "1px solid rgba(138,112,48,0.3)",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -129,10 +129,12 @@ function ArchSwatch({ color, label, index, inView }: { color: string; label: str
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ delay: index * 0.07, duration: 0.45, ease: "easeOut" }}
       whileHover={{ scale: 1.08, y: -5 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
     >
-      <div style={{ width: 42, height: 58, background: color, borderRadius: "50% 50% 0 0 / 40% 40% 0 0", border: "1px solid rgba(138,107,75,0.18)", boxShadow: "0 3px 12px rgba(61,34,21,0.12)" }} />
-      <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.55rem", letterSpacing: "0.1em", color: COLORS.lightBrown, textTransform: "uppercase", textAlign: "center", maxWidth: 44 }}>{label}</span>
+      <div style={{ width: 46, height: 64, background: color, borderRadius: "50% 50% 0 0 / 40% 40% 0 0", border: "1px solid rgba(138,107,75,0.18)", boxShadow: "0 3px 12px rgba(61,34,21,0.12)" }} />
+      {/* The printed card labels none of its nine swatches — so neither do we,
+          but the colour name still reaches a screen reader. */}
+      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }}>{label}</span>
     </motion.div>
   );
 }
@@ -354,7 +356,6 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                 <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} />
                 <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
                 <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
-                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, color: COLORS.lightBrown, lineHeight: 1.65 }}>{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -368,8 +369,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
             <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
-            <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.86rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 44 }}>{t.dress_desc}</p>
+            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
           </motion.div>
 
           {/* 9 swatch arches — drop in left→right, top row first.
@@ -377,13 +377,13 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               well below the fold when the section top crosses the viewport). */}
           <div ref={swatchSec.ref}>
             {[
-              [{ color: "#3A2C18", label: "Dark Brown" }, { color: "#7A5C30", label: "Brown" }, { color: "#B8956A", label: "Tan" }],
-              [{ color: "#6B5020", label: "Mustard" }, { color: "#A88030", label: "Gold" }, { color: "#D4BC70", label: "Pale Gold" }],
-              [{ color: "#2A3C1E", label: "Forest" }, { color: "#4A6030", label: "Olive" }, { color: "#7A9060", label: "Sage" }],
+              ["#3d2500", "#7a6200", "#9f6816"],
+              ["#cca300", "#ffd21f", "#ffeb99"],
+              ["#28564b", "#7c8745", "#2e6417"],
             ].map((row, ri) => (
-              <div key={ri} style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 28px)", marginBottom: 20 }}>
-                {row.map(({ color, label }, ci) => (
-                  <ArchSwatch key={color} color={color} label={label} index={ri * 3 + ci} inView={swatchSec.inView} />
+              <div key={ri} style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 28px)", marginBottom: 14 }}>
+                {row.map((color, ci) => (
+                  <ArchSwatch key={color} color={color} label={t.dress_colors[ri * 3 + ci]} index={ri * 3 + ci} inView={swatchSec.inView} />
                 ))}
               </div>
             ))}

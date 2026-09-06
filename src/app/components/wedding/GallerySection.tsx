@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "motion/react";
-import type { PanInfo, MotionValue } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
   useReveal,
@@ -10,16 +10,25 @@ import {
 } from "./shared";
 
 /* ───────────────────────────────────────────────────────────────
-   GALLERY — PRE-WEDDING CAROUSEL
+   GALLERY — PRE-WEDDING ALBUM
    ----------------------------------------------------------------
-   A single center-focused, drag-to-swipe carousel of the
-   pre-wedding shoot. The active card sits large and centered with
-   the next/previous cards peeking at the edges; dragging (or the
-   arrow buttons / dot indicators) glides to the neighbouring card
-   with a spring. Reads straight from src/imports/pre-wedding/ — drop
-   image files in and they appear automatically, no code changes
-   needed. Sorted by filename, so prefix with 01-, 02-, etc. if the
-   order matters.
+   A scattered mosaic of the pre-wedding shoot: photos laid out in
+   masonry columns, each one matted like a physical print and tilted
+   a degree or two off square, straightening when you touch it.
+   Tapping any print opens a full-screen viewer you can page through.
+
+   Replaced a one-at-a-time swipe carousel. With eleven photos a
+   carousel showed a guest one image and asked them to work for the
+   rest; a mosaic shows the whole album at a glance, which is what
+   "add more photos" was actually asking for. The tilt is the point:
+   a dead-straight grid reads as a stock template, and DESIGN.md
+   asks for handmade over templated.
+
+   Reads straight from src/imports/pre-wedding/ — drop image files
+   in and they appear automatically, no code changes needed. Sorted
+   by filename, so prefix with 01-, 02-, etc. The glob is
+   deliberately non-recursive, which is what keeps the full-size
+   originals in _originals/ out of the bundle.
 ─────────────────────────────────────────────────────────────── */
 
 const PRE_WEDDING_MODULES = import.meta.glob(
@@ -31,11 +40,30 @@ const PRE_WEDDING_IMAGES = Object.keys(PRE_WEDDING_MODULES)
   .sort()
   .map((key) => PRE_WEDDING_MODULES[key]);
 
-const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+/* Masonry needs a stylesheet rather than inline styles: the column count
+   changes at a breakpoint, and `break-inside` has no inline equivalent that
+   Safari honours. All three properties on the children matter — `break-inside`
+   alone still lets Chrome and Safari split a tall print across a column
+   boundary; they only behave once the child is also an inline-block with an
+   explicit width. */
+const MOSAIC_CSS = `
+.pw-mosaic { column-count: 2; column-gap: 12px; }
+@media (min-width: 640px) { .pw-mosaic { column-count: 3; column-gap: 14px; } }
+.pw-mosaic > * {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 12px;
+}
+@media (min-width: 640px) { .pw-mosaic > * { margin-bottom: 14px; } }
+`;
 
-const CARD_W = "min(300px, 76vw)"; // notably bigger than the old 150px film frames
-const CARD_ASPECT = "4 / 5";
-const CARD_GAP = 18;
+/* A degree or so either way, deterministic per position so the layout is
+   stable across re-renders. Every fourth print sits straight, which stops the
+   alternation from reading as a zigzag pattern of its own. */
+const tiltFor = (i: number) => [-1.2, 1.4, -0.7, 0][i % 4];
 
 function ArrowButton({
   direction,
@@ -55,8 +83,8 @@ function ArrowButton({
       disabled={disabled}
       aria-label={label}
       style={{
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         borderRadius: "50%",
         border: "1px solid rgba(138,112,48,0.35)",
         background: "rgba(255,248,240,0.9)",
@@ -65,7 +93,7 @@ function ArrowButton({
         alignItems: "center",
         justifyContent: "center",
         cursor: disabled ? "default" : "pointer",
-        opacity: disabled ? 0.35 : 1,
+        opacity: disabled ? 0.3 : 1,
         flexShrink: 0,
         WebkitTapHighlightColor: "transparent",
       }}
@@ -77,24 +105,53 @@ function ArrowButton({
   );
 }
 
-/* Full-screen tap-to-zoom viewer for a carousel photo. Portaled to
-   document.body so its `position: fixed` always covers the real viewport —
-   nesting it under the section's own reveal animation would otherwise put
-   it inside a transformed ancestor (Framer Motion's animated `y` becomes an
-   inline transform), which turns "fixed" into "fixed to that ancestor". */
-function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
+/* Full-screen viewer. Portaled to document.body so its `position: fixed`
+   always covers the real viewport — nesting it under the section's own reveal
+   animation would otherwise put it inside a transformed ancestor (Framer
+   Motion's animated `y` becomes an inline transform), which turns "fixed" into
+   "fixed to that ancestor". */
+function Lightbox({
+  images,
+  index,
+  onIndex,
+  onClose,
+}: {
+  images: string[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  const { lang } = useLang();
+  const last = images.length - 1;
+  const go = useCallback(
+    (next: number) => onIndex(Math.max(0, Math.min(last, next))),
+    [last, onIndex],
+  );
+
+  /* The body scroll lock runs once for the life of the viewer. Keeping it out
+     of the key handler's effect matters — that one re-subscribes whenever the
+     index changes, and locking/unlocking on every arrow press would let the
+     page jump behind the overlay. */
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prevOverflow; };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") { e.preventDefault(); go(index + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(index - 1); }
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [onClose]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, go, onClose]);
+
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    if (info.offset.x < -60) go(index + 1);
+    else if (info.offset.x > 60) go(index - 1);
+  };
 
   return createPortal(
     <motion.div
@@ -106,34 +163,83 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(42,26,10,0.92)",
+        background: "rgba(42,26,10,0.94)",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
-        padding: 24,
+        padding: "24px 16px",
       }}
     >
-      <motion.img
-        src={src}
-        alt=""
-        initial={{ scale: 0.94, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.96, opacity: 0 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "92vw", maxHeight: "86vh", objectFit: "contain", borderRadius: 12, boxShadow: "0 24px 60px rgba(42,26,10,0.55)", display: "block" }}
-      />
+      {/* Only the photo swaps between steps — the overlay itself is not keyed
+          on the image, so paging never re-fades the backdrop. */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", minHeight: 0 }}>
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={images[index]}
+            src={images[index]}
+            alt=""
+            drag={images.length > 1 ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.18}
+            onDragEnd={onDragEnd}
+            draggable={false}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "92vw",
+              maxHeight: "74vh",
+              objectFit: "contain",
+              borderRadius: 10,
+              boxShadow: "0 24px 60px rgba(42,26,10,0.55)",
+              display: "block",
+              cursor: images.length > 1 ? "grab" : "default",
+              touchAction: "pan-y",
+            }}
+          />
+        </AnimatePresence>
+      </div>
+
+      {images.length > 1 && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, paddingTop: 18, paddingBottom: "max(4px, env(safe-area-inset-bottom))" }}
+        >
+          <ArrowButton
+            direction="prev"
+            onClick={() => go(index - 1)}
+            disabled={index === 0}
+            label={lang === "TH" ? "รูปก่อนหน้า" : "Previous photo"}
+          />
+          <span
+            aria-live="polite"
+            style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: "rgba(255,248,240,0.75)", minWidth: 62, textAlign: "center" }}
+          >
+            {index + 1} / {images.length}
+          </span>
+          <ArrowButton
+            direction="next"
+            onClick={() => go(index + 1)}
+            disabled={index === last}
+            label={lang === "TH" ? "รูปถัดไป" : "Next photo"}
+          />
+        </div>
+      )}
+
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={lang === "TH" ? "ปิด" : "Close"}
         style={{
           position: "absolute",
           top: "max(16px, env(safe-area-inset-top))",
           right: 16,
-          width: 40,
-          height: 40,
+          width: 44,
+          height: 44,
           borderRadius: "50%",
           border: "1px solid rgba(255,248,240,0.4)",
           background: "rgba(255,248,240,0.14)",
@@ -153,36 +259,43 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-/* Each card owns its own scale/opacity transform derived from the shared
-   drag position — keeps the "active card pops, neighbours recede" effect
-   without re-rendering every card on every drag frame. Tapping (not
-   dragging — Framer's onTap only fires when the pointer barely moved)
-   opens the full-screen Lightbox. */
-function CarouselCard({ src, i, x, step, onZoom }: { src: string; i: number; x: MotionValue<number>; step: number; onZoom: (src: string) => void }) {
-  const scale = useTransform(x, (xv) => {
-    if (!step) return 1;
-    const dist = Math.abs(xv + i * step) / step;
-    return clamp(1 - dist * 0.14, 0.86, 1);
-  });
-  const opacity = useTransform(x, (xv) => {
-    if (!step) return 1;
-    const dist = Math.abs(xv + i * step) / step;
-    return clamp(1 - dist * 0.5, 0.5, 1);
-  });
-
+/* One matted print in the mosaic. A real button rather than a tap-handling
+   div, so it is reachable by keyboard and announces itself. */
+function Print({
+  src,
+  i,
+  inView,
+  onOpen,
+  label,
+}: {
+  src: string;
+  i: number;
+  inView: boolean;
+  onOpen: () => void;
+  label: string;
+}) {
+  const tilt = tiltFor(i);
   return (
-    <motion.div
-      data-card
-      onTap={() => onZoom(src)}
+    <motion.button
+      type="button"
+      onClick={onOpen}
+      aria-label={label}
+      initial={{ opacity: 0, y: 26, rotate: tilt }}
+      animate={inView ? { opacity: 1, y: 0, rotate: tilt } : {}}
+      // The stagger tails off so the eleventh print is not still arriving a
+      // full second after the first.
+      transition={{ delay: Math.min(i * 0.06, 0.55), duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ rotate: 0, scale: 1.03, zIndex: 2 }}
+      whileTap={{ rotate: 0, scale: 0.985 }}
       style={{
-        scale,
-        opacity,
-        flex: `0 0 ${CARD_W}`,
-        aspectRatio: CARD_ASPECT,
-        borderRadius: 20,
-        overflow: "hidden",
-        background: COLORS.ivory,
+        padding: 6,
+        background: COLORS.white,
+        border: "1px solid rgba(138,107,75,0.18)",
+        borderRadius: 4,
+        boxShadow: "0 6px 18px rgba(61,34,21,0.16)",
         cursor: "zoom-in",
+        WebkitTapHighlightColor: "transparent",
+        position: "relative",
       }}
     >
       <img
@@ -190,172 +303,22 @@ function CarouselCard({ src, i, x, step, onZoom }: { src: string; i: number; x: 
         alt=""
         draggable={false}
         loading="lazy"
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        decoding="async"
+        /* "auto 3 / 4" reserves a portrait box before the file arrives and then
+           defers to the real intrinsic ratio once it has. Without it, eleven
+           lazy-loaded images each lay out at zero height and the masonry
+           columns visibly reshuffle as they arrive. Eight of the eleven are
+           exactly 3:4, so most settle with no shift at all. */
+        style={{ width: "100%", height: "auto", aspectRatio: "auto 3 / 4", display: "block", borderRadius: 2 }}
       />
-    </motion.div>
-  );
-}
-
-function Carousel({ images, emptyText }: { images: string[]; emptyText: string }) {
-  const { lang } = useLang();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [cardPx, setCardPx] = useState(0);
-  const [index, setIndex] = useState(0);
-  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
-  const x = useMotionValue(0);
-
-  const maxIndex = Math.max(0, images.length - 1);
-  const step = cardPx + CARD_GAP;
-
-  useEffect(() => {
-    const measure = () => {
-      const first = trackRef.current?.querySelector<HTMLDivElement>("[data-card]");
-      if (first) setCardPx(first.getBoundingClientRect().width);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [images.length]);
-
-  useEffect(() => {
-    animate(x, -index * step, { type: "spring", stiffness: 340, damping: 36 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
-
-  const goTo = (next: number) => {
-    const clamped = clamp(next, 0, maxIndex);
-    setIndex(clamped);
-    animate(x, -clamped * step, { type: "spring", stiffness: 340, damping: 36 });
-  };
-
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    const dragged = info.offset.x;
-    const fast = Math.abs(info.velocity.x) > 500;
-    let delta = 0;
-    if (Math.abs(dragged) > step * 0.22 || fast) {
-      delta = dragged < 0 ? 1 : -1;
-    }
-    goTo(index + delta);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") { e.preventDefault(); goTo(index + 1); }
-    if (e.key === "ArrowLeft") { e.preventDefault(); goTo(index - 1); }
-  };
-
-  if (images.length === 0) {
-    return (
-      <div
-        style={{
-          width: "100%",
-          aspectRatio: CARD_ASPECT,
-          maxWidth: 300,
-          margin: "0 auto",
-          borderRadius: 20,
-          background: COLORS.ivory,
-          border: "1px dashed rgba(138,112,48,0.35)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          padding: "0 28px",
-          color: COLORS.lightBrown,
-          fontFamily: "'TT Interphases', sans-serif",
-          fontSize: "0.85rem",
-          letterSpacing: "0.04em",
-          lineHeight: 1.5,
-        }}
-      >
-        {emptyText}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div
-        role="region"
-        aria-roledescription="carousel"
-        aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        style={{ width: "100%", overflow: "hidden", paddingBlock: 8, outline: "none" }}
-      >
-        <motion.div
-          ref={trackRef}
-          drag={images.length > 1 ? "x" : false}
-          dragConstraints={{ left: -maxIndex * step, right: 0 }}
-          dragElastic={0.06}
-          dragMomentum={false}
-          onDragEnd={onDragEnd}
-          style={{
-            x,
-            display: "flex",
-            gap: CARD_GAP,
-            width: "max-content",
-            paddingLeft: `calc(50% - ${CARD_W} / 2)`,
-            paddingRight: `calc(50% - ${CARD_W} / 2)`,
-            cursor: images.length > 1 ? "grab" : "default",
-            touchAction: "pan-y",
-          }}
-          whileTap={images.length > 1 ? { cursor: "grabbing" } : undefined}
-        >
-          {images.map((src, i) => (
-            <CarouselCard key={src} src={src} i={i} x={x} step={step} onZoom={setZoomSrc} />
-          ))}
-        </motion.div>
-      </div>
-
-      <AnimatePresence>
-        {zoomSrc && <Lightbox key={zoomSrc} src={zoomSrc} onClose={() => setZoomSrc(null)} />}
-      </AnimatePresence>
-
-      {images.length > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, marginTop: 22 }}>
-          <ArrowButton
-            direction="prev"
-            onClick={() => goTo(index - 1)}
-            disabled={index === 0}
-            label={lang === "TH" ? "รูปก่อนหน้า" : "Previous photo"}
-          />
-          <div style={{ display: "flex", gap: 7 }}>
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goTo(i)}
-                aria-label={lang === "TH" ? `ไปที่รูปที่ ${i + 1}` : `Go to photo ${i + 1}`}
-                aria-current={i === index}
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: 4,
-                  background: i === index ? COLORS.gold : "rgba(138,112,48,0.3)",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                  transform: i === index ? "scaleX(2.85)" : "scaleX(1)",
-                  transformOrigin: "center",
-                  transition: "transform 0.3s ease, background 0.3s ease",
-                }}
-              />
-            ))}
-          </div>
-          <ArrowButton
-            direction="next"
-            onClick={() => goTo(index + 1)}
-            disabled={index === maxIndex}
-            label={lang === "TH" ? "รูปถัดไป" : "Next photo"}
-          />
-        </div>
-      )}
-    </div>
+    </motion.button>
   );
 }
 
 export function GallerySection() {
   const { lang, t } = useLang();
   const { ref, inView } = useReveal("-80px");
+  const [zoom, setZoom] = useState<number | null>(null);
 
   const preWeddingLabel = lang === "TH" ? "พรีเวดดิ้ง" : "Pre-Wedding";
   const preWeddingEmptyText =
@@ -370,19 +333,73 @@ export function GallerySection() {
         background: "transparent",
       }}
     >
+      <style>{MOSAIC_CSS}</style>
+
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.9 }}
-        style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}
+        style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto" }}
       >
         <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
         <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.26em", color: COLORS.midBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{preWeddingLabel}</p>
         <Divider className="mb-10" />
 
-        <Carousel images={PRE_WEDDING_IMAGES} emptyText={preWeddingEmptyText} />
+        {PRE_WEDDING_IMAGES.length === 0 ? (
+          <div
+            style={{
+              width: "100%",
+              aspectRatio: "4 / 5",
+              maxWidth: 300,
+              margin: "0 auto",
+              borderRadius: 20,
+              background: COLORS.ivory,
+              border: "1px dashed rgba(138,112,48,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              padding: "0 28px",
+              color: COLORS.lightBrown,
+              fontFamily: "'TT Interphases', sans-serif",
+              fontSize: "0.85rem",
+              letterSpacing: "0.04em",
+              lineHeight: 1.5,
+            }}
+          >
+            {preWeddingEmptyText}
+          </div>
+        ) : (
+          <div className="pw-mosaic" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
+            {PRE_WEDDING_IMAGES.map((src, i) => (
+              <Print
+                key={src}
+                src={src}
+                i={i}
+                inView={inView}
+                onOpen={() => setZoom(i)}
+                label={
+                  lang === "TH"
+                    ? `เปิดรูปที่ ${i + 1} จาก ${PRE_WEDDING_IMAGES.length}`
+                    : `Open photo ${i + 1} of ${PRE_WEDDING_IMAGES.length}`
+                }
+              />
+            ))}
+          </div>
+        )}
       </motion.div>
+
+      <AnimatePresence>
+        {zoom !== null && (
+          <Lightbox
+            images={PRE_WEDDING_IMAGES}
+            index={zoom}
+            onIndex={setZoom}
+            onClose={() => setZoom(null)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

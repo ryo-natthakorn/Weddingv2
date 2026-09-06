@@ -50,3 +50,27 @@
   font-display: swap;
   src: url('../imports/fonts/TTInterphasesPro-DemiBold.ttf') format('truetype');
 }
+
+/* Weight 700 — NOT SHIPPED.
+   The printed invitation sets the couple's names in TT Interphases with Canva's
+   Bold (700) applied, but only Light/Regular/Medium/DemiBold are licensed into
+   this repo. The names render at 600, the closest face we have, and the browser
+   synthesises the rest.
+
+   To close that gap: drop TTInterphasesPro-Bold.ttf into ../imports/fonts/ and
+   uncomment the block below. It is commented rather than left live because Vite
+   resolves url() at build time and fails outright on a missing font file.
+
+   Then re-check both names at 320px in TH and EN: a real Bold face is wider than
+   the DemiBold that NAME_FONT_SIZE's 16.17em worst case was measured at, so the
+   17.5 divisor in NameIntroWithCountdown.tsx may need to grow. */
+
+/*
+@font-face {
+  font-family: 'TT Interphases';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../imports/fonts/TTInterphasesPro-Bold.ttf') format('truetype');
+}
+*/

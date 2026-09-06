@@ -36,8 +36,12 @@ function CountdownTimer() {
       {[{ label: "Days", v: time.days }, { label: "Hours", v: time.hours }, { label: "Min", v: time.minutes }, { label: "Sec", v: time.seconds }].map(({ label, v }) => (
         <motion.div key={label} whileHover={{ scale: 1.05, y: -4 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
           {/* Static tile — only the digit animates, so the blur/border/shadow
-              never re-render and the tile never collapses between ticks */}
-          <div style={{ width: "100%", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "clamp(10px, 3vw, 14px) clamp(6px, 2vw, 16px)", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.2rem, 5.6vw, 2.2rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}>
+              never re-render and the tile never collapses between ticks.
+              Digits were clamp(1.2rem, 5.6vw, 2.2rem), which rendered 23.2px on
+              a 414px phone and out-scaled the names. The names cannot grow past
+              ~22.7px while staying on one line (see NAME_FONT_SIZE), so the
+              countdown gives way instead. */}
+          <div style={{ width: "100%", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "clamp(10px, 3vw, 14px) clamp(6px, 2vw, 16px)", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 4.4vw, 1.8rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}>
             <div style={{ height: "1em", overflow: "hidden" }}>
               <motion.span
                 key={v}
@@ -119,12 +123,20 @@ function ClipReveal({
 
    Dividing the container width by 17.5 keeps even the 16.17em worst case
    inside it with ~8% to spare, which also absorbs the platform Thai/Latin
-   fallbacks on iOS and Android differing from the ones measured here. The
-   container is the section's content box: min(720px, 100vw - 48px padding).
-   41px is that same formula at the 720px cap, so it doubles as the desktop
-   ceiling. Every name gets the identical size, so bride and groom always
-   match and nothing depends on load order or timing. */
-const NAME_FONT_SIZE = "min(41px, calc((100vw - 48px) / 17.5))";
+   fallbacks on iOS and Android differing from the ones measured here.
+
+   The name block is the one element that opts out of the section's 24px
+   gutter: it is wrapped in marginInline:-16px, leaving an 8px gutter, so its
+   container is (100vw - 16px) rather than (100vw - 48px). That buys ~9% more
+   type at exactly the same headroom — 22.7px at 414px instead of 20.9px —
+   which is what lets the names out-scale the date on a phone while still
+   sitting on one line each, as they do on the printed card. The margin and
+   this divisor describe the same box, so they must change together.
+
+   43px is that formula at the 720px content cap (720 + 32 = 752 / 17.5), so
+   it doubles as the desktop ceiling. Every name gets the identical size, so
+   bride and groom always match and nothing depends on load order or timing. */
+const NAME_FONT_SIZE = "min(43px, calc((100vw - 16px) / 17.5))";
 
 export function NameIntroWithCountdown() {
   const { t, lang } = useLang();
@@ -214,7 +226,7 @@ export function NameIntroWithCountdown() {
             single line (left-to-right clip-wipe). Bride wipes first
             (1.8s); groom follows after 0.3s (2.2s). Both triggered together
             when the section enters the viewport. */}
-        <div ref={namesRef} style={{ marginTop: 40 }}>
+        <div ref={namesRef} style={{ marginTop: 56, marginInline: -16 }}>
           {/* Bride */}
           <ClipReveal active={namesInView} duration={1.8}>
             <span style={nameLineStyle}>
@@ -263,12 +275,20 @@ export function NameIntroWithCountdown() {
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.32em", marginRight: "-0.32em", textTransform: "uppercase", marginBottom: 10 }}>
             {t.sunday}
           </p>
-          {/* Same geometry trick as NAME_FONT_SIZE: "22 พฤศจิกายน 2569" and
-              "22 November 2026" both measure at most 9.09em wide (across the
-              webfont and both fallbacks) at this weight and tracking, so
-              dividing the content box by 10 keeps either on one line with ~10%
-              to spare. The old clamp() floor of 2rem overflowed 320px. */}
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "min(3rem, calc((100vw - 48px) / 10))", fontWeight: 500, color: COLORS.navy, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
+          {/* The date deliberately yields to the names now. On the printed
+              card the names are large and teal while the date is smaller and a
+              dark neutral; the site had that inverted — a 37px date over 21px
+              names, which is exactly the complaint. Dividing by 20 instead of
+              the 10 that suited the old oversized date puts this at ~18px on a
+              414px phone against 22.7px names.
+
+              The 14px floor is load-bearing: without it a 320px phone renders
+              the date at 13.6px, under body size. Still nowrap-safe either way
+              — "22 พฤศจิกายน 2569" and "22 November 2026" both measure at most
+              9.09em across the webfont and both fallbacks, far inside a /20
+              box. Colour moves teal -> midBrown so it recedes in hue as well as
+              in scale. */}
+          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
           <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
