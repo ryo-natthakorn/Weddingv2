@@ -12,7 +12,7 @@ const output = join(tmpdir(), 'wedding-refinement');
 await mkdir(output, { recursive: true });
 
 try {
-  for (const [width, height] of [[414, 896], [1280, 896], [1920, 1080]]) {
+  for (const [width, height] of [[320, 896], [414, 896], [503, 1032], [794, 1032], [893, 1032], [1280, 896], [1920, 1080]]) {
     const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -40,7 +40,7 @@ try {
       assert.ok(headsBottom < geometry.hero.height, `${width}px faces cropped`);
       assert.ok(Math.abs(geometry.image.x + geometry.image.width / 2 - width / 2) < 2);
     }
-    const gallery = page.locator('.pw-mosaic');
+    const gallery = page.locator('.pw-gallery');
     await gallery.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => [...document.querySelectorAll('.pw-stamp img')].every(img => img.complete && img.naturalWidth > 0));
     for (const photo of await gallery.locator('img').all()) {
@@ -49,14 +49,41 @@ try {
     }
     await gallery.scrollIntoViewIfNeeded();
     await gallery.screenshot({ path: join(output, `gallery-${width}.png`), animations: 'disabled' });
+    const photos = await gallery.locator('img').evaluateAll(images => images.map(img => ({
+      name: new URL(img.src).pathname.split('/').pop(),
+      x: img.getBoundingClientRect().x,
+      y: img.getBoundingClientRect().y,
+    })));
+    assert.deepEqual(photos.map(photo => photo.name), [
+      '01-ring-box.jpg', '11-suan-ben.jpg', '10-suan-ben.jpg', '09-suan-ben.jpg',
+      '08-suan-ben.jpg', '02-rings.jpg', '07-suan-ben.jpg', '03-saphan-phut.jpg',
+      '04-saphan-phut.jpg', '05-saphan-phut.jpg', '06-saphan-phut.jpg',
+    ]);
+    assert.ok(photos[1].x < photos[2].x && Math.abs(photos[1].y - photos[2].y) < 20, 'group 1 must read left to right');
     await gallery.getByRole('button').last().scrollIntoViewIfNeeded();
     await page.screenshot({ path: join(output, `gallery-bottom-${width}.png`), animations: 'disabled' });
     const first = gallery.getByRole('button').first();
     await first.click();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Escape');
+    const mrt = page.getByText('โดย MRT', { exact: true }).locator('..').locator('..').locator('img');
+    await mrt.scrollIntoViewIfNeeded();
+    await mrt.screenshot({ path: join(output, `mrt-${width}.png`) });
+    for (const text of ['การตอบรับของคุณช่วยให้เราเตรียมงานได้พอดี', 'Your reply helps us plan our day.']) {
+      if (text.startsWith('Your')) await page.getByRole('button', { name: 'EN', exact: true }).click();
+      const message = page.getByText(text, { exact: true });
+      await message.scrollIntoViewIfNeeded();
+      const lines = await message.evaluate(el => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const rects = [...range.getClientRects()];
+        return { count: rects.length, fits: rects.every(rect => rect.left >= 0 && rect.right <= innerWidth) };
+      });
+      assert.deepEqual(lines, { count: 1, fits: true }, `${width}px RSVP must fit on one readable line`);
+      await message.screenshot({ path: join(output, `rsvp-${text.startsWith('Your') ? 'en' : 'th'}-${width}.png`), animations: 'disabled' });
+    }
     assert.deepEqual(errors, [], `${width}px browser exceptions`);
-    console.log(`PASS ${width}x${height}: hero framing, image loading, no overflow, gallery opens/navigates/closes`);
+    console.log(`PASS ${width}x${height}: hero framing, gallery grouping/navigation, logo rendering, single-line TH/EN RSVP`);
     await page.close();
   }
   console.log(`Screenshots: ${output}`);

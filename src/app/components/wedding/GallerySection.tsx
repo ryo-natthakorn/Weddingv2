@@ -12,8 +12,8 @@ import {
 /* ───────────────────────────────────────────────────────────────
    GALLERY — PRE-WEDDING ALBUM
    ----------------------------------------------------------------
-   A scattered mosaic of the pre-wedding shoot: photos laid out in
-   masonry columns, each one mounted like a postage stamp -- off-white
+   A grouped album of the pre-wedding shoot, with each photo mounted
+   like a postage stamp -- off-white
    mat, perforated edge -- and tilted a degree or two off square,
    straightening when you touch it.
    Tapping any print opens a full-screen viewer you can page through.
@@ -25,12 +25,9 @@ import {
    a dead-straight grid reads as a stock template, and DESIGN.md
    asks for handmade over templated.
 
-   Reads straight from src/imports/pre-wedding/ — drop image files
-   in and they appear automatically, no code changes needed. Sorted
-   by filename. The order is deliberate: the ring photos open the
-   album, then the Saphan Phut set, then Suan Benjakitti. The glob is
-   deliberately non-recursive, which is what keeps the full-size
-   originals in _originals/ out of the bundle.
+   The ring box opens the album, followed by the couple's ordered
+   park and bridge groups. New files are appended after those groups.
+   The non-recursive glob keeps _originals/ out of the bundle.
 ─────────────────────────────────────────────────────────────── */
 
 const PRE_WEDDING_MODULES = import.meta.glob(
@@ -38,28 +35,32 @@ const PRE_WEDDING_MODULES = import.meta.glob(
   { eager: true, query: "?url", import: "default" },
 ) as Record<string, string>;
 
-const PRE_WEDDING_IMAGES = Object.keys(PRE_WEDDING_MODULES)
-  .sort()
-  .map((key) => PRE_WEDDING_MODULES[key]);
+const PHOTO_GROUPS = [
+  ["01-ring-box.jpg"],
+  ["11-suan-ben.jpg", "10-suan-ben.jpg", "09-suan-ben.jpg", "08-suan-ben.jpg", "02-rings.jpg", "07-suan-ben.jpg"],
+  ["03-saphan-phut.jpg", "04-saphan-phut.jpg", "05-saphan-phut.jpg", "06-saphan-phut.jpg"],
+];
+const photosByName = new Map(Object.entries(PRE_WEDDING_MODULES).map(([path, src]) => [path.split("/").pop()!, src]));
+const assignedNames = new Set(PHOTO_GROUPS.flat());
+const PRE_WEDDING_GROUPS = [
+  ...PHOTO_GROUPS.map(names => names.flatMap(name => photosByName.has(name) ? [photosByName.get(name)!] : [])),
+  [...photosByName.entries()].filter(([name]) => !assignedNames.has(name)).sort(([a], [b]) => a.localeCompare(b)).map(([, src]) => src),
+];
+const PRE_WEDDING_IMAGES = PRE_WEDDING_GROUPS.flat();
 
-/* Masonry needs a stylesheet rather than inline styles: the column count
-   changes at a breakpoint, and `break-inside` has no inline equivalent that
-   Safari honours. All three properties on the children matter — `break-inside`
-   alone still lets Chrome and Safari split a tall print across a column
-   boundary; they only behave once the child is also an inline-block with an
-   explicit width. */
+/* Row-major grids keep the requested photo order consistent across widths,
+   keyboard navigation and the lightbox. Each group begins on its own row. */
 const MOSAIC_CSS = `
-.pw-mosaic { column-count: 2; column-gap: 12px; }
-@media (min-width: 640px) { .pw-mosaic { column-count: 3; column-gap: 14px; } }
-.pw-mosaic > * {
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  page-break-inside: avoid;
-  display: inline-block;
+.pw-mosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 640px) { .pw-mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
+.pw-opening { max-width: 280px; margin-inline: auto; }
+.pw-gallery > div + div { margin-top: 28px; }
+.pw-mosaic > *, .pw-opening > * {
+  display: block;
   width: 100%;
-  margin: 0 0 12px;
+  min-width: 0;
+  margin: 0;
 }
-@media (min-width: 640px) { .pw-mosaic > * { margin-bottom: 14px; } }
 
 /* Postage-stamp edge, matching the couple's reference: an off-white mat with
    semicircular notches punched along all four sides.
@@ -419,20 +420,27 @@ export function GallerySection() {
             {preWeddingEmptyText}
           </div>
         ) : (
-          <div className="pw-mosaic" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
-            {PRE_WEDDING_IMAGES.map((src, i) => (
-              <Print
-                key={src}
-                src={src}
-                i={i}
-                inView={inView}
-                onOpen={() => setZoom(i)}
-                label={
-                  lang === "TH"
-                    ? `เปิดรูปที่ ${i + 1} จาก ${PRE_WEDDING_IMAGES.length}`
-                    : `Open photo ${i + 1} of ${PRE_WEDDING_IMAGES.length}`
-                }
-              />
+          <div className="pw-gallery" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
+            {PRE_WEDDING_GROUPS.map((photos, groupIndex) => photos.length > 0 && (
+              <div key={groupIndex} className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
+                {photos.map(src => {
+                  const i = PRE_WEDDING_IMAGES.indexOf(src);
+                  return (
+                    <Print
+                      key={src}
+                      src={src}
+                      i={i}
+                      inView={inView}
+                      onOpen={() => setZoom(i)}
+                      label={
+                        lang === "TH"
+                          ? `เปิดรูปที่ ${i + 1} จาก ${PRE_WEDDING_IMAGES.length}`
+                          : `Open photo ${i + 1} of ${PRE_WEDDING_IMAGES.length}`
+                      }
+                    />
+                  );
+                })}
+              </div>
             ))}
           </div>
         )}

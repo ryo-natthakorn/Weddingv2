@@ -220,7 +220,7 @@ export function RSVPSection() {
 
         {/* Importance message — warm, gentle, between subtitle and form */}
         {status === "idle" && (
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: "0.02em", marginBottom: 40, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: 0, whiteSpace: "nowrap", marginBottom: 40, marginLeft: "auto", marginRight: "auto" }}>
             {t.rsvp_importance}
           </p>
         )}

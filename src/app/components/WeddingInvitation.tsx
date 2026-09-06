@@ -18,7 +18,7 @@ import {
 import heroIllustration from "../../imports/Hero.jpg";
 import pnLogo from "../../imports/Logo.svg";
 import carIcon from "../../imports/car-icon.svg";
-import mrtIcon from "../../imports/mrt-icon.svg";
+import mrtIcon from "../../imports/MRT_(Bangkok)_Pink_logo_with_name.svg";
 import grabIcon from "../../imports/grab-icon.png";
 
 /* Transport marks, keyed by the `key` on each item in t.direction_items.
@@ -405,7 +405,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                     src={DIRECTION_LOGOS[key]}
                     alt=""
                     aria-hidden
-                    style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0, boxShadow: "0 3px 10px rgba(61,34,21,0.18)" }}
+                    style={{ width: 48, height: 48, borderRadius: key === "mrt" ? 0 : "50%", objectFit: "contain", flexShrink: 0, boxShadow: key === "mrt" ? "none" : "0 3px 10px rgba(61,34,21,0.18)" }}
                   />
                   <div>
                     <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
