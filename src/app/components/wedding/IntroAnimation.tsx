@@ -5,6 +5,11 @@ import pnLogo from "../../../imports/Logo.svg";
 
 interface Props {
   onComplete: () => void;
+  /* Fired SYNCHRONOUSLY inside the pointerup / keydown that opens the card.
+     iOS only honours a play() request made inside the user-gesture call stack,
+     and onComplete runs 1.6s and two setTimeouts later — long after the gesture
+     is gone, which is why autoplay never worked on iPhone. */
+  onUnlockGesture?: () => void;
 }
 
 const Petal = memo(function Petal({ x, delay, size, duration }: { x: number; delay: number; size: number; duration: number }) {
@@ -39,7 +44,7 @@ const THUMB_W = 72;
 const UNLOCK_AT = 88;
 const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-export function IntroAnimation({ onComplete }: Props) {
+export function IntroAnimation({ onComplete, onUnlockGesture }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [pos, setPos] = useState(0);
@@ -87,6 +92,10 @@ export function IntroAnimation({ onComplete }: Props) {
 
   const handlePointerUp = () => {
     setIsDragging(false);
+    /* The unlock is DETECTED in pointermove, but pointermove is not a user
+       activation event on iOS — pointerup is. So the hand-off has to happen
+       here, on release, while the gesture is still live. */
+    if (unlocked || pos >= UNLOCK_AT) onUnlockGesture?.();
     if (!unlocked && pos < UNLOCK_AT) setPos(0);
   };
 
@@ -111,6 +120,8 @@ export function IntroAnimation({ onComplete }: Props) {
       case "Enter":
       case " ":
         e.preventDefault();
+        // keydown is itself an activation event, so the gesture is live here.
+        onUnlockGesture?.();
         triggerUnlock();
         break;
     }

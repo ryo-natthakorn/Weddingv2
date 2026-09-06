@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "motion/react";
 import { LangProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
@@ -209,7 +209,7 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
+function InvitationContent({ onPlaySong, songPlaying, onSongDockChange }: { onPlaySong: () => void; songPlaying: boolean; onSongDockChange: (d: boolean) => void }) {
   const { t } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
@@ -461,7 +461,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       <GiftSection />
 
       {/* ═══ OUR SONG ═══ */}
-      <SongSection onPlay={onPlaySong} />
+      <SongSection onPlay={onPlaySong} playing={songPlaying} onDockChange={onSongDockChange} />
 
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
@@ -490,6 +490,13 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
+  /* Lifted so the corner player and the Our Song button can act as one
+     control: the section reports when it is on screen, the player reports what
+     it is doing. */
+  const [songDocked, setSongDocked] = useState(false);
+  const [songPlaying, setSongPlaying] = useState(false);
+  const handleDock = useCallback((d: boolean) => setSongDocked(d), []);
+  const handlePlaying = useCallback((p: boolean) => setSongPlaying(p), []);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -523,6 +530,11 @@ export function WeddingInvitation() {
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
+            /* Runs inside the pointerup that opens the card, which is the only
+               moment iOS will accept a play() request. onComplete fires 1.6s
+               later, by which point the user gesture has expired — that is why
+               autoplay never worked on iPhone. */
+            onUnlockGesture={() => { musicRef.current?.play(); }}
             onComplete={() => {
               // Belt-and-braces against a restored/nonzero offset surviving the
               // lock — the card must open on the hero.
@@ -539,10 +551,17 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} />
+        <MusicPlayer ref={musicRef} docked={songDocked} onPlayingChange={handlePlaying} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent onPlaySong={() => musicRef.current?.open()} />
+        <InvitationContent
+          /* Once docked, this button IS the player, so it toggles rather than
+             re-opening the card every tap. Before docking it still opens the
+             card, which is how the section introduces the player. */
+          onPlaySong={() => { if (songDocked) musicRef.current?.toggle(); else musicRef.current?.open(); }}
+          songPlaying={songPlaying}
+          onSongDockChange={handleDock}
+        />
       </motion.div>
     </LangProvider>
   );

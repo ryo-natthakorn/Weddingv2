@@ -180,6 +180,24 @@ Everything else stays the same.
 
 **Fallback (Autoplay on Entry):** If H is removed, music starts softly as invitation fades in after sliding open. Player shows pause icon. No toast, no popup. Subtitle line does all the communication.
 
+**iOS autoplay — do not "simplify" this back.** play() must be called
+SYNCHRONOUSLY inside the pointerup/keydown that opens the card. iOS only
+honours a playback request made inside the user-gesture call stack, and
+onComplete fires ~1.6s and two setTimeouts later, by which point the gesture
+has expired — that is why autoplay silently failed on iPhone. IntroAnimation
+therefore takes an onUnlockGesture prop and fires it on RELEASE (pointermove,
+where the unlock is detected, is not an activation event). playerVars also
+needs playsinline:1, or iOS routes the hidden player to fullscreen video.
+Some in-app browsers (LINE on iOS) are stricter than Safari and may still
+require a tap; no technique overrides that.
+
+**Docking into Our Song.** While the Our Song section is on screen the corner
+button stands down (MusicPlayer `docked` prop) and that section's button
+becomes the single control, toggling play/pause rather than reopening the
+card. Otherwise a guest sees two play buttons for the same track and has to
+guess which is live. The section reports visibility via onDockChange; the
+player reports playback via onPlayingChange; WeddingInvitation holds both.
+
 ## Global: Background Continuity — CRITICAL — `WeddingInvitation.tsx + all section files`
 
 ```

@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallba
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 
-export type MusicPlayerHandle = { play: () => void; open: () => void };
+export type MusicPlayerHandle = { play: () => void; open: () => void; toggle: () => void };
 
 const YT_VIDEO_ID = (import.meta.env.VITE_YOUTUBE_VIDEO_ID as string) || "p8iVeHphD3c";
 const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
@@ -90,7 +90,13 @@ function PetalTrail() {
   );
 }
 
-export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
+export const MusicPlayer = forwardRef<MusicPlayerHandle, {
+  /* True while the Our Song section is on screen. The corner button stands
+     down there and that section's own button becomes the control, so the guest
+     is never looking at two play buttons for the same song. */
+  docked?: boolean;
+  onPlayingChange?: (playing: boolean) => void;
+}>(({ docked = false, onPlayingChange }, ref) => {
   const { t } = useLang();
   const reduceMotion = useReducedMotion();
   const playerRef = useRef<any>(null);
@@ -119,6 +125,15 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
 
   useImperativeHandle(ref, () => ({
     play: startPlayback,
+    /* Play/pause without opening the card — what the Our Song button needs
+       once it has taken over from the corner button. */
+    toggle: () => {
+      if (!playerRef.current) { autoplayWantedRef.current = true; return; }
+      try {
+        if (playing) playerRef.current.pauseVideo();
+        else playerRef.current.playVideo();
+      } catch {}
+    },
     /* Used by the "Our Song" section. Unlike autoplay-on-entry, this follows a
        deliberate tap partway down the page, so the card is expanded too —
        otherwise sound simply starts from a corner button with no visible
@@ -127,7 +142,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
       setExpanded(true);
       startPlayback();
     },
-  }), [startPlayback]);
+  }), [startPlayback, playing]);
+
+  /* Mirror playback state up so the Our Song button can show the right icon. */
+  useEffect(() => { onPlayingChange?.(playing); }, [playing, onPlayingChange]);
 
   /* ── Init YouTube IFrame API ── */
   const initPlayer = useCallback(() => {
@@ -136,6 +154,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
       videoId: YT_VIDEO_ID,
       playerVars: {
         autoplay: 0,            // discovery is the petal trail, not autoplay
+        playsinline: 1,         // iOS routes a non-inline player to fullscreen video
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -296,12 +315,14 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
 
       {/* COLLAPSED — 56px gold circle, bottom-right */}
       <AnimatePresence>
-        {!expanded && (
+        {!expanded && !docked && (
           <motion.div
             key="collapsed"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
+            /* Sinks toward the section rather than just vanishing, so handing
+               control to the Our Song button reads as one movement. */
+            exit={{ scale: 0.4, opacity: 0, y: 14 }}
             transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56 }}
           >
