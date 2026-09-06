@@ -201,7 +201,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", marginRight: "-0.25em", color: "#8A7030", marginTop: 28 }}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", marginRight: "-0.25em", color: "#8A7030", marginTop: 28 }}
             >
               22 · 11 · 26
             </motion.p>
@@ -209,7 +209,7 @@ export function IntroAnimation({ onComplete }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.8rem", letterSpacing: "0.2em", marginRight: "-0.2em", color: "rgba(27,74,92,0.72)", textTransform: "uppercase", marginTop: 8 }}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.8rem", letterSpacing: "0.2em", marginRight: "-0.2em", color: "rgba(27,74,92,0.72)", textTransform: "uppercase", marginTop: 8 }}
             >
               SailomSangdad · Bangkok
             </motion.p>
@@ -241,7 +241,7 @@ export function IntroAnimation({ onComplete }: Props) {
               animate={showHint ? { opacity: 1, y: 0 } : { opacity: 0, y: reduceMotion ? 0 : 8 }}
               transition={{ duration: 0.7 }}
               aria-hidden={!showHint}
-              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.78)", letterSpacing: "0.05em" }}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", fontStyle: "italic", color: "rgba(27,74,92,0.78)", letterSpacing: "0.05em" }}
             >
               Slide to open
             </motion.p>

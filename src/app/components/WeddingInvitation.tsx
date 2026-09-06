@@ -219,7 +219,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
   const FLORAL_IMAGE = Object.values(VENUE_IMAGE_MODULES)[0] ?? VENUE_IMAGE_FALLBACK;
 
   return (
-    <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "'TT Interphases', sans-serif", color: COLORS.warmBrown }}>
+    <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.warmBrown }}>
 
       {/* ═══ HERO ═══ */}
       <section
@@ -254,7 +254,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               alt="PN"
               style={{ width: "min(200px,50vw)", height: "auto", display: "block", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))", margin: "0 auto" }}
             />
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.4rem, 4vw, 2rem)", letterSpacing: "0.38em", color: "#8A7030", marginTop: 14, fontWeight: 500 }}>
+            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 4vw, 2rem)", letterSpacing: "0.38em", color: "#8A7030", marginTop: 14, fontWeight: 500 }}>
               22 · 11 · 26
             </p>
           </motion.div>
@@ -271,7 +271,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
           >
             <motion.div animate={{ y: [0, 12, 0], opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1.8 }} style={{ width: 3.5, height: 7, background: "rgba(27,74,92,0.5)", borderRadius: 2 }} />
           </motion.div>
-          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.58rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.4)", textTransform: "uppercase" }}>{t.scroll}</span>
+          <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.58rem", letterSpacing: "0.2em", color: "rgba(27,74,92,0.4)", textTransform: "uppercase" }}>{t.scroll}</span>
         </motion.div>
       </section>
 
@@ -288,7 +288,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
 
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
           <Divider className="mb-8" />
 
           {/* BLOCK 1+2 — merged: venue photo and address/CTA share one card */}
@@ -299,20 +299,20 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(42,26,10,0.7) 0%, rgba(42,26,10,0.15) 35%, transparent 60%)" }} />
               {/* venue name — bottom-left */}
               <div style={{ position: "absolute", bottom: 18, left: 20, right: 20 }}>
-                <h2 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.5rem, 6vw, 2.4rem)", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
+                <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.5rem, 6vw, 2.4rem)", fontWeight: 600, color: "#FFF8EE", lineHeight: 1.15, textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>{t.map_title}</h2>
               </div>
             </div>
 
             {/* Address + CTA — same card, below the photo */}
             <div style={{ padding: "32px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
-              <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em" }}>{t.map_address}</p>
+              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em" }}>{t.map_address}</p>
               <motion.a
                 href={MAPS_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
@@ -330,8 +330,8 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                     {icon}
                   </div>
                   <div>
-                    <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
-                    <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
+                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
+                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
                   </div>
                 </div>
               ))}
@@ -343,7 +343,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "48px 24px 56px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
@@ -354,8 +354,8 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                 style={{ background: "rgba(255,248,240,0.6)", border: "1px solid rgba(138,107,75,0.15)", borderTop: `3px solid ${COLORS.gold}`, borderRadius: 16, padding: "36px 24px", boxShadow: "0 10px 30px rgba(61,34,21,0.1)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}
               >
                 <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} />
-                <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
-                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
+                <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
+                <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
               </motion.div>
             ))}
           </div>
@@ -367,9 +367,9 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
+            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
-            <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
+            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
           </motion.div>
 
           {/* 9 swatch arches — drop in left→right, top row first.
@@ -403,7 +403,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               <InstagramIcon />
               <FacebookIcon />
             </motion.div>
-            <div style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(2rem, 7vw, 3.4rem)", fontWeight: 600, letterSpacing: "0.04em", color: COLORS.gold, marginBottom: 20, lineHeight: 1.1, minHeight: "1.2em", textShadow: "0 2px 8px rgba(138,112,48,0.15)" }}>
+            <div style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(2rem, 7vw, 3.4rem)", fontWeight: 600, letterSpacing: "0.04em", color: COLORS.gold, marginBottom: 20, lineHeight: 1.1, minHeight: "1.2em", textShadow: "0 2px 8px rgba(138,112,48,0.15)" }}>
               {/* screen readers get the whole hashtag; the per-character typewriter is decorative */}
               <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }}>{t.hashtag}</span>
               <span aria-hidden>
@@ -414,7 +414,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               initial={{ opacity: 0 }}
               animate={hashtagSec.inView ? { opacity: 1 } : {}}
               transition={{ delay: 0.4, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontWeight: 300, letterSpacing: "0.12em", color: COLORS.midBrown, textTransform: "uppercase" }}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontWeight: 300, letterSpacing: "0.12em", color: COLORS.midBrown, textTransform: "uppercase" }}
             >
               {t.hashtag_sub}
             </motion.p>
@@ -443,9 +443,9 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               paragraph still wraps normally if it's too long for a narrow
               phone — that's ordinary text wrapping, not the break this is
               guarding against. */}
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>
 

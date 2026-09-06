@@ -117,17 +117,17 @@ export function SongSection({ onPlay }: { onPlay: () => void }) {
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", marginRight: "-0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", marginRight: "-0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
           {t.music_label}
         </p>
         <Divider className="mb-10" />
 
         <StaffOfNotes inView={inView} />
 
-        <h3 style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.2, marginTop: 26 }}>
+        <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: "0.01em", lineHeight: 1.2, marginTop: 26 }}>
           {t.song_title}
         </h3>
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
           {t.song_dedication}
         </p>
 
@@ -145,7 +145,7 @@ export function SongSection({ onPlay }: { onPlay: () => void }) {
             border: "none",
             borderRadius: 100,
             padding: "14px 32px",
-            fontFamily: "'TT Interphases', sans-serif",
+            fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
             fontSize: "0.75rem",
             letterSpacing: "0.2em",
             textTransform: "uppercase",

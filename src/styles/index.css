@@ -7,6 +7,17 @@
    continuous page and the teal edge bleed on tablets is gone at every
    viewport size. These unlayered rules intentionally override the
    Tailwind base `bg-background`. */
+/* One family for the whole card, set once.
+   Form controls (input, button, select, textarea) do NOT inherit font-family
+   from their ancestors -- that is a UA-stylesheet rule, not something the
+   cascade fixes -- so without naming them here the RSVP fields and every
+   button silently render in the platform UI font. There was no body-level
+   rule at all before this, so anything that missed its inline fontFamily fell
+   back too. Inline styles in the components still win; this is the floor. */
+html, body, input, button, select, textarea, optgroup {
+  font-family: 'TT Interphases', 'Noto Sans Thai', sans-serif;
+}
+
 html {
   background-color: #F2E8D2;
 }

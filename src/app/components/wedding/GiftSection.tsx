@@ -295,7 +295,7 @@ function Envelope() {
           animate={open ? { opacity: 0 } : reduceMotion ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5] }}
           transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
           aria-hidden={open}
-          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em" }}
+          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em" }}
         >
           {t.gift_tap}
         </motion.p>
@@ -318,7 +318,7 @@ function Envelope() {
                 display: "inline-flex", alignItems: "center", gap: 8,
                 background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`,
                 border: "none", borderRadius: 100, padding: "12px 26px",
-                fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem",
+                fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem",
                 letterSpacing: "0.16em", textTransform: "uppercase", color: "#FFF8EE",
                 cursor: "pointer", boxShadow: "0 8px 24px rgba(138,112,48,0.3)",
                 WebkitTapHighlightColor: "transparent",
@@ -330,7 +330,7 @@ function Envelope() {
               </svg>
               {t.gift_save}
             </motion.button>
-            <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.66rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.4, padding: "0 12px" }}>
+            <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.66rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.4, padding: "0 12px" }}>
               {t.gift_save_hint}
             </span>
           </motion.div>
@@ -362,7 +362,7 @@ export function GiftSection() {
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
         </p>
         <Divider className="mb-12" />
@@ -371,7 +371,7 @@ export function GiftSection() {
           <Envelope />
         </div>
 
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8 }}>
           {t.gift_closing}
         </p>
       </motion.div>
