@@ -377,10 +377,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                 style={{ width: 42, height: 42, borderRadius: 10, objectFit: "cover", flexShrink: 0, boxShadow: "0 2px 8px rgba(61,34,21,0.2)" }}
               />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.95rem", fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.2 }}>
+                <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.95rem", fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.2 }}>
                   {TITLE}
                 </p>
-                <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.65rem", fontStyle: "italic", color: TEXT_MUTED, lineHeight: 1.35, marginTop: 2 }}>
+                <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", fontStyle: "italic", color: TEXT_MUTED, lineHeight: 1.35, marginTop: 2 }}>
                   {SUBTITLE}
                 </p>
               </div>
@@ -403,7 +403,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.5 }}
-                    style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.82rem", fontStyle: "italic", color: ACCENT, lineHeight: 1.4 }}
+                    style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontStyle: "italic", color: ACCENT, lineHeight: 1.4 }}
                   >
                     {currentLyric}
                   </motion.p>
@@ -436,8 +436,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
 
             {/* Time */}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, marginBottom: 8 }}>
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{formatTime(currentTime)}</span>
-              <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{duration > 0 ? formatTime(duration) : "--:--"}</span>
+              <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{formatTime(currentTime)}</span>
+              <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.6rem", color: TEXT_MUTED, letterSpacing: "0.05em" }}>{duration > 0 ? formatTime(duration) : "--:--"}</span>
             </div>
 
             {/* Controls: back 10 · play/pause · forward 10 */}
@@ -480,7 +480,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                 background: "transparent",
                 color: ACCENT,
                 textDecoration: "none",
-                fontFamily: "'TT Interphases', sans-serif",
+                fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
                 fontSize: "0.72rem",
                 letterSpacing: "0.08em",
                 boxSizing: "border-box",

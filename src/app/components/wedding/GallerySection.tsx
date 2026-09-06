@@ -270,7 +270,7 @@ function Lightbox({
           />
           <span
             aria-live="polite"
-            style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: "rgba(255,248,240,0.75)", minWidth: 62, textAlign: "center" }}
+            style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: "rgba(255,248,240,0.75)", minWidth: 62, textAlign: "center" }}
           >
             {index + 1} / {images.length}
           </span>
@@ -398,8 +398,8 @@ export function GallerySection() {
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
-        <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.7rem", letterSpacing: "0.26em", color: COLORS.midBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{preWeddingLabel}</p>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.7rem", letterSpacing: "0.26em", color: COLORS.midBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{preWeddingLabel}</p>
         <Divider className="mb-10" />
 
         {PRE_WEDDING_IMAGES.length === 0 ? (
@@ -418,7 +418,7 @@ export function GallerySection() {
               textAlign: "center",
               padding: "0 28px",
               color: COLORS.lightBrown,
-              fontFamily: "'TT Interphases', sans-serif",
+              fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
               fontSize: "0.85rem",
               letterSpacing: "0.04em",
               lineHeight: 1.5,

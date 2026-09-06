@@ -41,7 +41,7 @@ function CountdownTimer() {
               a 414px phone and out-scaled the names. The names cannot grow past
               ~22.7px while staying on one line (see NAME_FONT_SIZE), so the
               countdown gives way instead. */}
-          <div style={{ width: "100%", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "clamp(10px, 3vw, 14px) clamp(6px, 2vw, 16px)", fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.95rem, 4.4vw, 1.8rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}>
+          <div style={{ width: "100%", background: "rgba(255,248,240,0.55)", border: "1px solid rgba(138,112,48,0.25)", borderRadius: 12, padding: "clamp(10px, 3vw, 14px) clamp(6px, 2vw, 16px)", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.95rem, 4.4vw, 1.8rem)", fontWeight: 500, color: COLORS.gold, lineHeight: 1, textAlign: "center", boxShadow: "0 4px 20px rgba(61,34,21,0.12)", backdropFilter: "blur(8px)" }}>
             <div style={{ height: "1em", overflow: "hidden" }}>
               <motion.span
                 key={v}
@@ -56,7 +56,7 @@ function CountdownTimer() {
           </div>
           {/* nowrap + trimmed tracking at the small end so "HOURS" stays on one
               line inside a ~63px column at 320px */}
-          <span style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "0.58rem", letterSpacing: "clamp(0.06em, 0.5vw, 0.2em)", color: COLORS.lightBrown, marginTop: 8, textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
+          <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.58rem", letterSpacing: "clamp(0.06em, 0.5vw, 0.2em)", color: COLORS.lightBrown, marginTop: 8, textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
         </motion.div>
       ))}
     </div>
@@ -159,7 +159,7 @@ export function NameIntroWithCountdown() {
   // line (สระอือ, สระอุ) and some consonants (e.g. ฐ) have descenders —
   // ClipReveal's wrapper keeps overflow:hidden for its wipe animation, so a
   // tight line box would clip them.
-  const nameStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: NAME_FONT_SIZE, fontWeight: 600, color: COLORS.navy, lineHeight: 1.5 } as const;
+  const nameStyle = { fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: NAME_FONT_SIZE, fontWeight: 600, color: COLORS.navy, lineHeight: 1.5 } as const;
   // Title (Flt. Lt. / Mr.) fully matches the name's format — same family,
   // size, weight, and colour.
   const titleStyle = nameStyle;
@@ -174,7 +174,7 @@ export function NameIntroWithCountdown() {
   // Quieted a step further than before — these recede as setup so the
   // names/ring hero and the closing date read as the section's two peaks,
   // not three elements of similar weight.
-  const parentStyle = { fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.85rem, 2.1vw, 1rem)", color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.6, textAlign: "center" as const, ...singleLine };
+  const parentStyle = { fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.85rem, 2.1vw, 1rem)", color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.6, textAlign: "center" as const, ...singleLine };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -196,7 +196,7 @@ export function NameIntroWithCountdown() {
           transition={{ delay: 0.1, duration: 0.9 }}
         >
           <CountdownTimer />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.95rem)", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 18 }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.95rem)", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 18 }}>
             {t.countdown_caption}
           </p>
         </motion.div>
@@ -217,7 +217,7 @@ export function NameIntroWithCountdown() {
           initial={{ opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.32, duration: 0.8 }}
-          style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 1.9vw, 0.9rem)", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 32 }}
+          style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.78rem, 1.9vw, 0.9rem)", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 32 }}
         >
           {t.invite_line}
         </motion.p>
@@ -272,7 +272,7 @@ export function NameIntroWithCountdown() {
           style={{ marginTop: 64 }}
         >
           <Divider className="mb-6" />
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.32em", marginRight: "-0.32em", textTransform: "uppercase", marginBottom: 10 }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.32em", marginRight: "-0.32em", textTransform: "uppercase", marginBottom: 10 }}>
             {t.sunday}
           </p>
           {/* The date deliberately yields to the names now. On the printed
@@ -288,10 +288,10 @@ export function NameIntroWithCountdown() {
               9.09em across the webfont and both fallbacks, far inside a /20
               box. Colour moves teal -> midBrown so it recedes in hue as well as
               in scale. */}
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
-          <p style={{ fontFamily: "'TT Interphases', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
             {t.map_title}
           </p>
         </motion.div>
