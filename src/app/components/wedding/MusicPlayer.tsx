@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { LoaderCircle, Pause, Play } from "lucide-react";
 import { useLang } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
@@ -91,103 +92,144 @@ function PetalTrail() {
 }
 
 export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const reduceMotion = useReducedMotion();
   const playerRef = useRef<any>(null);
   const playerDivRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
-  const autoplayWantedRef = useRef(false);
+  const readyRef = useRef(false);
+  const playbackWantedRef = useRef(false);
+  const pendingSeekRef = useRef<number | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
+  const [buffering, setBuffering] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
 
-  /* Autoplay entry point — exposed to WeddingInvitation, which calls it the
-     moment the invitation fades in after the guest slides to open. */
-  const startPlayback = useCallback(() => {
-    if (playerRef.current && ready) {
-      try { playerRef.current.playVideo(); } catch {}
-    } else {
-      autoplayWantedRef.current = true; // play as soon as the API is ready
+  // Entry autoplay is best-effort in the unlock gesture. Never queue it for
+  // later: a slow connection must not unexpectedly start music mid-invitation.
+  const startPlayback = useCallback((explicit = false) => {
+    if (!readyRef.current && !explicit) return;
+    if (playbackWantedRef.current) return;
+    playbackWantedRef.current = true;
+    setBuffering(true);
+    if (readyRef.current && playerRef.current) {
+      try { playerRef.current.playVideo(); }
+      catch { playbackWantedRef.current = false; setBuffering(false); setFailed(true); }
     }
-  }, [ready]);
+  }, []);
 
   useImperativeHandle(ref, () => ({
-    play: startPlayback,
+    play: () => startPlayback(),
     /* Used by the "Our Song" section. Unlike autoplay-on-entry, this follows a
        deliberate tap partway down the page, so the card is expanded too —
        otherwise sound simply starts from a corner button with no visible
        cause. Expanding also retires the petal trail (see the effect below). */
     open: () => {
       setExpanded(true);
-      startPlayback();
+      startPlayback(true);
     },
   }), [startPlayback]);
 
   /* ── Init YouTube IFrame API ── */
-  const initPlayer = useCallback(() => {
-    if (!playerDivRef.current || playerRef.current) return;
-    playerRef.current = new window.YT.Player(playerDivRef.current, {
-      videoId: YT_VIDEO_ID,
-      playerVars: {
-        autoplay: 0,            // discovery is the petal trail, not autoplay
-        controls: 0,
-        disablekb: 1,
-        fs: 0,
-        iv_load_policy: 3,
-        modestbranding: 1,
-        rel: 0,
-        origin: window.location.origin,
-      },
-      events: {
-        onReady: () => {
-          setReady(true);
-          try { setDuration(playerRef.current.getDuration?.() ?? 0); } catch {}
-          // If autoplay was requested before the API finished loading, go now.
-          if (autoplayWantedRef.current) {
-            autoplayWantedRef.current = false;
-            try { playerRef.current.playVideo(); } catch {}
-          }
-        },
-        onStateChange: (e: any) => {
-          setPlaying(e.data === 1);
-          if (e.data === 0) {
-            setPlaying(false);
-            setProgress(0);
-            setCurrentTime(0);
-          }
-        },
-      },
-    });
-  }, []);
-
   useEffect(() => {
-    if (window.YT && window.YT.Player) {
-      initPlayer();
-      return;
-    }
+    let disposed = false;
+    const host = playerDivRef.current;
+    const stopPending = () => {
+      if (disposed) return;
+      playbackWantedRef.current = false;
+      setPlaying(false);
+      setBuffering(false);
+    };
+    const onError = () => { stopPending(); if (!disposed) setFailed(true); };
+    const initPlayer = () => {
+      if (disposed || !host || playerRef.current) return;
+      // YouTube replaces its mount node. React owns the stable outer host so
+      // cleanup/remount (including StrictMode) always gets a connected node.
+      const mount = document.createElement("div");
+      host.replaceChildren(mount);
+      playerRef.current = new window.YT.Player(mount, {
+        videoId: YT_VIDEO_ID,
+        width: 200,
+        height: 200,
+        playerVars: {
+          autoplay: 0,
+          playsinline: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          iv_load_policy: 3,
+          rel: 0,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: (event: any) => {
+            if (disposed) return;
+            readyRef.current = true;
+            setReady(true);
+            setFailed(false);
+            setDuration(event.target.getDuration?.() ?? 0);
+            event.target.setVolume(45);
+            if (playbackWantedRef.current) event.target.playVideo();
+          },
+          onStateChange: (e: any) => {
+            if (disposed) return;
+            if (e.data === 1) {
+              playbackWantedRef.current = true;
+              setPlaying(true);
+              setBuffering(false);
+              setFailed(false);
+            } else if (e.data === 3) {
+              setBuffering(playbackWantedRef.current);
+            } else if (e.data === 2 || e.data === 0) {
+              stopPending();
+            }
+            if (e.data === 0) {
+              setProgress(0);
+              setCurrentTime(0);
+            }
+          },
+          onAutoplayBlocked: stopPending,
+          onError,
+        },
+      });
+    };
     const prevCallback = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      if (prevCallback) prevCallback();
+    const onApiReady = () => {
+      prevCallback?.();
       initPlayer();
     };
-    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.head.appendChild(tag);
+    let tag = document.querySelector<HTMLScriptElement>('script[src="https://www.youtube.com/iframe_api"]');
+    if (window.YT?.Player) {
+      initPlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = onApiReady;
+      if (!tag) {
+        tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+      }
+      tag.addEventListener("error", onError);
     }
     return () => {
+      disposed = true;
+      readyRef.current = false;
+      setReady(false);
+      tag?.removeEventListener("error", onError);
+      if (window.onYouTubeIframeAPIReady === onApiReady) window.onYouTubeIframeAPIReady = prevCallback;
       if (playerRef.current) {
         try { playerRef.current.destroy(); } catch {}
         playerRef.current = null;
       }
+      host?.replaceChildren();
     };
-  }, [initPlayer]);
+  }, []);
 
   /* ── The discovery cue retires after 30s, or once the player is engaged.
      It deliberately does NOT stop on autoplay alone — autoplay fires before
@@ -202,7 +244,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
 
   /* ── Progress + lyric polling while playing ── */
   useEffect(() => {
-    if (!playing) return;
+    if (!expanded || !playing || buffering) return;
     const interval = setInterval(() => {
       if (!playerRef.current || draggingRef.current) return;
       try {
@@ -212,39 +254,49 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
         setDuration(dur);
         setProgress(dur > 0 ? (cur / dur) * 100 : 0);
       } catch {}
-    }, 300);
+    }, 500);
     return () => clearInterval(interval);
-  }, [playing]);
+  }, [expanded, playing, buffering]);
 
   const togglePlay = useCallback(() => {
-    if (!ready || !playerRef.current) return;
+    if (failed) return;
     setShowTrail(false); // explicit user engagement retires the discovery cue
     try {
-      if (playing) playerRef.current.pauseVideo();
-      else playerRef.current.playVideo();
+      if (playbackWantedRef.current) {
+        playbackWantedRef.current = false;
+        setPlaying(false);
+        setBuffering(false);
+        if (readyRef.current) playerRef.current?.pauseVideo();
+      } else startPlayback(true);
     } catch {}
-  }, [ready, playing]);
+  }, [failed, startPlayback]);
 
   const skipBy = (sec: number) => {
     if (!playerRef.current || !ready) return;
     try {
       const cur = playerRef.current.getCurrentTime?.() ?? 0;
-      playerRef.current.seekTo(Math.max(0, cur + sec), true);
+      const dur = playerRef.current.getDuration?.() ?? 0;
+      const next = Math.max(0, Math.min(dur, cur + sec));
+      playerRef.current.seekTo(next, true);
+      setCurrentTime(next);
+      setProgress(dur > 0 ? next / dur * 100 : 0);
     } catch {}
   };
 
   /* ── Draggable progress bar ── */
   const seekToClientX = (clientX: number) => {
     const el = trackRef.current;
-    if (!el || !playerRef.current) return;
+    if (!el || !playerRef.current || !readyRef.current) return;
     const rect = el.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const dur = (() => { try { return playerRef.current.getDuration?.() ?? duration; } catch { return duration; } })();
-    try { playerRef.current.seekTo(ratio * dur, true); } catch {}
+    if (dur <= 0 || rect.width <= 0) return;
+    pendingSeekRef.current = ratio * dur;
     setProgress(ratio * 100);
     setCurrentTime(ratio * dur);
   };
   const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!readyRef.current) return;
     draggingRef.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
     seekToClientX(e.clientX);
@@ -253,7 +305,12 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
     if (draggingRef.current) seekToClientX(e.clientX);
   };
   const onTrackPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
     draggingRef.current = false;
+    if (e.type === "pointerup" && pendingSeekRef.current !== null) {
+      try { playerRef.current?.seekTo(pendingSeekRef.current, true); } catch {}
+    }
+    pendingSeekRef.current = null;
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
   };
 
@@ -272,20 +329,14 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
     else break;
   }
 
-  const PlayPauseIcon = ({ size = 14 }: { size?: number }) =>
-    playing ? (
-      <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-        <rect x="2.5" y="1.5" width="3.5" height="11" rx="1.5" fill="white" />
-        <rect x="8" y="1.5" width="3.5" height="11" rx="1.5" fill="white" />
-      </svg>
-    ) : (
-      <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-        <path d="M3.5 2L13 7L3.5 12V2Z" fill="white" />
-      </svg>
-    );
+  const playbackActive = playing || buffering;
+  const playbackIcon = (size: number) => buffering
+    ? <LoaderCircle size={size} color="white" style={{ animation: reduceMotion ? undefined : "music-loading 1s linear infinite" }} />
+    : playing ? <Pause size={size} fill="white" color="white" /> : <Play size={size} fill="white" color="white" />;
 
   return (
     <>
+      <style>{`@keyframes music-loading { to { transform: rotate(360deg); } }`}</style>
       {/* Hidden YouTube player div — must stay in the DOM */}
       <div style={{ position: "fixed", left: "-9999px", top: 0, width: 2, height: 2, overflow: "hidden", pointerEvents: "none" }}>
         <div ref={playerDivRef} />
@@ -339,7 +390,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                 boxShadow: "0 8px 24px rgba(138,112,48,0.4)",
               }}
             >
-              <PlayPauseIcon size={18} />
+              {playbackIcon(18)}
             </button>
           </motion.div>
         )}
@@ -392,6 +443,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                 ×
               </button>
             </div>
+
+            {failed && <p role="status" style={{ color: TEXT_PRIMARY, fontSize: "0.8rem", marginTop: 12 }}>
+              {lang === "TH" ? "โหลดเพลงไม่ได้ กรุณาฟังผ่าน YouTube" : "Unable to load the song. Listen on YouTube."}
+            </p>}
 
             {/* Lyric line — one at a time, gold, fading */}
             {LYRICS.length > 0 && (
@@ -449,11 +504,12 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
               </button>
               <button
                 onClick={togglePlay}
-                disabled={!ready}
-                aria-label={playing ? "Pause" : "Play"}
+                disabled={failed}
+                aria-label={playbackActive ? "Pause" : "Play"}
+                aria-busy={buffering}
                 style={{ width: 48, height: 48, borderRadius: "50%", background: ready ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : "rgba(138,112,48,0.2)", border: "none", cursor: ready ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: ready ? "0 4px 16px rgba(138,112,48,0.4)" : "none" }}
               >
-                <PlayPauseIcon size={14} />
+                {playbackIcon(18)}
               </button>
               <button onClick={() => skipBy(10)} aria-label="Forward 10 seconds" style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_MUTED, display: "flex", padding: 4 }}>
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">

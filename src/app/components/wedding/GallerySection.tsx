@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -76,17 +76,12 @@ const MOSAIC_CSS = `
    filter instead, which follows the scalloped alpha outline the way the
    reference's does rather than drawing a rectangle behind it. */
 .pw-stamp {
-  --stamp-pitch: 15px;
-  --stamp-notch: 2.2px;
-  --stamp-edge: calc(var(--stamp-notch) + 0.7px);
+  --stamp-pitch: 12px;
+  --stamp-notch: 3.4px;
+  --stamp-edge: calc(var(--stamp-notch) + 0.35px);
   display: block;
-  padding: 10px;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.74), rgba(255,248,240,0.98) 46%, rgba(242,232,210,0.92)),
-    #FFF8F0;
-  box-shadow:
-    inset 0 0 0 1px rgba(138,112,48,0.2),
-    inset 0 0 18px rgba(138,112,48,0.08);
+  padding: 11px;
+  background: #FFFDF7;
   -webkit-mask-image:
     radial-gradient(circle at 50% 0,    rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
     radial-gradient(circle at 50% 100%, rgba(0,0,0,0) var(--stamp-notch), #000 var(--stamp-edge)),
@@ -107,10 +102,9 @@ const MOSAIC_CSS = `
   mask-composite: intersect;
 }
 .pw-stamp img {
-  border: 1px solid rgba(90,62,37,0.18);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.55);
+  border: 0;
 }
-@media (min-width: 640px) { .pw-stamp { --stamp-pitch: 17px; --stamp-notch: 2.4px; padding: 11px; } }
+@media (min-width: 640px) { .pw-stamp { --stamp-pitch: 14px; --stamp-notch: 4px; padding: 13px; } }
 `;
 
 /* A degree or so either way, deterministic per position so the layout is
@@ -328,25 +322,26 @@ function Print({
   label: string;
 }) {
   const tilt = tiltFor(i);
+  const reduceMotion = useReducedMotion();
   return (
     <motion.button
       type="button"
       onClick={onOpen}
       aria-label={label}
-      initial={{ opacity: 0, y: 26, rotate: tilt }}
+      initial={{ opacity: 0, y: reduceMotion ? 0 : 26, rotate: tilt }}
       animate={inView ? { opacity: 1, y: 0, rotate: tilt } : {}}
       // The stagger tails off so the eleventh print is not still arriving a
       // full second after the first.
       transition={{ delay: Math.min(i * 0.06, 0.55), duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ rotate: 0, scale: 1.03, zIndex: 2 }}
-      whileTap={{ rotate: 0, scale: 0.985 }}
+      whileHover={reduceMotion ? undefined : { rotate: 0, scale: 1.02, zIndex: 2 }}
+      whileTap={reduceMotion ? undefined : { rotate: 0, scale: 0.985 }}
       style={{
         padding: 0,
         background: "none",
         border: "none",
         /* drop-shadow, not box-shadow: the mat is masked into a scalloped
            outline and a box-shadow would draw a rectangle behind it. */
-        filter: "drop-shadow(0 9px 18px rgba(61,34,21,0.18)) drop-shadow(0 2px 5px rgba(138,112,48,0.14))",
+        filter: "drop-shadow(0 2px 3px rgba(61,34,21,0.16))",
         cursor: "zoom-in",
         WebkitTapHighlightColor: "transparent",
         position: "relative",
@@ -359,12 +354,9 @@ function Print({
           draggable={false}
           loading="lazy"
           decoding="async"
-          /* "auto 3 / 4" reserves a portrait box before the file arrives and
-             then defers to the real intrinsic ratio once it has. Without it,
-             eleven lazy-loaded images each lay out at zero height and the
-             masonry columns visibly reshuffle as they arrive. Eight of the
-             eleven are exactly 3:4, so most settle with no shift at all. */
-          style={{ width: "100%", height: "auto", aspectRatio: "auto 3 / 4", display: "block" }}
+          /* Stable thumbnail geometry prevents lazy-loaded photos from moving
+             other columns. The lightbox still shows the complete original. */
+          style={{ width: "100%", height: "auto", aspectRatio: "3 / 4", objectFit: "cover", display: "block" }}
         />
       </span>
     </motion.button>

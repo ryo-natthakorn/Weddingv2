@@ -5,6 +5,7 @@ import pnLogo from "../../../imports/Logo.svg";
 
 interface Props {
   onComplete: () => void;
+  onUnlock?: () => void;
 }
 
 const Petal = memo(function Petal({ x, delay, size, duration }: { x: number; delay: number; size: number; duration: number }) {
@@ -39,7 +40,7 @@ const THUMB_W = 72;
 const UNLOCK_AT = 88;
 const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-export function IntroAnimation({ onComplete }: Props) {
+export function IntroAnimation({ onComplete, onUnlock }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [pos, setPos] = useState(0);
@@ -47,6 +48,14 @@ export function IntroAnimation({ onComplete }: Props) {
   const [unlocked, setUnlocked] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const unlockedRef = useRef(false);
+  const musicStartedRef = useRef(false);
+
+  const startMusic = () => {
+    if (!unlockedRef.current || musicStartedRef.current) return;
+    musicStartedRef.current = true;
+    onUnlock?.();
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setShowHint(true), 1800);
@@ -54,7 +63,8 @@ export function IntroAnimation({ onComplete }: Props) {
   }, []);
 
   const triggerUnlock = () => {
-    if (unlocked) return;
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
     setUnlocked(true);
     setIsDragging(false);
     setPos(100);
@@ -87,6 +97,7 @@ export function IntroAnimation({ onComplete }: Props) {
 
   const handlePointerUp = () => {
     setIsDragging(false);
+    startMusic();
     if (!unlocked && pos < UNLOCK_AT) setPos(0);
   };
 
@@ -114,6 +125,7 @@ export function IntroAnimation({ onComplete }: Props) {
         triggerUnlock();
         break;
     }
+    startMusic();
   };
 
   const burstParticles = useMemo(
@@ -296,7 +308,7 @@ export function IntroAnimation({ onComplete }: Props) {
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
-                  onPointerCancel={handlePointerUp}
+                  onPointerCancel={() => { setIsDragging(false); if (!unlockedRef.current) setPos(0); }}
                   animate={unlocked ? { y: reduceMotion ? 0 : -80, opacity: 0, scale: reduceMotion ? 1 : 0.7 } : { y: 0, opacity: 1, scale: 1 }}
                   transition={unlocked ? { duration: 0.6, ease: [0.22, 1, 0.36, 1] } : undefined}
                   style={{

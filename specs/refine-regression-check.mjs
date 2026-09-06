@@ -10,7 +10,6 @@ const fail = (message) => {
 const fontsCss = read("src/styles/fonts.css");
 const indexCss = read("src/styles/index.css");
 const invitation = read("src/app/components/WeddingInvitation.tsx");
-const gallery = read("src/app/components/wedding/GallerySection.tsx");
 const sourceFiles = [
   "src/app/components/WeddingInvitation.tsx",
   "src/app/components/wedding/GallerySection.tsx",
@@ -44,10 +43,6 @@ if (oldInlineStackFile) {
 
 if (invitation.includes('objectPosition: "bottom center"')) {
   fail("Hero desktop crop must not pin the image to bottom center.");
-}
-
-if (!gallery.includes("--stamp-notch") || !gallery.includes("inset 0 0 0 1px")) {
-  fail("Gallery stamp edge should use the refined notch variables and inner border.");
 }
 
 console.log("refine regression checks passed");
