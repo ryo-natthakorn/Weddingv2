@@ -96,7 +96,7 @@ function StaffOfNotes({ inView }: { inView: boolean }) {
   );
 }
 
-export function SongSection({ onPlay }: { onPlay: () => void }) {
+export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor: (node: HTMLButtonElement | null) => void }) {
   const { t } = useLang();
   const { ref, inView } = useReveal("-80px");
 
@@ -112,12 +112,12 @@ export function SongSection({ onPlay }: { onPlay: () => void }) {
     >
       <motion.div
         ref={ref}
-        initial={{ opacity: 0, y: 28 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : {}}
         transition={{ duration: 0.9 }}
-        style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
+        style={{ position: "relative", zIndex: 2, maxWidth: 760, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
           {t.music_label}
         </p>
         <Divider className="mb-10" />
@@ -127,11 +127,13 @@ export function SongSection({ onPlay }: { onPlay: () => void }) {
         <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: 0, lineHeight: 1.2, marginTop: 26 }}>
           {t.song_title}
         </h3>
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+        <p className="song-dedication" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
           {t.song_dedication}
         </p>
 
         <motion.button
+          ref={onAnchor}
+          id="song-play-button"
           type="button"
           onClick={onPlay}
           whileHover={{ scale: 1.04, y: -2 }}

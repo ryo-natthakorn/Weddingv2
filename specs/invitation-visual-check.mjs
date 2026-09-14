@@ -88,10 +88,10 @@ try {
     const mrt = page.getByText('โดย MRT', { exact: true }).locator('..').locator('..').locator('img');
     await mrt.scrollIntoViewIfNeeded();
     await mrt.screenshot({ path: join(output, `mrt-${width}.png`) });
-    await page.getByRole('button', { name: 'แตะเปิดซอง', exact: true }).scrollIntoViewIfNeeded();
+    await page.getByRole('button', { name: 'แตะเพื่อร่วมใส่ซอง', exact: true }).scrollIntoViewIfNeeded();
     const giftHeight = await page.locator('#gift-section').evaluate(el => el.getBoundingClientRect().height);
     await page.locator('#gift-section').screenshot({ path: join(output, `envelope-closed-${width}.png`), animations: 'disabled' });
-    await page.getByRole('button', { name: 'แตะเปิดซอง', exact: true }).click();
+    await page.getByRole('button', { name: 'แตะเพื่อร่วมใส่ซอง', exact: true }).click();
     await page.getByRole('button', { name: 'บันทึก QR', exact: true }).click({ trial: true });
     await page.locator('#gift-section').screenshot({ path: join(output, `envelope-open-${width}.png`), animations: 'disabled' });
     assert.equal(await page.locator('#gift-section').evaluate(el => el.getBoundingClientRect().height), giftHeight, 'envelope must not shift subsequent sections');
@@ -99,7 +99,27 @@ try {
       const style = getComputedStyle(el);
       return { size: style.fontSize, weight: style.fontWeight, spacing: style.letterSpacing, color: style.color };
     });
-    assert.deepEqual(heading, { size: '22px', weight: '600', spacing: 'normal', color: 'rgb(27, 74, 92)' });
+    assert.deepEqual(heading, { size: '30px', weight: '600', spacing: 'normal', color: 'rgb(27, 74, 92)' });
+    await page.getByRole('button', { name: 'ยินดีร่วมงาน', exact: true }).click();
+    const guests = page.getByRole('spinbutton');
+    await guests.press('End');
+    assert.equal(await guests.getAttribute('aria-valuenow'), '5');
+    assert.equal(await guests.getAttribute('aria-valuemax'), '5');
+    assert.equal(await page.getByText('รวมผู้กรอกแบบฟอร์ม', { exact: true }).count(), 0);
+    await page.getByRole('button', { name: 'ไม่สะดวกร่วมงาน', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'ไม่สะดวกร่วมงาน', exact: true }).getAttribute('aria-pressed'), 'true');
+    const song = page.getByRole('button', { name: 'ฟังเพลง', exact: true });
+    await song.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
+    assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 0, 'floating button merges into song CTA');
+    await page.screenshot({ path: join(output, `song-docked-${width}.png`), animations: 'disabled' });
+    if (width >= 768) {
+      const dedication = await page.locator('.song-dedication').evaluate(el => {
+        const range = document.createRange(); range.selectNodeContents(el);
+        return [...range.getClientRects()].length;
+      });
+      assert.equal(dedication, 1, 'desktop song dedication is one line');
+    }
     for (const text of ['รบกวนแจ้งให้เราทราบ เพื่อเตรียมที่นั่งต้อนรับทุกคน', 'Your reply helps us plan our day.']) {
       if (text.startsWith('Your')) await page.getByRole('button', { name: 'EN', exact: true }).click();
       const message = page.getByText(text, { exact: true });

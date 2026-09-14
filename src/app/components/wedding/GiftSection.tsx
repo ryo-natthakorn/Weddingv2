@@ -353,12 +353,15 @@ export function GiftSection() {
         transition={{ duration: reduceMotion ? 0 : 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
         </p>
         <Divider className="mb-12" />
+        <p style={{ fontSize: 16, lineHeight: 1.8, color: COLORS.midBrown, maxWidth: 440, margin: "0 auto", textWrap: "pretty" }}>
+          {t.gift_description}
+        </p>
 
-        <div style={{ marginTop: 130, marginBottom: 24 }}>
+        <div style={{ marginTop: 120, marginBottom: 24 }}>
           <Envelope />
         </div>
 

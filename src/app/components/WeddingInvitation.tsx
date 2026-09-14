@@ -20,6 +20,7 @@ import pnLogo from "../../imports/Logo.svg";
 import carIcon from "../../imports/car-icon.svg";
 import mrtIcon from "../../imports/MRT_(Bangkok)_Pink_logo_with_name.svg";
 import grabIcon from "../../imports/grab-icon.png";
+import googleMapsIcon from "../../imports/google-maps.png";
 
 /* Transport marks, keyed by the `key` on each item in t.direction_items.
    The mapping lives here rather than in the translations so the copy stays
@@ -272,7 +273,7 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
+function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => void; onSongAnchor: (node: HTMLButtonElement | null) => void }) {
   const { t } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroRef);
@@ -360,7 +361,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
 
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
           <Divider className="mb-8" />
 
           {/* BLOCK 1+2 — merged: venue photo and address/CTA share one card */}
@@ -386,10 +387,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                 whileTap={{ scale: 0.97 }}
                 style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
-                  <circle cx="8" cy="6" r="1.5" stroke="#FFF8EE" strokeWidth="1.2"/>
-                </svg>
+                <img src={googleMapsIcon} alt="" width={28} height={28} style={{ objectFit: "contain", flexShrink: 0 }} />
                 {t.map_btn}
               </motion.a>
             </div>
@@ -421,7 +419,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "48px 24px 56px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
@@ -445,9 +443,9 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
-            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
+            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
-            <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
+            <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "20px", fontWeight: 400, color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
             <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
           </motion.div>
 
@@ -507,7 +505,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       <GiftSection />
 
       {/* ═══ OUR SONG ═══ */}
-      <SongSection onPlay={onPlaySong} />
+      <SongSection onPlay={onPlaySong} onAnchor={onSongAnchor} />
 
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
@@ -536,6 +534,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
+  const [songAnchor, setSongAnchor] = useState<HTMLButtonElement | null>(null);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -584,10 +583,10 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} />
+        <MusicPlayer ref={musicRef} dockTarget={songAnchor} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent onPlaySong={() => musicRef.current?.open()} />
+        <InvitationContent onPlaySong={() => musicRef.current?.open()} onSongAnchor={setSongAnchor} />
       </motion.div>
     </LangProvider>
   );

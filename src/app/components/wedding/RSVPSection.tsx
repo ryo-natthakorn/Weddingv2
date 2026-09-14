@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -13,7 +14,7 @@ type Spark = { id: number; x: number; y: number; size: number; color: string };
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL as string | undefined;
 
 const GUEST_MIN = 1;
-const GUEST_MAX = 4;
+const GUEST_MAX = 5;
 
 /* Round 48px control for the guest stepper — comfortably past the 44px touch
    target floor, so it stays easy for older guests to hit. */
@@ -207,7 +208,7 @@ export function RSVPSection() {
         transition={{ duration: 0.9 }}
         style={{ maxWidth: 560, margin: "0 auto", position: "relative", zIndex: 2 }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
           {t.rsvp_label}
         </p>
         <Divider className="mb-6" />
@@ -257,7 +258,7 @@ export function RSVPSection() {
                   {(["yes", "no"] as const).map((val) => {
                     const isYes = val === "yes";
                     const selected = attending === val;
-                    const accent = isYes ? COLORS.navy : COLORS.lightBrown;
+                    const accent = isYes ? "#28564B" : "#814F44";
                     return (
                       <motion.button
                         key={val}
@@ -274,17 +275,15 @@ export function RSVPSection() {
                           position: "relative",
                           padding: "14px",
                           borderRadius: 12,
-                          border: `1.5px solid ${selected ? (isYes ? COLORS.navy : "rgba(138,107,75,0.5)") : "rgba(138,107,75,0.2)"}`,
-                          background: selected
-                            ? isYes ? "rgba(27,42,74,0.08)" : "rgba(138,107,75,0.07)"
-                            : "rgba(255,255,255,0.5)",
+                          border: `1.5px solid ${accent}`,
+                          background: selected ? accent : isYes ? "#E8F0E9" : "#FBF4EF",
                           cursor: "pointer",
                           fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
                           fontSize: "1rem",
                           minHeight: 54,
                           lineHeight: 1.6,
                           letterSpacing: 0,
-                          color: selected ? accent : COLORS.lightBrown,
+                          color: selected ? "#FFFFFF" : accent,
                           // Yes pops; No simply dims with a quiet, slower fade.
                           opacity: 1,
                           transition: isYes
@@ -296,6 +295,7 @@ export function RSVPSection() {
                           gap: 8,
                         }}
                       >
+                        {isYes ? <Check size={20} aria-hidden /> : <X size={20} aria-hidden />}
                         {isYes ? t.rsvp_yes : t.rsvp_no}
                         {/* Burst particles — Yes button only */}
                         {isYes && burst.map((s) => (
@@ -353,6 +353,8 @@ export function RSVPSection() {
                         aria-valuemax={GUEST_MAX}
                         tabIndex={0}
                         onKeyDown={(e) => {
+                          if (e.key === "Home") { e.preventDefault(); setGuests(GUEST_MIN); }
+                          if (e.key === "End") { e.preventDefault(); setGuests(GUEST_MAX); }
                           if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); stepGuests(1); }
                           if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); stepGuests(-1); }
                         }}
@@ -409,9 +411,6 @@ export function RSVPSection() {
                           label={lang === "TH" ? "เพิ่มจำนวนผู้เข้าร่วม" : "One guest more"}
                         />
                       </div>
-                      <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, marginTop: 6 }}>
-                        {t.rsvp_guests_help}
-                      </p>
                     </div>
                   </motion.div>
                 )}

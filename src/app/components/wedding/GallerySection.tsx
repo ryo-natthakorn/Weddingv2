@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Grid2X2, GalleryHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "motion/react";
+import type { MotionValue } from "motion/react";
 import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
 import {
@@ -39,6 +40,12 @@ const MOSAIC_CSS = `
 .pw-orbit-card img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
 .pw-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 18px 0 28px; }
 .pw-view-toggle { display: grid; place-items: center; width: 44px; height: 44px; background: #FFFDF7; color: #1B4A5C; border: 1px solid #C8BDA1; border-radius: 50%; cursor: pointer; }
+.pw-album-page { position: relative; padding: 36px 24px 28px 36px; background: #FFFEFA; border: 1px solid #D6CEBA; border-left: 8px solid #466257; box-shadow: 3px 3px 0 #E8E2D6, 6px 6px 0 #D6CEBA; }
+.pw-album-page::before { content: ''; position: absolute; top: 0; bottom: 0; left: 15px; border-left: 1px solid #DDD4C3; }
+.pw-album-page header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 18px; margin-bottom: 24px; border-bottom: 1px solid #DED7C9; color: #3A2C18; font-size: 14px; }
+.pw-album-page .pw-mosaic { gap: 26px 18px; }
+.pw-album-page .pw-opening { max-width: 250px; }
+@media (max-width: 479px) { .pw-album-page { padding: 24px 12px 24px 22px; } .pw-album-page .pw-mosaic { gap: 18px 10px; } }
 @media (min-width: 640px) {
   .pw-orbit { height: 520px; }
   .pw-orbit-card { width: 260px; left: calc(50% - 130px); top: 160px; }
@@ -372,10 +379,24 @@ function Print({
   );
 }
 
+function MorphPrint({ progress, children, i, radius, angle }: {
+  progress: MotionValue<number>; children: React.ReactNode; i: number; radius: number; angle: number;
+}) {
+  const reduceMotion = useReducedMotion();
+  // Offset the ring positions into a scattered sheet, then release them as
+  // the section enters the viewport. No scroll listeners or React renders.
+  const x = useTransform(progress, value => reduceMotion ? 0 : (1 - value) * (((i % 3) - 1) * radius * 0.9 - Math.sin(angle) * radius));
+  const y = useTransform(progress, value => reduceMotion ? 0 : (1 - value) * ((Math.floor(i / 3) - 1.5) * 100));
+  const opacity = useTransform(progress, [0, 0.3, 1], [0.35, 0.8, 1]);
+  return <motion.div style={{ position: "absolute", inset: 0, x, y, zIndex: Math.round((Math.cos(angle) + 1) * 50), opacity: reduceMotion ? 1 : opacity, pointerEvents: "none" }}>{children}</motion.div>;
+}
+
 export function GallerySection() {
   const { lang, t } = useLang();
   const { ref, inView } = useReveal("-80px");
   const [zoom, setZoom] = useState<number | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "start 15%"] });
   const [active, setActive] = useState(0);
   const [grid, setGrid] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -399,6 +420,7 @@ export function GallerySection() {
 
   return (
     <section
+      ref={sectionRef}
       style={{
         padding: "48px 14px 56px",
         position: "relative",
@@ -415,8 +437,8 @@ export function GallerySection() {
         transition={{ duration: reduceMotion ? 0 : 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.7rem", letterSpacing: "0.26em", color: COLORS.midBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{preWeddingLabel}</p>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
+
         <Divider className="mb-10" />
 
         {PRE_WEDDING_IMAGES.length === 0 ? (
@@ -470,21 +492,21 @@ export function GallerySection() {
               const angle = (i - active) * Math.PI * 2 / count;
               const depth = (Math.cos(angle) + 1) / 2;
               const selected = i === active;
-              return <motion.button
+              return <MorphPrint key={src} i={i} angle={angle} radius={radius} progress={scrollYProgress}><motion.button
                 type="button"
                 key={src}
                 className="pw-orbit-card"
                 aria-label={lang === "TH" ? `เปิดรูปที่ ${i + 1} จาก ${count}` : `Open photo ${i + 1} of ${count}`}
                 aria-current={selected ? "true" : undefined}
                 tabIndex={selected ? 0 : -1}
-                initial={reduceMotion ? false : { x: 0, y: 0, scale: 0.94, rotate: tiltFor(i) }}
+                initial={false}
                 animate={inView || reduceMotion ? { x: Math.sin(angle) * radius, y: -145 * (1 - depth), scale: 0.4 + depth * 0.6, rotate: Math.sin(angle) * 8 } : {}}
                 transition={{ duration: reduceMotion ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
-                style={{ zIndex: Math.round(depth * 100), filter: "drop-shadow(0 6px 7px rgba(61,34,21,0.18))" }}
+                style={{ zIndex: Math.round(depth * 100), pointerEvents: "auto", filter: "drop-shadow(0 6px 7px rgba(61,34,21,0.18))" }}
                 onClick={() => { if (!swiped.current) { if (selected) setZoom(i); else setActive(i); } }}
               >
                 <span className="pw-stamp"><img src={src} alt="" draggable={false} loading="lazy" decoding="async" /></span>
-              </motion.button>;
+              </motion.button></MorphPrint>;
             })}
           </div>}
           <div className="pw-controls">
@@ -500,7 +522,9 @@ export function GallerySection() {
           {grid &&
           <div className="pw-gallery" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
             {PRE_WEDDING_GROUPS.map((photos, groupIndex) => photos.length > 0 && (
-              <div key={groupIndex} className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
+              <div key={groupIndex} className="pw-album-page">
+                <header><span>{lang === "TH" ? ["จุดเริ่มต้น", "เราสองคน", "ยามเย็นริมแม่น้ำ"][groupIndex] || "ความทรงจำ" : ["The beginning", "The two of us", "By the river"][groupIndex] || "Memories"}</span><span>{String(groupIndex + 1).padStart(2, "0")}</span></header>
+                <div className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
                 {photos.map(src => {
                   const i = PRE_WEDDING_IMAGES.indexOf(src);
                   return (
@@ -518,6 +542,7 @@ export function GallerySection() {
                     />
                   );
                 })}
+                </div>
               </div>
             ))}
           </div>}

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
-import { LoaderCircle, Pause, Play } from "lucide-react";
+import { LoaderCircle, Pause, Play, Youtube } from "lucide-react";
 import { useLang } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
@@ -27,17 +27,7 @@ const SUBTITLE = "Written for Yee, as a surprise for our proposal";
 type Lyric = { t: number; line: string };
 // TODO: Replace with real Pantika lyrics + timestamps (seconds)
 // Format: { t: 12, line: "actual lyric here" }
-const LYRICS: Lyric[] = [
-  { t: 0, line: "♪" },
-  { t: 12, line: "In every quiet morning, I find you" },
-  { t: 30, line: "A song I never knew I'd sing" },
-  { t: 50, line: "Pantika, my every reason" },
-  { t: 74, line: "On the day I asked forever" },
-  { t: 98, line: "You said yes, and the world stood still" },
-  { t: 126, line: "Now every road leads home to you" },
-  { t: 158, line: "Forever starts the moment you smile" },
-  { t: 196, line: "♪" },
-];
+const LYRICS: Lyric[] = [];
 
 const ACCENT = "#8A7030";       // olive gold
 const ACCENT_DARK = "#6B5520";  // deeper gold
@@ -91,7 +81,7 @@ function PetalTrail() {
   );
 }
 
-export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
+export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButtonElement | null }>(({ dockTarget }, ref) => {
   const { t, lang } = useLang();
   const reduceMotion = useReducedMotion();
   const playerRef = useRef<any>(null);
@@ -110,6 +100,32 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [dock, setDock] = useState<{ x: number; y: number } | null>(null);
+  const [merged, setMerged] = useState(false);
+
+  useEffect(() => {
+    if (!dockTarget || expanded) { setDock(null); setMerged(false); return; }
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const rect = dockTarget.getBoundingClientRect();
+      const visible = rect.top > 80 && rect.bottom < window.innerHeight - 80;
+      if (!visible) { setDock(null); setMerged(false); return; }
+      const next = { x: rect.left + rect.width / 2 - (window.innerWidth - 52), y: rect.top + rect.height / 2 - (window.innerHeight - 52) };
+      setDock(previous => previous && Math.abs(previous.x - next.x) < 1 && Math.abs(previous.y - next.y) < 1 ? previous : next);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(dockTarget);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame); observer.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [dockTarget, expanded]);
   const [showTrail, setShowTrail] = useState(true);
 
   // Entry autoplay is best-effort in the unlock gesture. Never queue it for
@@ -343,7 +359,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
       </div>
 
       {/* Discovery cue — gold petals drifting into the button */}
-      <AnimatePresence>{showTrail && !expanded && !reduceMotion && <PetalTrail />}</AnimatePresence>
+      <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <PetalTrail />}</AnimatePresence>
 
       {/* COLLAPSED — 56px gold circle, bottom-right */}
       <AnimatePresence>
@@ -351,10 +367,14 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
           <motion.div
             key="collapsed"
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            animate={{ x: dock?.x ?? 0, y: dock?.y ?? 0, scale: 1, opacity: merged && dock ? 0 : 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56 }}
+            transition={{ duration: reduceMotion ? 0 : dock ? 1.8 : 0.65, opacity: { duration: reduceMotion ? 0 : 0.35 }, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => { if (dock) setMerged(true); }}
+            data-music-docked={merged && !!dock}
+            data-music-docking={!!dock}
+            aria-hidden={merged && !!dock}
+            style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56, pointerEvents: dock ? "none" : "auto" }}
           >
             {/* Warm glow (stronger during discovery) */}
             <motion.div
@@ -377,7 +397,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                 }}
               />
             )}
-            <button
+            <motion.button
+              tabIndex={dock ? -1 : 0}
+              animate={dock && !reduceMotion ? { scaleX: [1, 1.4, 0.92, 1], scaleY: [1, 0.82, 1.08, 1] } : { scaleX: 1, scaleY: 1 }}
+              transition={{ duration: reduceMotion ? 0 : 1.8, times: [0, 0.5, 0.85, 1] }}
               onClick={() => setExpanded(true)}
               aria-label="Open music player"
               style={{
@@ -391,7 +414,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
               }}
             >
               {playbackIcon(18)}
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -542,6 +565,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle>((_, ref) => {
                 boxSizing: "border-box",
               }}
             >
+              <Youtube size={24} fill="#FF0000" color="#FFFFFF" aria-hidden />
               {t.music_youtube}
             </a>
           </motion.div>

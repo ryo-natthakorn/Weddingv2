@@ -272,7 +272,7 @@ export function NameIntroWithCountdown() {
           style={{ marginTop: 64 }}
         >
           <Divider className="mb-6" />
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: "0.32em", marginRight: "-0.32em", textTransform: "uppercase", marginBottom: 10 }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, textTransform: "uppercase", marginBottom: 10 }}>
             {t.sunday}
           </p>
           {/* The date deliberately yields to the names now. On the printed
@@ -291,7 +291,7 @@ export function NameIntroWithCountdown() {
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.92rem)", letterSpacing: "0.14em", color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "28px", letterSpacing: 0, color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
             {t.map_title}
           </p>
         </motion.div>

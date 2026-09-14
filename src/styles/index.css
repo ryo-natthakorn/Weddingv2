@@ -27,6 +27,17 @@ optgroup {
 }
 
 .rsvp-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.song-dedication { text-wrap: pretty; }
+@keyframes music-merge {
+  0%, 65%, 100% { transform: scale(1); }
+  82% { transform: scale(1.08, 0.95); }
+  92% { transform: scale(0.98, 1.03); }
+}
+body:has([data-music-docking="true"]) #song-play-button { animation: music-merge 2.2s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  body:has([data-music-docking="true"]) #song-play-button { animation: none; }
+}
+@media (min-width: 768px) { .song-dedication { white-space: nowrap; } }
 @media (max-width: 359px) { .rsvp-options { grid-template-columns: 1fr; } }
 button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid #1B4A5C;
