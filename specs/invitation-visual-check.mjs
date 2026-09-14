@@ -40,6 +40,23 @@ try {
       assert.ok(headsBottom < geometry.hero.height, `${width}px faces cropped`);
       assert.ok(Math.abs(geometry.image.x + geometry.image.width / 2 - width / 2) < 2);
     }
+    const orbit = page.locator('.pw-orbit');
+    await orbit.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => [...document.querySelectorAll('.pw-orbit img')].every(img => img.complete && img.naturalWidth > 0));
+    await orbit.locator('img').evaluateAll(images => Promise.all(images.map(img => img.decode())));
+    await orbit.screenshot({ path: join(output, `ring-${width}.png`), animations: 'disabled' });
+    await page.getByRole('button', { name: 'รูปถัดไป', exact: true }).click();
+    assert.equal(await orbit.locator('[aria-current="true"]').getAttribute('aria-label'), 'เปิดรูปที่ 2 จาก 11');
+    await orbit.locator('[aria-current="true"]').press('ArrowLeft');
+    assert.equal(await orbit.locator('[aria-current="true"]').getAttribute('aria-label'), 'เปิดรูปที่ 1 จาก 11');
+    const box = await orbit.locator('[aria-current="true"]').boundingBox();
+    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2, { steps: 8 });
+    await page.mouse.up();
+    assert.equal(await orbit.locator('[aria-current="true"]').getAttribute('aria-label'), 'เปิดรูปที่ 2 จาก 11');
+    assert.equal(await page.getByRole('dialog').count(), 0, 'swipe must not open lightbox');
+    await page.getByRole('button', { name: 'ดูรูปทั้งหมด', exact: true }).click();
     const gallery = page.locator('.pw-gallery');
     await gallery.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => [...document.querySelectorAll('.pw-stamp img')].every(img => img.complete && img.naturalWidth > 0));
@@ -64,12 +81,26 @@ try {
     await page.screenshot({ path: join(output, `gallery-bottom-${width}.png`), animations: 'disabled' });
     const first = gallery.getByRole('button').first();
     await first.click();
+    assert.equal(await page.getByRole('dialog').count(), 1);
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Escape');
+    assert.equal(await first.evaluate(el => el === document.activeElement), true, 'lightbox restores focus');
     const mrt = page.getByText('โดย MRT', { exact: true }).locator('..').locator('..').locator('img');
     await mrt.scrollIntoViewIfNeeded();
     await mrt.screenshot({ path: join(output, `mrt-${width}.png`) });
-    for (const text of ['การตอบรับของคุณช่วยให้เราเตรียมงานได้พอดี', 'Your reply helps us plan our day.']) {
+    await page.getByRole('button', { name: 'แตะเปิดซอง', exact: true }).scrollIntoViewIfNeeded();
+    const giftHeight = await page.locator('#gift-section').evaluate(el => el.getBoundingClientRect().height);
+    await page.locator('#gift-section').screenshot({ path: join(output, `envelope-closed-${width}.png`), animations: 'disabled' });
+    await page.getByRole('button', { name: 'แตะเปิดซอง', exact: true }).click();
+    await page.getByRole('button', { name: 'บันทึก QR', exact: true }).click({ trial: true });
+    await page.locator('#gift-section').screenshot({ path: join(output, `envelope-open-${width}.png`), animations: 'disabled' });
+    assert.equal(await page.locator('#gift-section').evaluate(el => el.getBoundingClientRect().height), giftHeight, 'envelope must not shift subsequent sections');
+    const heading = await page.getByText('ฟอร์มตอบรับคำเชิญ', { exact: true }).evaluate(el => {
+      const style = getComputedStyle(el);
+      return { size: style.fontSize, weight: style.fontWeight, spacing: style.letterSpacing, color: style.color };
+    });
+    assert.deepEqual(heading, { size: '22px', weight: '600', spacing: 'normal', color: 'rgb(27, 74, 92)' });
+    for (const text of ['รบกวนแจ้งให้เราทราบ เพื่อเตรียมที่นั่งต้อนรับทุกคน', 'Your reply helps us plan our day.']) {
       if (text.startsWith('Your')) await page.getByRole('button', { name: 'EN', exact: true }).click();
       const message = page.getByText(text, { exact: true });
       await message.scrollIntoViewIfNeeded();
@@ -79,11 +110,12 @@ try {
         const rects = [...range.getClientRects()];
         return { count: rects.length, fits: rects.every(rect => rect.left >= 0 && rect.right <= innerWidth) };
       });
-      assert.deepEqual(lines, { count: 1, fits: true }, `${width}px RSVP must fit on one readable line`);
+      assert.equal(lines.fits, true, `${width}px RSVP must fit without overflow`);
+      assert.ok(lines.count <= 3, `${width}px RSVP should wrap naturally`);
       await message.screenshot({ path: join(output, `rsvp-${text.startsWith('Your') ? 'en' : 'th'}-${width}.png`), animations: 'disabled' });
     }
     assert.deepEqual(errors, [], `${width}px browser exceptions`);
-    console.log(`PASS ${width}x${height}: hero framing, gallery grouping/navigation, logo rendering, single-line TH/EN RSVP`);
+    console.log(`PASS ${width}x${height}: hero, ring/grid navigation, photo order, envelope, readable TH/EN RSVP`);
     await page.close();
   }
   console.log(`Screenshots: ${output}`);

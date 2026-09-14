@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Grid2X2, GalleryHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { PanInfo } from "motion/react";
@@ -9,26 +10,8 @@ import {
   COLORS,
 } from "./shared";
 
-/* ───────────────────────────────────────────────────────────────
-   GALLERY — PRE-WEDDING ALBUM
-   ----------------------------------------------------------------
-   A grouped album of the pre-wedding shoot, with each photo mounted
-   like a postage stamp -- off-white
-   mat, perforated edge -- and tilted a degree or two off square,
-   straightening when you touch it.
-   Tapping any print opens a full-screen viewer you can page through.
-
-   Replaced a one-at-a-time swipe carousel. With eleven photos a
-   carousel showed a guest one image and asked them to work for the
-   rest; a mosaic shows the whole album at a glance, which is what
-   "add more photos" was actually asking for. The tilt is the point:
-   a dead-straight grid reads as a stock template, and DESIGN.md
-   asks for handmade over templated.
-
-   The ring box opens the album, followed by the couple's ordered
-   park and bridge groups. New files are appended after those groups.
-   The non-recursive glob keeps _originals/ out of the bundle.
-─────────────────────────────────────────────────────────────── */
+/* Stamp album: unfolds into an elliptical ring on entry. Guests control
+   navigation; the grouped overview and full-size viewer share the same order. */
 
 const PRE_WEDDING_MODULES = import.meta.glob(
   "../../../imports/pre-wedding/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
@@ -51,6 +34,15 @@ const PRE_WEDDING_IMAGES = PRE_WEDDING_GROUPS.flat();
 /* Row-major grids keep the requested photo order consistent across widths,
    keyboard navigation and the lightbox. Each group begins on its own row. */
 const MOSAIC_CSS = `
+.pw-orbit { position: relative; height: 460px; touch-action: pan-y; }
+.pw-orbit-card { position: absolute; top: 155px; left: calc(50% - 110px); width: 220px; padding: 0; border: 0; background: none; cursor: pointer; }
+.pw-orbit-card img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.pw-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 18px 0 28px; }
+.pw-view-toggle { display: grid; place-items: center; width: 44px; height: 44px; background: #FFFDF7; color: #1B4A5C; border: 1px solid #C8BDA1; border-radius: 50%; cursor: pointer; }
+@media (min-width: 640px) {
+  .pw-orbit { height: 520px; }
+  .pw-orbit-card { width: 260px; left: calc(50% - 130px); top: 160px; }
+}
 .pw-mosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (min-width: 640px) { .pw-mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
 .pw-opening { max-width: 280px; margin-inline: auto; }
@@ -146,9 +138,7 @@ function ArrowButton({
         WebkitTapHighlightColor: "transparent",
       }}
     >
-      <svg width="16" height="14" viewBox="0 0 14 12" fill="none" style={{ transform: direction === "prev" ? "scaleX(-1)" : "none" }}>
-        <path d="M1 6H12M12 6L8 2M12 6L8 10" stroke={COLORS.gold} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      {direction === "prev" ? <ArrowLeft size={18} color={COLORS.gold} /> : <ArrowRight size={18} color={COLORS.gold} />}
     </button>
   );
 }
@@ -170,6 +160,9 @@ function Lightbox({
   onClose: () => void;
 }) {
   const { lang } = useLang();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const reduceMotion = useReducedMotion();
   const last = images.length - 1;
   const go = useCallback(
     (next: number) => onIndex(Math.max(0, Math.min(last, next))),
@@ -182,12 +175,24 @@ function Lightbox({
      page jump behind the overlay. */
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prevOverflow; };
+    closeRef.current?.focus({ preventScroll: true });
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      previousFocus?.focus({ preventScroll: true });
+    };
   }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Tab") {
+        const buttons = [...(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [])];
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") { e.preventDefault(); go(index + 1); }
       if (e.key === "ArrowLeft") { e.preventDefault(); go(index - 1); }
@@ -203,10 +208,14 @@ function Lightbox({
 
   return createPortal(
     <motion.div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={lang === "TH" ? "ดูรูปขนาดเต็ม" : "Photo viewer"}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: reduceMotion ? 0 : 0.25 }}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -279,6 +288,7 @@ function Lightbox({
       )}
 
       <button
+        ref={closeRef}
         type="button"
         onClick={onClose}
         aria-label={lang === "TH" ? "ปิด" : "Close"}
@@ -298,9 +308,7 @@ function Lightbox({
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M2 2L14 14M14 2L2 14" stroke="#FFF8F0" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
+        <X size={18} color="#FFF8F0" />
       </button>
     </motion.div>,
     document.body,
@@ -368,6 +376,22 @@ export function GallerySection() {
   const { lang, t } = useLang();
   const { ref, inView } = useReveal("-80px");
   const [zoom, setZoom] = useState<number | null>(null);
+  const [active, setActive] = useState(0);
+  const [grid, setGrid] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const orbitRef = useRef<HTMLDivElement>(null);
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
+  const [radius, setRadius] = useState(180);
+  const count = PRE_WEDDING_IMAGES.length;
+  const step = (direction: number) => setActive(i => (i + direction + count) % count);
+
+  useEffect(() => {
+    if (grid || !orbitRef.current) return;
+    const observer = new ResizeObserver(([entry]) => setRadius(Math.min(290, entry.contentRect.width * 0.53)));
+    observer.observe(orbitRef.current);
+    return () => observer.disconnect();
+  }, [grid]);
 
   const preWeddingLabel = lang === "TH" ? "พรีเวดดิ้ง" : "Pre-Wedding";
   const preWeddingEmptyText =
@@ -386,12 +410,12 @@ export function GallerySection() {
 
       <motion.div
         ref={ref}
-        initial={{ opacity: 0, y: 28 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.9 }}
+        transition={{ duration: reduceMotion ? 0 : 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
         <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.7rem", letterSpacing: "0.26em", color: COLORS.midBrown, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>{preWeddingLabel}</p>
         <Divider className="mb-10" />
 
@@ -420,6 +444,60 @@ export function GallerySection() {
             {preWeddingEmptyText}
           </div>
         ) : (
+          <>
+          {!grid && <div
+            ref={orbitRef}
+            className="pw-orbit"
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={preWeddingLabel}
+            onKeyDown={e => {
+              if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1);
+              }
+            }}
+            onPointerDown={e => { pointer.current = { x: e.clientX, y: e.clientY }; swiped.current = false; }}
+            onPointerUp={e => {
+              if (!pointer.current) return;
+              const dx = e.clientX - pointer.current.x;
+              const dy = e.clientY - pointer.current.y;
+              if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { swiped.current = true; step(dx < 0 ? 1 : -1); }
+              pointer.current = null;
+            }}
+            onPointerCancel={() => { pointer.current = null; }}
+          >
+            {PRE_WEDDING_IMAGES.map((src, i) => {
+              const angle = (i - active) * Math.PI * 2 / count;
+              const depth = (Math.cos(angle) + 1) / 2;
+              const selected = i === active;
+              return <motion.button
+                type="button"
+                key={src}
+                className="pw-orbit-card"
+                aria-label={lang === "TH" ? `เปิดรูปที่ ${i + 1} จาก ${count}` : `Open photo ${i + 1} of ${count}`}
+                aria-current={selected ? "true" : undefined}
+                tabIndex={selected ? 0 : -1}
+                initial={reduceMotion ? false : { x: 0, y: 0, scale: 0.94, rotate: tiltFor(i) }}
+                animate={inView || reduceMotion ? { x: Math.sin(angle) * radius, y: -145 * (1 - depth), scale: 0.4 + depth * 0.6, rotate: Math.sin(angle) * 8 } : {}}
+                transition={{ duration: reduceMotion ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+                style={{ zIndex: Math.round(depth * 100), filter: "drop-shadow(0 6px 7px rgba(61,34,21,0.18))" }}
+                onClick={() => { if (!swiped.current) { if (selected) setZoom(i); else setActive(i); } }}
+              >
+                <span className="pw-stamp"><img src={src} alt="" draggable={false} loading="lazy" decoding="async" /></span>
+              </motion.button>;
+            })}
+          </div>}
+          <div className="pw-controls">
+            {!grid && <>
+              <ArrowButton direction="prev" onClick={() => step(-1)} disabled={count < 2} label={lang === "TH" ? "รูปก่อนหน้า" : "Previous photo"} />
+              <span aria-live="polite" style={{ minWidth: 64, textAlign: "center", color: COLORS.navy }}>{active + 1} / {count}</span>
+              <ArrowButton direction="next" onClick={() => step(1)} disabled={count < 2} label={lang === "TH" ? "รูปถัดไป" : "Next photo"} />
+            </>}
+            <button type="button" className="pw-view-toggle" onClick={() => setGrid(!grid)} aria-label={grid ? (lang === "TH" ? "ดูรูปแบบวง" : "Ring view") : (lang === "TH" ? "ดูรูปทั้งหมด" : "All photos")} title={grid ? (lang === "TH" ? "ดูรูปแบบวง" : "Ring view") : (lang === "TH" ? "ดูรูปทั้งหมด" : "All photos")}>
+              {grid ? <GalleryHorizontal size={20} /> : <Grid2X2 size={20} />}
+            </button>
+          </div>
+          {grid &&
           <div className="pw-gallery" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
             {PRE_WEDDING_GROUPS.map((photos, groupIndex) => photos.length > 0 && (
               <div key={groupIndex} className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
@@ -442,7 +520,8 @@ export function GallerySection() {
                 })}
               </div>
             ))}
-          </div>
+          </div>}
+          </>
         )}
       </motion.div>
 

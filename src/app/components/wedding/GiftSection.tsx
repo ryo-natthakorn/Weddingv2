@@ -7,20 +7,10 @@ import {
   COLORS,
 } from "./shared";
 
-/* 100% keeps the envelope inside the section's content box at any width, so it
-   can never overflow the way a fixed vw value can.
-
-   Landscape proportions rather than the original 257x340 — taller than it was
-   wide, which read as an odd portrait shape rather than an envelope. Height
-   grew from 280 to 300 to make room for a bigger QR (below) while keeping the
-   width:height ratio close to where it was (0.92 -> 0.91 at the 320px floor,
-   1.5 -> 1.4 at the 420px cap) — still landscape-at-rest, still near-square
-   rather than portrait at the narrowest width. Height is a fixed px (not
-   aspect-ratio) because the flap below is sized off ENV_H/2 in JS; switching
-   to aspect-ratio would decouple the flap from the body's actual rendered
-   height. */
-const ENV_W = "min(420px, 100%)";
-const ENV_H = 300;
+/* Reserve the opened envelope's height so the QR reveal never shifts the
+   following sections. The closed body sits lower in the same fixed stage. */
+const ENV_W = "min(380px, 100%)";
+const ENV_H = 320;
 /* QR display size, sized to clear both dimensions at every width. Content-
    layer padding (below) was trimmed from 18px/20px to 12px/16px specifically
    to free up more of this room without growing the envelope further. Available
@@ -146,8 +136,7 @@ function Envelope() {
             setOpen(true);
           }
         }}
-        animate={open || reduceMotion ? { y: 0 } : { y: [0, -8, 0] }}
-        transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0 } : { repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
+        animate={{ y: 0 }}
         style={{
           position: "relative",
           width: ENV_W,
@@ -166,11 +155,12 @@ function Envelope() {
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            borderRadius: 12,
-            background: "rgba(255, 248, 235, 0.95)",
-            border: "1.5px solid rgba(138, 112, 48, 0.5)",
-            boxShadow: "0 12px 36px rgba(138, 112, 48, 0.25)",
+            inset: `${open ? 0 : 80}px 0 20px`,
+            transition: reduceMotion ? "none" : "inset 0.5s ease",
+            borderRadius: 6,
+            background: "#FFFDF7",
+            border: "1px solid #CDBF9F",
+            boxShadow: "0 12px 24px rgba(81,64,31,0.14)",
             overflow: "visible",
           }}
         >
@@ -181,7 +171,7 @@ function Envelope() {
           <motion.div
             initial={false}
             animate={open ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.9, y: 12 }}
-            transition={{ delay: open ? 0.38 : 0, duration: 0.5 }}
+            transition={{ delay: open && !reduceMotion ? 0.38 : 0, duration: reduceMotion ? 0 : 0.5 }}
             style={{
               position: "absolute",
               inset: 0,
@@ -211,9 +201,9 @@ function Envelope() {
               right: 0,
               bottom: 0,
               top: 0,
-              clipPath: "polygon(0 38%, 50% 100%, 100% 38%, 100% 100%, 0 100%)",
-              background: "linear-gradient(160deg, #E3D2B0 0%, #D4BC8E 100%)",
-              borderRadius: 12,
+              clipPath: "polygon(0 12%, 50% 65%, 100% 12%, 100% 100%, 0 100%)",
+              background: "linear-gradient(160deg, #EEE4CD 0%, #E5D8B8 100%)",
+              borderRadius: 6,
               pointerEvents: "none",
               opacity: open ? 0.55 : 1,
               transition: "opacity 0.5s",
@@ -224,14 +214,14 @@ function Envelope() {
 
         {/* Flap — opens upward to reveal the card */}
         <motion.div
-          animate={{ rotateX: open ? -172 : 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          animate={{ rotateX: open ? -172 : 0, top: open ? 0 : 80 }}
+          transition={{ duration: reduceMotion ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: "absolute",
             top: 0,
             left: 0,
             right: 0,
-            height: ENV_H / 2,
+            height: 125,
             transformOrigin: "top center",
             transformStyle: "preserve-3d",
             zIndex: open ? 0 : 4,
@@ -241,9 +231,9 @@ function Envelope() {
             style={{
               width: "100%",
               height: "100%",
-              clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-              background: "linear-gradient(160deg, #E0CBA0 0%, #DCC89A 100%)",
-              borderRadius: "12px 12px 0 0",
+              clipPath: "polygon(0 0, 100% 0, 54% 96%, 50% 100%, 46% 96%)",
+              background: "linear-gradient(160deg, #F6EFDF 0%, #E7DBBE 100%)",
+              borderRadius: "6px 6px 0 0",
               boxShadow: "0 4px 10px rgba(61,34,21,0.12)",
             }}
           />
@@ -292,10 +282,10 @@ function Envelope() {
           positioned, so swapping between them can't shift the closing line. */}
       <div style={{ position: "relative", width: "100%", height: 76, marginTop: 18 }}>
         <motion.p
-          animate={open ? { opacity: 0 } : reduceMotion ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5] }}
-          transition={open ? { duration: 0.4 } : reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+          animate={{ opacity: open ? 0 : 1 }}
+          transition={{ duration: reduceMotion ? 0 : 0.3 }}
           aria-hidden={open}
-          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.78rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.08em" }}
+          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0 }}
         >
           {t.gift_tap}
         </motion.p>
@@ -318,8 +308,8 @@ function Envelope() {
                 display: "inline-flex", alignItems: "center", gap: 8,
                 background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`,
                 border: "none", borderRadius: 100, padding: "12px 26px",
-                fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem",
-                letterSpacing: "0.16em", textTransform: "uppercase", color: "#FFF8EE",
+                fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem",
+                letterSpacing: 0, textTransform: "uppercase", color: "#FFF8EE",
                 cursor: "pointer", boxShadow: "0 8px 24px rgba(138,112,48,0.3)",
                 WebkitTapHighlightColor: "transparent",
               }}
@@ -330,7 +320,7 @@ function Envelope() {
               </svg>
               {t.gift_save}
             </motion.button>
-            <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.66rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.4, padding: "0 12px" }}>
+            <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.4, padding: "0 12px" }}>
               {t.gift_save_hint}
             </span>
           </motion.div>
@@ -343,6 +333,7 @@ function Envelope() {
 export function GiftSection() {
   const { t } = useLang();
   const { ref, inView } = useReveal("-80px");
+  const reduceMotion = useReducedMotion();
 
   return (
     <section
@@ -357,21 +348,21 @@ export function GiftSection() {
       }}
     >
       <motion.div
-        initial={{ opacity: 0, y: 28 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.9 }}
+        transition={{ duration: reduceMotion ? 0 : 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
         </p>
         <Divider className="mb-12" />
 
-        <div style={{ marginTop: 36, marginBottom: 40 }}>
+        <div style={{ marginTop: 130, marginBottom: 24 }}>
           <Envelope />
         </div>
 
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.85rem, 2.2vw, 1rem)", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8 }}>
           {t.gift_closing}
         </p>
       </motion.div>

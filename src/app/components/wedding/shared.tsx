@@ -175,7 +175,7 @@ export const COLORS = {
   cream: "#F8F1E6",       // warm peach-cream (card background)
   ivory: "#F2E8D2",       // deeper warm ivory
   warmBrown: "#2A1A0A",   // very dark warm (body text)
-  midBrown: "#5A3E25",    // warm mid brown
+  midBrown: "#3A2C18",    // readable warm ink
   lightBrown: "#7A5A38",  // warm light brown
   gold: "#8A7030",        // olive gold (PN monogram)
   goldLight: "#C4A840",   // lighter gold

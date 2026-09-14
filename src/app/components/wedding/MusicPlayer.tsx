@@ -10,7 +10,7 @@ const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
 const YT_THUMB = `https://img.youtube.com/vi/${YT_VIDEO_ID}/0.jpg`;
 
 const TITLE = "Pantika";
-const SUBTITLE = "Written for her, on the day I asked forever";
+const SUBTITLE = "Written for Yee, as a surprise for our proposal";
 
 /* ───────────────────────────────────────────────────────────────
    TIME-SYNCED LYRICS

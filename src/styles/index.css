@@ -26,6 +26,13 @@ optgroup {
   font-family: 'TT Interphases', 'Noto Sans Thai', sans-serif;
 }
 
+.rsvp-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 359px) { .rsvp-options { grid-template-columns: 1fr; } }
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid #1B4A5C;
+  outline-offset: 5px;
+}
+
 /* Music player "now playing" pulse ring — pure CSS so it stays smooth
    (replaces the jittery Framer Motion repeat). */
 @keyframes pulse-ring {

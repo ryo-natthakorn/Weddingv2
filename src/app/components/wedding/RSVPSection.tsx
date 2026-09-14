@@ -172,7 +172,7 @@ export function RSVPSection() {
     padding: "14px 18px",
     fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
     fontSize: "1rem", // 16px minimum — anything smaller triggers iOS focus auto-zoom
-    fontWeight: 300,
+    fontWeight: 400,
     color: COLORS.warmBrown,
     outline: "none",
     transition: "all 0.3s",
@@ -182,8 +182,8 @@ export function RSVPSection() {
 
   const labelStyle: React.CSSProperties = {
     fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-    fontSize: "0.68rem",
-    letterSpacing: "0.2em",
+    fontSize: "1rem",
+    letterSpacing: 0,
     textTransform: "uppercase",
     color: COLORS.lightBrown,
     display: "block",
@@ -207,20 +207,20 @@ export function RSVPSection() {
         transition={{ duration: 0.9 }}
         style={{ maxWidth: 560, margin: "0 auto", position: "relative", zIndex: 2 }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
           {t.rsvp_label}
         </p>
         <Divider className="mb-6" />
         <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
           {t.rsvp_title}
         </h2>
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: "0.06em" }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: 0 }}>
           {t.rsvp_subtitle}
         </p>
 
         {/* Importance message — warm, gentle, between subtitle and form */}
         {status === "idle" && (
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontStyle: "italic", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: 0, whiteSpace: "nowrap", marginBottom: 40, marginLeft: "auto", marginRight: "auto" }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: 0, marginBottom: 40, marginLeft: "auto", marginRight: "auto" }}>
             {t.rsvp_importance}
           </p>
         )}
@@ -253,7 +253,7 @@ export function RSVPSection() {
               {/* Attending */}
               <div>
                 <label style={labelStyle}>{t.rsvp_attend}</label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div className="rsvp-options">
                   {(["yes", "no"] as const).map((val) => {
                     const isYes = val === "yes";
                     const selected = attending === val;
@@ -262,6 +262,7 @@ export function RSVPSection() {
                       <motion.button
                         key={val}
                         type="button"
+                        aria-pressed={selected}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => {
@@ -279,11 +280,13 @@ export function RSVPSection() {
                             : "rgba(255,255,255,0.5)",
                           cursor: "pointer",
                           fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-                          fontSize: "0.8rem",
-                          letterSpacing: "0.1em",
+                          fontSize: "1rem",
+                          minHeight: 54,
+                          lineHeight: 1.6,
+                          letterSpacing: 0,
                           color: selected ? accent : COLORS.lightBrown,
                           // Yes pops; No simply dims with a quiet, slower fade.
-                          opacity: selected && !isYes ? 0.7 : 1,
+                          opacity: 1,
                           transition: isYes
                             ? "all 0.3s"
                             : "border-color 0.6s ease, color 0.6s ease, background 0.6s ease, opacity 0.6s ease",
@@ -293,7 +296,6 @@ export function RSVPSection() {
                           gap: 8,
                         }}
                       >
-                        <span style={{ fontSize: "1rem" }}>{isYes ? "♥" : "✦"}</span>
                         {isYes ? t.rsvp_yes : t.rsvp_no}
                         {/* Burst particles — Yes button only */}
                         {isYes && burst.map((s) => (
@@ -323,7 +325,7 @@ export function RSVPSection() {
                   })}
                 </div>
                 {attendHint && (
-                  <p role="alert" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.74rem", color: COLORS.midBrown, letterSpacing: "0.04em", marginTop: 8 }}>
+                  <p role="alert" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", color: COLORS.midBrown, letterSpacing: 0, marginTop: 8 }}>
                     {lang === "TH" ? "กรุณาเลือกว่าจะมาร่วมงานหรือไม่" : "Please choose whether you can join us"}
                   </p>
                 )}
@@ -407,7 +409,7 @@ export function RSVPSection() {
                           label={lang === "TH" ? "เพิ่มจำนวนผู้เข้าร่วม" : "One guest more"}
                         />
                       </div>
-                      <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem", fontWeight: 300, color: COLORS.lightBrown, letterSpacing: "0.04em", marginTop: 6 }}>
+                      <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, marginTop: 6 }}>
                         {t.rsvp_guests_help}
                       </p>
                     </div>
@@ -417,7 +419,7 @@ export function RSVPSection() {
 
               {/* Error message */}
               {error && (
-                <p role="alert" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.8rem", color: "#C0392B", textAlign: "center" }}>
+                <p role="alert" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", color: "#C0392B", textAlign: "center" }}>
                   {t.rsvp_error}
                 </p>
               )}
@@ -436,8 +438,8 @@ export function RSVPSection() {
                   borderRadius: 100,
                   padding: "16px 40px",
                   fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-                  fontSize: "0.78rem",
-                  letterSpacing: "0.2em",
+                  fontSize: "1rem",
+                  letterSpacing: 0,
                   textTransform: "uppercase",
                   cursor: submitting ? "default" : "pointer",
                   opacity: submitting ? 0.7 : 1,
@@ -474,12 +476,12 @@ export function RSVPSection() {
               <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 3.5vw, 2rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.3 }}>
                 {name}
               </h3>
-              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.8 }}>
+              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8 }}>
                 {status === "submitted-yes" ? t.rsvp_thanks : t.rsvp_sorry}
               </p>
               <button
                 onClick={resetForm}
-                style={{ marginTop: 28, minHeight: 44, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.7rem", letterSpacing: "0.16em", color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
+                style={{ marginTop: 28, minHeight: 44, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
               >
                 ← Go Back
               </button>

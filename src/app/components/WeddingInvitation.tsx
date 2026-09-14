@@ -32,7 +32,7 @@ const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok
    transparent windows into it, so scrolling never hits a hard color break.
    The hero's own gradient ends on #F8F1E6, the exact color this starts on. */
 const POST_HERO_GRADIENT =
-  "linear-gradient(180deg, #F8F1E6 0%, #F2E8D2 20%, #EBDDC4 50%, #E3D2B0 75%, #DBC59A 100%)";
+  "linear-gradient(180deg, #F8F1E6 0%, #F6EFE2 20%, #F3ECDC 50%, #F0E8D7 75%, #ECE2CF 100%)";
 
 /* Paper grain — same fractal-noise texture as the body fallback in index.css.
    The hero and post-hero wrapper both paint fully opaque backgrounds over the
@@ -360,7 +360,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
 
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
           <Divider className="mb-8" />
 
           {/* BLOCK 1+2 — merged: venue photo and address/CTA share one card */}
@@ -377,14 +377,14 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
 
             {/* Address + CTA — same card, below the photo */}
             <div style={{ padding: "32px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
-              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: "0.04em" }}>{t.map_address}</p>
+              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: 0 }}>{t.map_address}</p>
               <motion.a
                 href={MAPS_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z" stroke="#FFF8EE" strokeWidth="1.2"/>
@@ -408,8 +408,8 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                     style={{ width: 48, height: 48, borderRadius: key === "mrt" ? 0 : "50%", objectFit: "contain", flexShrink: 0, boxShadow: key === "mrt" ? "none" : "0 3px 10px rgba(61,34,21,0.18)" }}
                   />
                   <div>
-                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.72rem", letterSpacing: "0.16em", color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
-                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.85rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
+                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
+                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
                   </div>
                 </div>
               ))}
@@ -421,7 +421,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "48px 24px 56px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
           <Divider className="mb-12" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
@@ -432,7 +432,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
                 style={{ background: "rgba(255,248,240,0.6)", border: "1px solid rgba(138,107,75,0.15)", borderTop: `3px solid ${COLORS.gold}`, borderRadius: 16, padding: "36px 24px", boxShadow: "0 10px 30px rgba(61,34,21,0.1)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}
               >
                 <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} />
-                <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: "0.04em", lineHeight: 1 }}>{item.time}</span>
+                <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: 0, lineHeight: 1 }}>{item.time}</span>
                 <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
               </motion.div>
             ))}
@@ -445,10 +445,10 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
-            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.1rem", letterSpacing: "0.28em", color: COLORS.lightBrown, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
+            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.375rem", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
             <Divider className="mb-8" />
-            <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, fontStyle: "italic", color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
-            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.9rem", fontWeight: 300, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
+            <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 400, color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
+            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
           </motion.div>
 
           {/* 9 swatch arches — drop in left→right, top row first.
@@ -482,7 +482,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               <InstagramIcon />
               <FacebookIcon />
             </motion.div>
-            <div style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(2rem, 7vw, 3.4rem)", fontWeight: 600, letterSpacing: "0.04em", color: COLORS.gold, marginBottom: 20, lineHeight: 1.1, minHeight: "1.2em", textShadow: "0 2px 8px rgba(138,112,48,0.15)" }}>
+            <div style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(2rem, 7vw, 3.4rem)", fontWeight: 600, letterSpacing: 0, color: COLORS.gold, marginBottom: 20, lineHeight: 1.1, minHeight: "1.2em", textShadow: "0 2px 8px rgba(138,112,48,0.15)" }}>
               {/* screen readers get the whole hashtag; the per-character typewriter is decorative */}
               <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" }}>{t.hashtag}</span>
               <span aria-hidden>
@@ -493,7 +493,7 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               initial={{ opacity: 0 }}
               animate={hashtagSec.inView ? { opacity: 1 } : {}}
               transition={{ delay: 0.4, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontWeight: 300, letterSpacing: "0.12em", color: COLORS.midBrown, textTransform: "uppercase" }}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, letterSpacing: 0, color: COLORS.midBrown, textTransform: "uppercase" }}
             >
               {t.hashtag_sub}
             </motion.p>
@@ -522,8 +522,8 @@ function InvitationContent({ onPlaySong }: { onPlaySong: () => void }) {
               paragraph still wraps normally if it's too long for a narrow
               phone — that's ordinary text wrapping, not the break this is
               guarding against. */}
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", fontStyle: "italic", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</p>
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>
