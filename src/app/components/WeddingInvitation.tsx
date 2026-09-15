@@ -96,15 +96,15 @@ const HERO_CSS = `
     top: 5%;
     left: 50%;
     transform: translateX(-50%);
-    width: 320px;
+    width: 420px;
     text-align: center;
   }
   .wedding-hero-mark img {
-    width: 180px !important;
+    width: 280px !important;
     margin: 0 auto !important;
   }
   .wedding-hero-mark p {
-    font-size: 1.5rem !important;
+    font-size: 30px !important;
     letter-spacing: 0 !important;
   }
 }

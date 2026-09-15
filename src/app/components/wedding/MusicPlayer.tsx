@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
 import { LoaderCircle, Pause, Play, Youtube } from "lucide-react";
 import { useLang } from "./wedding-context";
 
@@ -100,19 +100,38 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [dock, setDock] = useState<{ x: number; y: number } | null>(null);
+  const [dock, setDock] = useState(false);
   const [merged, setMerged] = useState(false);
+  const dockProgress = useMotionValue(0);
+  const targetX = useMotionValue(0);
+  const targetY = useMotionValue(0);
+  const dockX = useTransform(() => targetX.get() * dockProgress.get());
+  const dockY = useTransform(() => targetY.get() * dockProgress.get() - Math.sin(dockProgress.get() * Math.PI) * 32);
+  const dockOpacity = useTransform(dockProgress, [0, 0.82, 1], [1, 1, 0]);
+  const stretchX = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 1.25, 1, 0.65]);
+  const stretchY = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 0.85, 1, 0.65]);
 
   useEffect(() => {
-    if (!dockTarget || expanded) { setDock(null); setMerged(false); return; }
+    setMerged(false);
+    const playback = animate(dockProgress, dock ? 1 : 0, {
+      duration: reduceMotion ? 0 : dock ? 1.9 : 0.8,
+      ease: [0.4, 0, 0.2, 1],
+      onComplete: () => setMerged(dock),
+    });
+    return () => playback.stop();
+  }, [dock, dockProgress, reduceMotion]);
+
+  useEffect(() => {
+    if (!dockTarget || expanded) { setDock(false); setMerged(false); return; }
     let frame = 0;
     const measure = () => {
       frame = 0;
       const rect = dockTarget.getBoundingClientRect();
       const visible = rect.top > 80 && rect.bottom < window.innerHeight - 80;
-      if (!visible) { setDock(null); setMerged(false); return; }
       const next = { x: rect.left + rect.width / 2 - (window.innerWidth - 52), y: rect.top + rect.height / 2 - (window.innerHeight - 52) };
-      setDock(previous => previous && Math.abs(previous.x - next.x) < 1 && Math.abs(previous.y - next.y) < 1 ? previous : next);
+      targetX.set(next.x);
+      targetY.set(next.y);
+      setDock(visible);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
@@ -125,7 +144,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [dockTarget, expanded]);
+  }, [dockTarget, expanded, targetX, targetY]);
   const [showTrail, setShowTrail] = useState(true);
 
   // Entry autoplay is best-effort in the unlock gesture. Never queue it for
@@ -366,15 +385,12 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
         {!expanded && (
           <motion.div
             key="collapsed"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ x: dock?.x ?? 0, y: dock?.y ?? 0, scale: 1, opacity: merged && dock ? 0 : 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : dock ? 1.8 : 0.65, opacity: { duration: reduceMotion ? 0 : 0.35 }, ease: [0.22, 1, 0.36, 1] }}
-            onAnimationComplete={() => { if (dock) setMerged(true); }}
+            initial={false}
+            exit={{ scale: 0 }}
             data-music-docked={merged && !!dock}
             data-music-docking={!!dock}
             aria-hidden={merged && !!dock}
-            style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56, pointerEvents: dock ? "none" : "auto" }}
+            style={{ x: dockX, y: dockY, opacity: dockOpacity, position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56, pointerEvents: dock ? "none" : "auto" }}
           >
             {/* Warm glow (stronger during discovery) */}
             <motion.div
@@ -399,11 +415,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
             )}
             <motion.button
               tabIndex={dock ? -1 : 0}
-              animate={dock && !reduceMotion ? { scaleX: [1, 1.4, 0.92, 1], scaleY: [1, 0.82, 1.08, 1] } : { scaleX: 1, scaleY: 1 }}
-              transition={{ duration: reduceMotion ? 0 : 1.8, times: [0, 0.5, 0.85, 1] }}
               onClick={() => setExpanded(true)}
               aria-label="Open music player"
               style={{
+                scaleX: stretchX, scaleY: stretchY,
                 position: "relative",
                 width: 56, height: 56, borderRadius: "50%",
                 background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,

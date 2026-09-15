@@ -155,7 +155,7 @@ function Envelope() {
         <div
           style={{
             position: "absolute",
-            inset: `${open ? 0 : 80}px 0 20px`,
+            inset: `0 0 ${open ? 20 : 100}px`,
             transition: reduceMotion ? "none" : "inset 0.5s ease",
             borderRadius: 6,
             background: "#FFFDF7",
@@ -214,7 +214,7 @@ function Envelope() {
 
         {/* Flap — opens upward to reveal the card */}
         <motion.div
-          animate={{ rotateX: open ? -172 : 0, top: open ? 0 : 80 }}
+          animate={{ rotateX: open ? -90 : 0, top: 0, opacity: open ? 0 : 1 }}
           transition={{ duration: reduceMotion ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: "absolute",
@@ -361,7 +361,7 @@ export function GiftSection() {
           {t.gift_description}
         </p>
 
-        <div style={{ marginTop: 120, marginBottom: 24 }}>
+        <div style={{ marginTop: 36, marginBottom: 24 }}>
           <Envelope />
         </div>
 

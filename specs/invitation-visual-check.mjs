@@ -58,6 +58,9 @@ try {
     assert.equal(await page.getByRole('dialog').count(), 0, 'swipe must not open lightbox');
     await page.getByRole('button', { name: 'ดูรูปทั้งหมด', exact: true }).click();
     const gallery = page.locator('.pw-gallery');
+    assert.equal(await page.locator('.pw-album-page').count(), 1, 'one continuous stamp album');
+    assert.deepEqual(await gallery.locator('h3').allTextContents(), ['เขาใหญ่', 'สวนเบญจกิติ', 'สะพานพุทธ']);
+    assert.equal(await gallery.locator('.pw-album-group').first().locator('img').count(), 1);
     await gallery.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => [...document.querySelectorAll('.pw-stamp img')].every(img => img.complete && img.naturalWidth > 0));
     for (const photo of await gallery.locator('img').all()) {
@@ -76,7 +79,7 @@ try {
       '08-suan-ben.jpg', '02-rings.jpg', '07-suan-ben.jpg', '03-saphan-phut.jpg',
       '04-saphan-phut.jpg', '05-saphan-phut.jpg', '06-saphan-phut.jpg',
     ]);
-    assert.ok(photos[1].x < photos[2].x && Math.abs(photos[1].y - photos[2].y) < 20, 'group 1 must read left to right');
+    assert.ok(photos[1].x < photos[2].x && Math.abs(photos[1].y - photos[2].y) < 40, 'hand-placed photos must still read left to right');
     await gallery.getByRole('button').last().scrollIntoViewIfNeeded();
     await page.screenshot({ path: join(output, `gallery-bottom-${width}.png`), animations: 'disabled' });
     const first = gallery.getByRole('button').first();
@@ -120,7 +123,7 @@ try {
       });
       assert.equal(dedication, 1, 'desktop song dedication is one line');
     }
-    for (const text of ['รบกวนแจ้งให้เราทราบ เพื่อเตรียมที่นั่งต้อนรับทุกคน', 'Your reply helps us plan our day.']) {
+    for (const text of ['รบกวนแจ้งให้เราทราบ เพื่อที่เราจะได้ต้อนรับทุกท่านได้อย่างทั่วถึง', 'Your reply helps us plan our day.']) {
       if (text.startsWith('Your')) await page.getByRole('button', { name: 'EN', exact: true }).click();
       const message = page.getByText(text, { exact: true });
       await message.scrollIntoViewIfNeeded();

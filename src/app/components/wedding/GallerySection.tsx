@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } fr
 import type { MotionValue } from "motion/react";
 import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
+import { ringPosition } from "./ring-layout";
 import {
   useReveal,
   Divider,
@@ -36,24 +37,30 @@ const PRE_WEDDING_IMAGES = PRE_WEDDING_GROUPS.flat();
    keyboard navigation and the lightbox. Each group begins on its own row. */
 const MOSAIC_CSS = `
 .pw-orbit { position: relative; height: 460px; touch-action: pan-y; }
-.pw-orbit-card { position: absolute; top: 155px; left: calc(50% - 110px); width: 220px; padding: 0; border: 0; background: none; cursor: pointer; }
+.pw-orbit-card { position: absolute; top: 72px; left: calc(50% - 110px); width: 220px; padding: 0; border: 0; background: none; cursor: pointer; }
 .pw-orbit-card img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
 .pw-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 18px 0 28px; }
 .pw-view-toggle { display: grid; place-items: center; width: 44px; height: 44px; background: #FFFDF7; color: #1B4A5C; border: 1px solid #C8BDA1; border-radius: 50%; cursor: pointer; }
 .pw-album-page { position: relative; padding: 36px 24px 28px 36px; background: #FFFEFA; border: 1px solid #D6CEBA; border-left: 8px solid #466257; box-shadow: 3px 3px 0 #E8E2D6, 6px 6px 0 #D6CEBA; }
 .pw-album-page::before { content: ''; position: absolute; top: 0; bottom: 0; left: 15px; border-left: 1px solid #DDD4C3; }
 .pw-album-page header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 18px; margin-bottom: 24px; border-bottom: 1px solid #DED7C9; color: #3A2C18; font-size: 14px; }
-.pw-album-page .pw-mosaic { gap: 26px 18px; }
+.pw-album-page .pw-mosaic { gap: 38px 22px; padding: 10px 5px 18px; align-items: start; }
+.pw-album-group + .pw-album-group { margin-top: 48px; }
+.pw-album-group h3 { margin: 0; font-size: 20px; font-weight: 500; }
+.pw-album-page .pw-mosaic > :nth-child(3n + 1) .pw-stamp { transform: rotate(-2deg); }
+.pw-album-page .pw-mosaic > :nth-child(3n + 2) { margin-top: 15px; }
+.pw-album-page .pw-mosaic > :nth-child(3n + 2) .pw-stamp { transform: rotate(1.6deg); }
+.pw-album-page .pw-mosaic > :nth-child(3n) .pw-stamp { transform: rotate(-0.8deg); }
+.pw-album-page .pw-opening .pw-stamp { transform: rotate(-2deg); }
 .pw-album-page .pw-opening { max-width: 250px; }
 @media (max-width: 479px) { .pw-album-page { padding: 24px 12px 24px 22px; } .pw-album-page .pw-mosaic { gap: 18px 10px; } }
 @media (min-width: 640px) {
   .pw-orbit { height: 520px; }
-  .pw-orbit-card { width: 260px; left: calc(50% - 130px); top: 160px; }
+  .pw-orbit-card { width: 260px; left: calc(50% - 130px); top: 74px; }
 }
 .pw-mosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (min-width: 640px) { .pw-mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
 .pw-opening { max-width: 280px; margin-inline: auto; }
-.pw-gallery > div + div { margin-top: 28px; }
 .pw-mosaic > *, .pw-opening > * {
   display: block;
   width: 100%;
@@ -379,16 +386,17 @@ function Print({
   );
 }
 
-function MorphPrint({ progress, children, i, radius, angle }: {
-  progress: MotionValue<number>; children: React.ReactNode; i: number; radius: number; angle: number;
+function MorphPrint({ progress, children, i, radius, angle, count }: {
+  progress: MotionValue<number>; children: React.ReactNode; i: number; radius: number; angle: number; count: number;
 }) {
   const reduceMotion = useReducedMotion();
-  // Offset the ring positions into a scattered sheet, then release them as
-  // the section enters the viewport. No scroll listeners or React renders.
-  const x = useTransform(progress, value => reduceMotion ? 0 : (1 - value) * (((i % 3) - 1) * radius * 0.9 - Math.sin(angle) * radius));
-  const y = useTransform(progress, value => reduceMotion ? 0 : (1 - value) * ((Math.floor(i / 3) - 1.5) * 100));
-  const opacity = useTransform(progress, [0, 0.3, 1], [0.35, 0.8, 1]);
-  return <motion.div style={{ position: "absolute", inset: 0, x, y, zIndex: Math.round((Math.cos(angle) + 1) * 50), opacity: reduceMotion ? 1 : opacity, pointerEvents: "none" }}>{children}</motion.div>;
+  const ring = ringPosition(angle, radius);
+  const circleAngle = i / count * Math.PI * 2;
+  // Native-scroll version of the supplied scatter -> line -> circle sequence.
+  const x = useTransform(progress, [0, 0.25, 0.6, 1], [((i % 3) - 1) * radius - ring.x, (i / Math.max(1, count - 1) - 0.5) * radius * 2 - ring.x, Math.cos(circleAngle) * radius * 0.72 - ring.x, 0]);
+  const y = useTransform(progress, [0, 0.25, 0.6, 1], [(Math.floor(i / 3) - 1.5) * 85 - ring.y, -ring.y, Math.sin(circleAngle) * radius * 0.72 - ring.y, 0]);
+  const opacity = useTransform(progress, [0, 0.2, 1], [0.35, 1, 1]);
+  return <motion.div style={{ position: "absolute", inset: 0, x: reduceMotion ? 0 : x, y: reduceMotion ? 0 : y, zIndex: Math.round(ring.depth * 100), opacity: reduceMotion ? 1 : opacity, pointerEvents: "none" }}>{children}</motion.div>;
 }
 
 export function GallerySection() {
@@ -396,20 +404,20 @@ export function GallerySection() {
   const { ref, inView } = useReveal("-80px");
   const [zoom, setZoom] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "start 15%"] });
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start 85%", "start 5%"] });
   const [active, setActive] = useState(0);
   const [grid, setGrid] = useState(false);
   const reduceMotion = useReducedMotion();
   const orbitRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
-  const [radius, setRadius] = useState(180);
+  const [radius, setRadius] = useState(100);
   const count = PRE_WEDDING_IMAGES.length;
   const step = (direction: number) => setActive(i => (i + direction + count) % count);
 
   useEffect(() => {
     if (grid || !orbitRef.current) return;
-    const observer = new ResizeObserver(([entry]) => setRadius(Math.min(290, entry.contentRect.width * 0.53)));
+    const observer = new ResizeObserver(([entry]) => setRadius(Math.min(220, entry.contentRect.width * 0.27)));
     observer.observe(orbitRef.current);
     return () => observer.disconnect();
   }, [grid]);
@@ -490,9 +498,9 @@ export function GallerySection() {
           >
             {PRE_WEDDING_IMAGES.map((src, i) => {
               const angle = (i - active) * Math.PI * 2 / count;
-              const depth = (Math.cos(angle) + 1) / 2;
+              const ring = ringPosition(angle, radius);
               const selected = i === active;
-              return <MorphPrint key={src} i={i} angle={angle} radius={radius} progress={scrollYProgress}><motion.button
+              return <MorphPrint key={src} i={i} angle={angle} radius={radius} count={count} progress={scrollYProgress}><motion.button
                 type="button"
                 key={src}
                 className="pw-orbit-card"
@@ -500,9 +508,9 @@ export function GallerySection() {
                 aria-current={selected ? "true" : undefined}
                 tabIndex={selected ? 0 : -1}
                 initial={false}
-                animate={inView || reduceMotion ? { x: Math.sin(angle) * radius, y: -145 * (1 - depth), scale: 0.4 + depth * 0.6, rotate: Math.sin(angle) * 8 } : {}}
+                animate={inView || reduceMotion ? { x: ring.x, y: ring.y, scale: ring.scale, rotate: 0 } : {}}
                 transition={{ duration: reduceMotion ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
-                style={{ zIndex: Math.round(depth * 100), pointerEvents: "auto", filter: "drop-shadow(0 6px 7px rgba(61,34,21,0.18))" }}
+                style={{ zIndex: Math.round(ring.depth * 100), pointerEvents: "auto", filter: "drop-shadow(0 6px 7px rgba(61,34,21,0.18))" }}
                 onClick={() => { if (!swiped.current) { if (selected) setZoom(i); else setActive(i); } }}
               >
                 <span className="pw-stamp"><img src={src} alt="" draggable={false} loading="lazy" decoding="async" /></span>
@@ -520,10 +528,10 @@ export function GallerySection() {
             </button>
           </div>
           {grid &&
-          <div className="pw-gallery" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
+          <div className="pw-gallery pw-album-page" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
             {PRE_WEDDING_GROUPS.map((photos, groupIndex) => photos.length > 0 && (
-              <div key={groupIndex} className="pw-album-page">
-                <header><span>{lang === "TH" ? ["จุดเริ่มต้น", "เราสองคน", "ยามเย็นริมแม่น้ำ"][groupIndex] || "ความทรงจำ" : ["The beginning", "The two of us", "By the river"][groupIndex] || "Memories"}</span><span>{String(groupIndex + 1).padStart(2, "0")}</span></header>
+              <div key={groupIndex} className="pw-album-group">
+                <header><h3>{lang === "TH" ? ["เขาใหญ่", "สวนเบญจกิติ", "สะพานพุทธ"][groupIndex] || "ความทรงจำ" : ["Khao Yai", "Benjakitti Park", "Memorial Bridge"][groupIndex] || "Memories"}</h3><span>{String(groupIndex + 1).padStart(2, "0")}</span></header>
                 <div className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
                 {photos.map(src => {
                   const i = PRE_WEDDING_IMAGES.indexOf(src);
