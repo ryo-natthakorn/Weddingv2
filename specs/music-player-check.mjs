@@ -65,6 +65,29 @@ async function check(name, run) {
 }
 
 try {
+  await check('load timeout offers retry without inventing song time', async () => {
+    const page = await setup({ delayed: true });
+    try {
+      await openInvitation(page);
+      await page.getByRole('button', { name: 'ลองใหม่', exact: true }).waitFor({ timeout: 15000 });
+      assert.equal(await page.locator('[data-song-lyrics]').textContent(), '');
+      await page.getByRole('button', { name: 'ลองใหม่', exact: true }).click();
+      await page.waitForFunction(() => window.musicTest.players.length === 2);
+      await page.evaluate(() => window.musicTest.players[1].ready());
+      await page.getByRole('button', { name: 'Play', exact: true }).click();
+      await page.evaluate(() => window.musicTest.players[1].emit(1));
+      await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
+    } finally { await page.close(); }
+  });
+  await check('start timeout ends indefinite buffering', async () => {
+    const page = await setup();
+    try {
+      await openInvitation(page);
+      await page.getByRole('button', { name: 'ลองใหม่', exact: true }).waitFor({ timeout: 15000 });
+      assert.equal(await page.getByRole('button', { name: 'Play', exact: true }).getAttribute('aria-busy'), 'false');
+      assert.equal(await page.locator('[data-song-lyrics]').textContent(), '');
+    } finally { await page.close(); }
+  });
   await check('SBV lyrics follow playback, clear in gaps and update after seeking', async () => {
     const page = await setup();
     try {

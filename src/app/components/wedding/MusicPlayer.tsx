@@ -85,6 +85,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   const [ready, setReady] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -164,6 +165,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   /* ── Init YouTube IFrame API ── */
   useEffect(() => {
     let disposed = false;
+    let loadTimeout: ReturnType<typeof setTimeout>;
     const host = playerDivRef.current;
     const stopPending = () => {
       if (disposed) return;
@@ -171,14 +173,15 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       setPlaying(false);
       setBuffering(false);
     };
-    const onError = () => { stopPending(); if (!disposed) setFailed(true); };
+    const onError = () => { clearTimeout(loadTimeout); stopPending(); if (!disposed) setFailed(true); };
+    loadTimeout = setTimeout(onError, 12000);
     const initPlayer = () => {
       if (disposed || !host || playerRef.current) return;
       // YouTube replaces its mount node. React owns the stable outer host so
       // cleanup/remount (including StrictMode) always gets a connected node.
       const mount = document.createElement("div");
       host.replaceChildren(mount);
-      playerRef.current = new window.YT.Player(mount, {
+      try { playerRef.current = new window.YT.Player(mount, {
         videoId: YT_VIDEO_ID,
         width: 200,
         height: 200,
@@ -195,6 +198,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
         events: {
           onReady: (event: any) => {
             if (disposed) return;
+            clearTimeout(loadTimeout);
             readyRef.current = true;
             setReady(true);
             setFailed(false);
@@ -222,7 +226,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
           onAutoplayBlocked: stopPending,
           onError,
         },
-      });
+      }); } catch { onError(); }
     };
     const prevCallback = window.onYouTubeIframeAPIReady;
     const onApiReady = () => {
@@ -230,6 +234,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       initPlayer();
     };
     let tag = document.querySelector<HTMLScriptElement>('script[src="https://www.youtube.com/iframe_api"]');
+    if (attempt > 0 && !window.YT?.Player) { tag?.remove(); tag = null; }
     if (window.YT?.Player) {
       initPlayer();
     } else {
@@ -243,6 +248,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
     }
     return () => {
       disposed = true;
+      clearTimeout(loadTimeout);
       readyRef.current = false;
       setReady(false);
       tag?.removeEventListener("error", onError);
@@ -253,7 +259,26 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       }
       host?.replaceChildren();
     };
-  }, []);
+  }, [attempt]);
+
+  useEffect(() => {
+    if (!buffering) return;
+    const timeout = setTimeout(() => {
+      playbackWantedRef.current = false;
+      try { playerRef.current?.pauseVideo(); } catch {}
+      setPlaying(false);
+      setBuffering(false);
+      setFailed(true);
+    }, 12000);
+    return () => clearTimeout(timeout);
+  }, [buffering, attempt]);
+
+  const retry = () => {
+    playbackWantedRef.current = false;
+    readyRef.current = false;
+    setReady(false); setFailed(false); setPlaying(false); setBuffering(false);
+    setAttempt(value => value + 1);
+  };
 
   /* ── The discovery cue retires after 30s, or once the player is engaged.
      It deliberately does NOT stop on autoplay alone — autoplay fires before
@@ -469,9 +494,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
               </button>
             </div>
 
-            {failed && <p role="status" style={{ color: TEXT_PRIMARY, fontSize: "0.8rem", marginTop: 12 }}>
-              {lang === "TH" ? "โหลดเพลงไม่ได้ กรุณาฟังผ่าน YouTube" : "Unable to load the song. Listen on YouTube."}
-            </p>}
+            <p role="status" style={{ color: TEXT_PRIMARY, fontSize: "0.8rem", marginTop: 12 }}>
+              {failed ? (lang === "TH" ? "โหลดเพลงไม่สำเร็จ ลองใหม่หรือฟังบน YouTube" : "Unable to load. Retry or listen on YouTube.") : !ready ? (lang === "TH" ? "กำลังโหลดเพลง" : "Loading song") : buffering ? (lang === "TH" ? "กำลังเริ่มเล่น" : "Starting playback") : ""}
+            </p>
+            {failed && <button type="button" onClick={retry} style={{ color: ACCENT, background: "transparent", border: `1px solid ${ACCENT}`, padding: "8px 16px", minHeight: 44, borderRadius: 6, cursor: "pointer" }}>{lang === "TH" ? "ลองใหม่" : "Retry"}</button>}
 
             {/* Lyric line — one at a time, gold, fading */}
             {LYRICS.length > 0 && (

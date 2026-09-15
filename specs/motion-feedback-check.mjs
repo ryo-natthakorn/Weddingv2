@@ -19,13 +19,8 @@ try {
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
     const gallery = page.locator('.pw-orbit');
     const section = page.locator('#gallery-section');
-    await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY + (el.offsetHeight - innerHeight) * 0.2));
-    await page.waitForTimeout(1100);
-    const early = await gallery.locator('.pw-orbit-card').nth(3).locator('..').evaluate(el => getComputedStyle(el).transform);
-    await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY + (el.offsetHeight - innerHeight) * 0.68));
-    await page.waitForTimeout(800);
-    const late = await gallery.locator('.pw-orbit-card').nth(3).locator('..').evaluate(el => getComputedStyle(el).transform);
-    assert.notEqual(early, late, 'gallery morph follows scroll position');
+    await gallery.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector('[data-gallery-ready="true"]'));
     await gallery.locator('img').evaluateAll(images => Promise.all(images.map(img => img.decode())));
     await page.screenshot({ path: join(output, `morph-settled-${width}.png`) });
     const song = page.getByRole('button', { name: 'ฟังเพลง', exact: true });
@@ -46,7 +41,7 @@ try {
     await section.evaluate(el => el.scrollIntoView());
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
     await page.waitForFunction(() => !document.querySelector('[data-music-docking="true"]'));
-    console.log(`PASS ${width}px: scroll morph, visible merge duration, song control, floating return`);
+    console.log(`PASS ${width}px: circular gallery, visible merge duration, song control, floating return`);
     await page.close();
   }
 } finally {

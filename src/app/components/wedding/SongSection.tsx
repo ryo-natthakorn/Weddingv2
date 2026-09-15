@@ -128,7 +128,7 @@ export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor
           {t.song_title}
         </h3>
         <p className="song-dedication" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
-          {lang === "TH" ? <>เรียวแอบแต่งเพลงนี้ให้หยี<span className="song-mobile-line"> เพื่อเซอร์ไพรส์ตอนขอหยีแต่งงาน</span></> : t.song_dedication}
+          {lang === "TH" ? <>เรียวแอบแต่งเพลงนี้ให้หยี<span className="song-mobile-line"> เพื่อเซอร์ไพรส์หยีตอนขอแต่งงาน</span></> : t.song_dedication}
         </p>
 
         <motion.button

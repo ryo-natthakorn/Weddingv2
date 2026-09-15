@@ -42,52 +42,18 @@ try {
     }
     const orbit = page.locator('.pw-orbit');
     await orbit.scrollIntoViewIfNeeded();
-    await page.waitForFunction(() => [...document.querySelectorAll('.pw-orbit img')].every(img => img.complete && img.naturalWidth > 0));
     await orbit.locator('img').evaluateAll(images => Promise.all(images.map(img => img.decode())));
+    assert.equal(await orbit.locator('img').count(), 11);
+    assert.equal(await page.locator('.pw-book, .pw-book-tabs').count(), 0);
     await orbit.screenshot({ path: join(output, `ring-${width}.png`), animations: 'disabled' });
-    await page.getByRole('button', { name: 'รูปถัดไป', exact: true }).click();
-    assert.equal(await orbit.locator('[aria-current="true"]').getAttribute('aria-label'), 'เปิดรูปที่ 2 จาก 11');
-    await orbit.locator('[aria-current="true"]').press('ArrowLeft');
-    assert.equal(await orbit.locator('[aria-current="true"]').getAttribute('aria-label'), 'เปิดรูปที่ 1 จาก 11');
-    const box = await orbit.locator('[aria-current="true"]').boundingBox();
-    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2, { steps: 8 });
-    await page.mouse.up();
-    assert.equal(await orbit.locator('[aria-current="true"]').getAttribute('aria-label'), 'เปิดรูปที่ 2 จาก 11');
-    assert.equal(await page.getByRole('dialog').count(), 0, 'swipe must not open lightbox');
-    await page.getByRole('button', { name: 'ดูรูปทั้งหมด', exact: true }).click();
-    const gallery = page.locator('.pw-gallery');
-    assert.equal(await page.locator('.pw-album-page').count(), 1, 'one continuous stamp album');
-    assert.deepEqual(await gallery.locator('h3').allTextContents(), ['เขาใหญ่', 'สวนเบญจกิติ', 'สะพานพุทธ']);
-    assert.equal(await gallery.locator('.pw-album-group').first().locator('img').count(), 1);
-    await gallery.scrollIntoViewIfNeeded();
-    for (const tab of await page.getByRole('tab').all()) {
-      await tab.click();
-      for (const photo of await page.getByRole('tabpanel').locator('img').all()) {
-        await photo.evaluate(img => img.decode());
-      }
-    }
-    await gallery.scrollIntoViewIfNeeded();
-    await gallery.screenshot({ path: join(output, `gallery-${width}.png`), animations: 'disabled' });
-    const photos = await gallery.locator('img').evaluateAll(images => images.map(img => ({
-      name: new URL(img.src).pathname.split('/').pop(),
-      x: img.getBoundingClientRect().x,
-      y: img.getBoundingClientRect().y,
-    })));
-    assert.deepEqual(photos.map(photo => photo.name), [
-      '01-ring-box.jpg', '11-suan-ben.jpg', '10-suan-ben.jpg', '09-suan-ben.jpg',
-      '08-suan-ben.jpg', '02-rings.jpg', '07-suan-ben.jpg', '03-saphan-phut.jpg',
-      '04-saphan-phut.jpg', '05-saphan-phut.jpg', '06-saphan-phut.jpg',
-    ]);
-    await gallery.getByRole('button').last().scrollIntoViewIfNeeded();
-    await page.screenshot({ path: join(output, `gallery-bottom-${width}.png`), animations: 'disabled' });
-    const first = gallery.getByRole('button').first();
-    await first.click();
+    const first = orbit.getByRole('button').first();
+    await first.focus();
+    await first.press('ArrowRight');
+    assert.equal(await orbit.getByRole('button').nth(1).evaluate(el => el === document.activeElement), true);
+    await orbit.getByRole('button').nth(1).press('Enter');
     assert.equal(await page.getByRole('dialog').count(), 1);
-    await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Escape');
-    assert.equal(await first.evaluate(el => el === document.activeElement), true, 'lightbox restores focus');
+    assert.equal(await orbit.getByRole('button').nth(1).evaluate(el => el === document.activeElement), true);
     const mrt = page.getByText('โดย MRT', { exact: true }).locator('..').locator('..').locator('img');
     await mrt.scrollIntoViewIfNeeded();
     await mrt.screenshot({ path: join(output, `mrt-${width}.png`) });
@@ -123,7 +89,7 @@ try {
       });
       assert.equal(dedication, 1, 'desktop song dedication is one line');
     }
-    for (const text of ['รบกวนแจ้งให้เราทราบ เพื่อที่เราจะได้ต้อนรับทุกท่านได้อย่างทั่วถึง', 'Your reply helps us plan our day.']) {
+    for (const text of ['การตอบรับของท่านจะช่วยให้เราต้อนรับแขกทุกท่านได้อย่างทั่วถึง', 'Your reply helps us plan our day.']) {
       if (text.startsWith('Your')) await page.getByRole('button', { name: 'EN', exact: true }).click();
       const message = page.getByText(text, { exact: true });
       await message.scrollIntoViewIfNeeded();
@@ -138,7 +104,7 @@ try {
       await message.screenshot({ path: join(output, `rsvp-${text.startsWith('Your') ? 'en' : 'th'}-${width}.png`), animations: 'disabled' });
     }
     assert.deepEqual(errors, [], `${width}px browser exceptions`);
-    console.log(`PASS ${width}x${height}: hero, ring/grid navigation, photo order, envelope, readable TH/EN RSVP`);
+    console.log(`PASS ${width}x${height}: hero, circular gallery navigation, photo order, envelope, readable TH/EN RSVP`);
     await page.close();
   }
   console.log(`Screenshots: ${output}`);

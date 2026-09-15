@@ -1,17 +1,17 @@
-# Invitation feedback - 15 September 2026
+# Invitation feedback - 16 September 2026
 
 ## Implemented
 
 - Section labels: 30px; Sunday: 30px; venue in the date block: 28px.
 - Dress-code subtitle is smaller than its section heading.
 - Removed the visible pre-wedding subtitle.
-- Gallery entrance now follows scroll position; reduced-motion skips the morph.
-- Compact bound stamp album with three selectable location pages, visible
-  perforations against darker paper, a centre fold and uneven print placement.
-  Each page fits within 65svh; full-size photos remain available in the lightbox.
-- Gallery pins within a native-scroll section: stack, line, tilted Ring,
-  landing on book pages, then the chapter browser. Reverse scroll restores
-  the sequence; reduced-motion skips pinning. Photos stay off the centre fold.
+- One normal-scroll gallery: stamp stack unfolds once at 60% visibility over
+  1.8 seconds, then rotates at 3 degrees/second. No book, categories or pinning.
+- Three.js perspective projection drives upright DOM photo buttons via Motion
+  Values. Front photos stay larger; the back of the ring may be obscured.
+- ResizeObserver sizes the ring within 70svh, including short landscape screens.
+  Hover, focus, touch, viewer, offscreen and hidden-tab states pause rotation;
+  reduced motion immediately presents a static ring. Lightbox restores focus.
 - Requested parent/caption/invitation/deadline typography, white Maps button,
   revised dress heading, conversational gift description and tighter tap hint.
 - Larger desktop hero logo/date, reduced space above the envelope, revised RSVP copy.
@@ -33,6 +33,11 @@
 
 - Production build and font regression check pass.
 - Visual/interaction tests: 320, 414, 503, 794, 893, 1280, 1920px.
-- Non-reduced-motion checks: 414px and 1401px, scroll morph and docking/return.
-- Seven mocked YouTube playback/lifecycle/lyrics tests pass; no real RSVP submitted.
+- Non-reduced-motion checks: 414px and 1401px, unfolding and docking/return.
+- Nine mocked YouTube playback/lifecycle/lyrics tests pass, including 12-second
+  load/start timeouts and retry. No synthetic song clock; no real RSVP submitted.
+- Real-network Chromium playback verified: first two SBV cues, forward/back seek
+  and an instrumental gap. Some analytics requests abort, but playback succeeds.
+  This does not establish playback on every device/network or physical audio output.
+- Circular gallery checked at 320, 366, 413, 681, 1049, 1401px and 844x390.
 - Physical iPhone/Safari testing remains outstanding.
