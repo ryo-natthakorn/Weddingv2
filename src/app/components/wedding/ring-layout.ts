@@ -12,7 +12,7 @@ export function ringPosition(angle: number, radius: number) {
   return {
     x: x * Math.cos(rotation) - y * Math.sin(rotation),
     y: x * Math.sin(rotation) + y * Math.cos(rotation),
-    scale: 0.42 * (1 + (perspective - 1) * 0.42),
+    scale: 0.29 * (1 + (perspective - 1) * 0.42),
     depth: perspective,
   };
 }

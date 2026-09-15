@@ -215,7 +215,7 @@ export function RSVPSection() {
         <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
           {t.rsvp_title}
         </h2>
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: 0 }}>
+        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "28px", fontWeight: 700, lineHeight: 1.5, color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: 0 }}>
           {t.rsvp_subtitle}
         </p>
 

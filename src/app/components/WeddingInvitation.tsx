@@ -385,7 +385,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`, border: "none", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, textTransform: "uppercase", color: "#FFF8EE", textDecoration: "none", boxShadow: "0 8px 24px rgba(138,112,48,0.3)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#FFFFFF", border: "1px solid #C8BDA1", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, textTransform: "uppercase", color: COLORS.navy, textDecoration: "none", boxShadow: "0 4px 16px rgba(138,112,48,0.12)" }}
               >
                 <img src={googleMapsIcon} alt="" width={28} height={28} style={{ objectFit: "contain", flexShrink: 0 }} />
                 {t.map_btn}

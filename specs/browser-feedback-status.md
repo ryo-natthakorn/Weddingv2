@@ -6,10 +6,14 @@
 - Dress-code subtitle is smaller than its section heading.
 - Removed the visible pre-wedding subtitle.
 - Gallery entrance now follows scroll position; reduced-motion skips the morph.
-- One continuous stamp album, with Khao Yai, Benjakitti Park and Memorial Bridge
-  headings, slightly rotated prints and preserved photo order.
-- Ring projection adapted from the supplied Hyperiux source; native scroll
-  transitions through scatter, line and circle without capturing wheel events.
+- Compact bound stamp album with three selectable location pages, visible
+  perforations against darker paper, a centre fold and uneven print placement.
+  Each page fits within 65svh; full-size photos remain available in the lightbox.
+- Ring projection adapted from the supplied Hyperiux source; a single smoothed
+  circle-to-ring transition begins with the gallery in view. Smaller prints
+  improve spacing; native scrolling is never captured.
+- Requested parent/caption/invitation/deadline typography, white Maps button,
+  revised dress heading, conversational gift description and tighter tap hint.
 - Larger desktop hero logo/date, reduced space above the envelope, revised RSVP copy.
 - Full-colour Google Maps asset; centred car symbol; revised parking/MRT copy.
 - Gift description and tap label; revised song dedication and footer quote.

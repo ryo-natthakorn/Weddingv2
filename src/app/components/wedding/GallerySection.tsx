@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Grid2X2, GalleryHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform, useSpring } from "motion/react";
 import type { MotionValue } from "motion/react";
 import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
@@ -36,6 +36,22 @@ const PRE_WEDDING_IMAGES = PRE_WEDDING_GROUPS.flat();
 /* Row-major grids keep the requested photo order consistent across widths,
    keyboard navigation and the lightbox. Each group begins on its own row. */
 const MOSAIC_CSS = `
+.pw-book-tabs { display:flex; justify-content:center; gap:4px; margin:0 0 12px; flex-wrap:wrap; }
+.pw-book-tabs button { background:transparent; border:0; border-bottom:2px solid transparent; padding:10px 12px; min-height:44px; color:#52655B; cursor:pointer; font-size:14px; }
+.pw-book-tabs button[aria-selected="true"] { border-color:#8A7030; color:#1B4A5C; }
+.pw-book.pw-album-page { height:min(580px, 65svh); min-height:300px; padding:22px 24px 26px 34px; border:8px solid #426457; border-left-width:14px; border-radius:3px 7px 7px 3px; background:linear-gradient(90deg,#D9D4BB 0%,#F3F0DD 5%,#EAE5CF 49%,#C9C1A5 50%,#F4F0DE 52%,#EBE5D1 100%); box-shadow:3px 4px 0 #E9E3D0,5px 7px 0 #426457,0 18px 32px #3A2C1826; }
+.pw-book::before { left:12px; top:20px; bottom:20px; border-left:2px dashed #AFA384; }
+.pw-book .pw-album-group { height:100%; margin:0; display:flex; flex-direction:column; }
+.pw-book .pw-album-group[hidden] { display:none; }
+.pw-book .pw-album-group header { flex:none; border:0; margin:0 0 14px; padding:0; align-items:center; }
+.pw-book .pw-album-group h3 { background:#F8F4E5; padding:6px 18px; transform:rotate(-2deg); border:1px solid #C8BDA1; box-shadow:1px 2px 3px #3A2C1818; font-size:18px; color:#36564A; }
+.pw-book .pw-mosaic { flex:1; min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); gap:18px; padding:8px 4px; }
+.pw-book .pw-opening { flex:1; min-height:0; display:flex; justify-content:center; width:100%; max-width:none; padding:12px 0; }
+.pw-book .pw-mosaic > *, .pw-book .pw-opening > * { width:100%; height:100%; min-height:0; margin:0; display:flex; align-items:center; justify-content:center; container-type:size; }
+.pw-book .pw-stamp { height:auto; width:min(90cqw,calc(90cqh * 0.75)); max-width:100%; aspect-ratio:3/4; padding:8px; filter:drop-shadow(0 2px 1px #584B3940); }
+.pw-book .pw-stamp img { width:100%; height:100% !important; object-fit:cover; }
+.pw-book .pw-opening .pw-stamp { max-height:100%; }
+@media(max-width:479px) { .pw-book.pw-album-page { padding:16px 12px 20px 20px; } .pw-book .pw-mosaic { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:14px 18px; } .pw-book .pw-album-group h3 { font-size:16px; } .pw-book .pw-stamp { padding:7px; --stamp-pitch:9px; --stamp-notch:2.5px; } }
 .pw-orbit { position: relative; height: 460px; touch-action: pan-y; }
 .pw-orbit-card { position: absolute; top: 72px; left: calc(50% - 110px); width: 220px; padding: 0; border: 0; background: none; cursor: pointer; }
 .pw-orbit-card img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
@@ -45,7 +61,7 @@ const MOSAIC_CSS = `
 .pw-album-page::before { content: ''; position: absolute; top: 0; bottom: 0; left: 15px; border-left: 1px solid #DDD4C3; }
 .pw-album-page header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 18px; margin-bottom: 24px; border-bottom: 1px solid #DED7C9; color: #3A2C18; font-size: 14px; }
 .pw-album-page .pw-mosaic { gap: 38px 22px; padding: 10px 5px 18px; align-items: start; }
-.pw-album-group + .pw-album-group { margin-top: 48px; }
+.pw-album-group + .pw-album-group { margin-top: 0; }
 .pw-album-group h3 { margin: 0; font-size: 20px; font-weight: 500; }
 .pw-album-page .pw-mosaic > :nth-child(3n + 1) .pw-stamp { transform: rotate(-2deg); }
 .pw-album-page .pw-mosaic > :nth-child(3n + 2) { margin-top: 15px; }
@@ -351,7 +367,7 @@ function Print({
       type="button"
       onClick={onOpen}
       aria-label={label}
-      initial={{ opacity: 0, y: reduceMotion ? 0 : 26, rotate: tilt }}
+      initial={reduceMotion ? false : { opacity: 0, y: 26, rotate: tilt }}
       animate={inView ? { opacity: 1, y: 0, rotate: tilt } : {}}
       // The stagger tails off so the eleventh print is not still arriving a
       // full second after the first.
@@ -391,11 +407,11 @@ function MorphPrint({ progress, children, i, radius, angle, count }: {
 }) {
   const reduceMotion = useReducedMotion();
   const ring = ringPosition(angle, radius);
-  const circleAngle = i / count * Math.PI * 2;
-  // Native-scroll version of the supplied scatter -> line -> circle sequence.
-  const x = useTransform(progress, [0, 0.25, 0.6, 1], [((i % 3) - 1) * radius - ring.x, (i / Math.max(1, count - 1) - 0.5) * radius * 2 - ring.x, Math.cos(circleAngle) * radius * 0.72 - ring.x, 0]);
-  const y = useTransform(progress, [0, 0.25, 0.6, 1], [(Math.floor(i / 3) - 1.5) * 85 - ring.y, -ring.y, Math.sin(circleAngle) * radius * 0.72 - ring.y, 0]);
-  const opacity = useTransform(progress, [0, 0.2, 1], [0.35, 1, 1]);
+  const circleAngle = Math.PI / 2 - angle;
+  // One readable transition, with a pause at either end of the scroll range.
+  const x = useTransform(progress, [0, 0.15, 0.85, 1], [Math.cos(circleAngle) * radius * 0.8 - ring.x, Math.cos(circleAngle) * radius * 0.8 - ring.x, 0, 0]);
+  const y = useTransform(progress, [0, 0.15, 0.85, 1], [Math.sin(circleAngle) * radius * 0.8 - ring.y, Math.sin(circleAngle) * radius * 0.8 - ring.y, 0, 0]);
+  const opacity = useTransform(progress, [0, 1], [1, 1]);
   return <motion.div style={{ position: "absolute", inset: 0, x: reduceMotion ? 0 : x, y: reduceMotion ? 0 : y, zIndex: Math.round(ring.depth * 100), opacity: reduceMotion ? 1 : opacity, pointerEvents: "none" }}>{children}</motion.div>;
 }
 
@@ -404,9 +420,11 @@ export function GallerySection() {
   const { ref, inView } = useReveal("-80px");
   const [zoom, setZoom] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start 85%", "start 5%"] });
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start 40%", "start 0%"] });
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 35, damping: 22, restDelta: 0.001 });
   const [active, setActive] = useState(0);
   const [grid, setGrid] = useState(false);
+  const [chapter, setChapter] = useState(0);
   const reduceMotion = useReducedMotion();
   const orbitRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
@@ -417,7 +435,7 @@ export function GallerySection() {
 
   useEffect(() => {
     if (grid || !orbitRef.current) return;
-    const observer = new ResizeObserver(([entry]) => setRadius(Math.min(220, entry.contentRect.width * 0.27)));
+    const observer = new ResizeObserver(([entry]) => setRadius(Math.min(240, entry.contentRect.width * 0.34)));
     observer.observe(orbitRef.current);
     return () => observer.disconnect();
   }, [grid]);
@@ -500,7 +518,7 @@ export function GallerySection() {
               const angle = (i - active) * Math.PI * 2 / count;
               const ring = ringPosition(angle, radius);
               const selected = i === active;
-              return <MorphPrint key={src} i={i} angle={angle} radius={radius} count={count} progress={scrollYProgress}><motion.button
+              return <MorphPrint key={src} i={i} angle={angle} radius={radius} count={count} progress={smoothProgress}><motion.button
                 type="button"
                 key={src}
                 className="pw-orbit-card"
@@ -527,10 +545,18 @@ export function GallerySection() {
               {grid ? <GalleryHorizontal size={20} /> : <Grid2X2 size={20} />}
             </button>
           </div>
-          {grid &&
-          <div className="pw-gallery pw-album-page" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
+          {grid && <>
+          <div className="pw-book-tabs" role="tablist" aria-label={lang === "TH" ? "สถานที่" : "Locations"} onKeyDown={event => {
+            const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+            const current = tabs.indexOf(document.activeElement as HTMLButtonElement);
+            const next = event.key === "ArrowRight" ? (current + 1) % tabs.length : event.key === "ArrowLeft" ? (current - 1 + tabs.length) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
+            if (next >= 0) { event.preventDefault(); tabs[next].focus(); tabs[next].click(); }
+          }}>
+            {PRE_WEDDING_GROUPS.map((photos, index) => photos.length > 0 && <button key={index} id={`album-tab-${index}`} role="tab" aria-selected={chapter === index} aria-controls={`album-page-${index}`} onClick={() => setChapter(index)}>{lang === "TH" ? ["เขาใหญ่", "สวนเบญจกิติ", "สะพานพุทธ"][index] || "ความทรงจำ" : ["Khao Yai", "Benjakitti", "Memorial Bridge"][index] || "Memories"}</button>)}
+          </div>
+          <div className="pw-gallery pw-album-page pw-book" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
             {PRE_WEDDING_GROUPS.map((photos, groupIndex) => photos.length > 0 && (
-              <div key={groupIndex} className="pw-album-group">
+              <div key={groupIndex} className="pw-album-group" id={`album-page-${groupIndex}`} role="tabpanel" aria-labelledby={`album-tab-${groupIndex}`} hidden={chapter !== groupIndex}>
                 <header><h3>{lang === "TH" ? ["เขาใหญ่", "สวนเบญจกิติ", "สะพานพุทธ"][groupIndex] || "ความทรงจำ" : ["Khao Yai", "Benjakitti Park", "Memorial Bridge"][groupIndex] || "Memories"}</h3><span>{String(groupIndex + 1).padStart(2, "0")}</span></header>
                 <div className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
                 {photos.map(src => {
@@ -553,7 +579,7 @@ export function GallerySection() {
                 </div>
               </div>
             ))}
-          </div>}
+          </div></>}
           </>
         )}
       </motion.div>

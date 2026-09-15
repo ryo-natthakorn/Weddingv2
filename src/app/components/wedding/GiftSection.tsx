@@ -280,7 +280,7 @@ function Envelope() {
 
       {/* Tap hint and save button share one fixed-height slot, both absolutely
           positioned, so swapping between them can't shift the closing line. */}
-      <div style={{ position: "relative", width: "100%", height: 76, marginTop: 18 }}>
+      <div style={{ position: "relative", width: "100%", height: 76, marginTop: open ? 8 : -82 }}>
         <motion.p
           animate={{ opacity: open ? 0 : 1 }}
           transition={{ duration: reduceMotion ? 0 : 0.3 }}
@@ -365,9 +365,6 @@ export function GiftSection() {
           <Envelope />
         </div>
 
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8 }}>
-          {t.gift_closing}
-        </p>
       </motion.div>
     </section>
   );

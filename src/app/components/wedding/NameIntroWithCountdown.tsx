@@ -174,7 +174,7 @@ export function NameIntroWithCountdown() {
   // Quieted a step further than before — these recede as setup so the
   // names/ring hero and the closing date read as the section's two peaks,
   // not three elements of similar weight.
-  const parentStyle = { fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.85rem, 2.1vw, 1rem)", color: COLORS.lightBrown, letterSpacing: "0.04em", lineHeight: 1.6, textAlign: "center" as const, ...singleLine };
+  const parentStyle = { fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "22px", color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.6, textAlign: "center" as const, whiteSpace: "normal" as const };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -196,7 +196,7 @@ export function NameIntroWithCountdown() {
           transition={{ delay: 0.1, duration: 0.9 }}
         >
           <CountdownTimer />
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.78rem, 2vw, 0.95rem)", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 18 }}>
+          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "20px", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: 0, marginTop: 18 }}>
             {t.countdown_caption}
           </p>
         </motion.div>
@@ -217,7 +217,7 @@ export function NameIntroWithCountdown() {
           initial={{ opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.32, duration: 0.8 }}
-          style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.78rem, 1.9vw, 0.9rem)", color: COLORS.lightBrown, letterSpacing: "0.06em", marginTop: 32 }}
+          style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "20px", color: COLORS.lightBrown, letterSpacing: 0, marginTop: 32 }}
         >
           {t.invite_line}
         </motion.p>
