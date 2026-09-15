@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
-import { LoaderCircle, Pause, Play, Youtube } from "lucide-react";
+import { LoaderCircle, Pause, Play } from "lucide-react";
+import youtubeIcon from "../../../imports/youtube-icon.png";
 import { useLang } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
@@ -580,7 +581,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
                 boxSizing: "border-box",
               }}
             >
-              <Youtube size={24} fill="#FF0000" color="#FFFFFF" aria-hidden />
+              <img src={youtubeIcon} alt="" aria-hidden style={{ width: 40, height: 34, objectFit: "contain", flexShrink: 0 }} />
               {t.music_youtube}
             </a>
           </motion.div>

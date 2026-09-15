@@ -38,6 +38,10 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
     assert.ok(Date.now() - start >= 1500, 'merge is not instantaneous');
     await song.click();
+    const youtube = page.locator('a[href="https://www.youtube.com/watch?v=p8iVeHphD3c"]');
+    await youtube.locator('img').evaluate(img => img.decode());
+    assert.ok((await youtube.locator('img').getAttribute('src')).includes('youtube-icon'));
+    await youtube.screenshot({ path: join(output, `youtube-official-${width}.png`) });
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await section.evaluate(el => el.scrollIntoView());
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
