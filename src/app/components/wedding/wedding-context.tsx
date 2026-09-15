@@ -104,7 +104,7 @@ export const translations = {
     ampersand: "&",
     together: "พร้อมด้วยสองครอบครัว",
     parents_groom: "คุณพ่อ วินัย & คุณแม่ อนงค์",
-    parents_bride: "คุณพ่อ ณัฐวุฒิ & คุณแม่ รัชตนา",
+    parents_bride: "คุณพ่อ ณัฐวุฒิ & คุณแม่ รัชตณา",
     invite_line: "ขอเรียนเชิญร่วมแสดงความยินดีในงานมงคลสมรส",
     bride_title: "ร.อ.หญิง",
     bride_name: "ปัณฑิกา เศรษฐ์บุญสร้าง",

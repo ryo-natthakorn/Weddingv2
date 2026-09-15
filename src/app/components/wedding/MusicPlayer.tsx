@@ -2,6 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallba
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
 import { LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
+import captions from "../../../imports/pantika.sbv?raw";
+import { parseSbv, lyricAt } from "./captions.mjs";
 import { useLang } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
@@ -11,24 +13,10 @@ const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
 const YT_THUMB = `https://img.youtube.com/vi/${YT_VIDEO_ID}/0.jpg`;
 
 const TITLE = "Pantika";
-const SUBTITLE = "Written for Yee, as a surprise for our proposal";
+const SUBTITLE = "เพลงที่เรียวแต่งให้หยีตอนขอแต่งงาน";
 
-/* ───────────────────────────────────────────────────────────────
-   TIME-SYNCED LYRICS
-   ----------------------------------------------------------------
-   The YouTube Data API v3 can list caption *tracks* with an API key,
-   but downloading the caption *text* needs OAuth + video ownership,
-   so synced lyrics cannot be fetched client-side with a key alone.
-   These hardcoded, time-stamped lines are the reliable source.
-
-   ►► CLIENT: replace the lines below with the real lyrics of
-      "Pantika" and their start times (in seconds). Leave the array
-      empty ([]) to hide the lyric line entirely.
-─────────────────────────────────────────────────────────────── */
-type Lyric = { t: number; line: string };
-// TODO: Replace with real Pantika lyrics + timestamps (seconds)
-// Format: { t: 12, line: "actual lyric here" }
-const LYRICS: Lyric[] = [];
+// The couple's supplied SBV is local, so captions need no third-party request.
+const LYRICS = parseSbv(captions);
 
 const ACCENT = "#8A7030";       // olive gold
 const ACCENT_DARK = "#6B5520";  // deeper gold
@@ -360,10 +348,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   /* Current lyric line from playback time */
   let currentLyric = "";
   let lyricKey = -1;
-  for (let i = 0; i < LYRICS.length; i++) {
-    if (currentTime >= LYRICS[i].t) { currentLyric = LYRICS[i].line; lyricKey = i; }
-    else break;
-  }
+  const cue = lyricAt(LYRICS, currentTime);
+  if (cue) { currentLyric = cue.line; lyricKey = cue.t; }
 
   const playbackActive = playing || buffering;
   const playbackIcon = (size: number) => buffering
@@ -489,15 +475,15 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
 
             {/* Lyric line — one at a time, gold, fading */}
             {LYRICS.length > 0 && (
-              <div style={{ minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", margin: "14px 0 4px" }}>
+              <div data-song-lyrics style={{ height: 72, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", margin: "14px 0 4px" }}>
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={lyricKey}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.5 }}
-                    style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.82rem", fontStyle: "italic", color: ACCENT, lineHeight: 1.4 }}
+                    transition={{ duration: 0.15 }}
+                    style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "14px", color: ACCENT, lineHeight: 1.6, whiteSpace: "pre-line" }}
                   >
                     {currentLyric}
                   </motion.p>

@@ -18,11 +18,11 @@ try {
     await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
     const gallery = page.locator('.pw-orbit');
-    const section = gallery.locator('..').locator('..');
-    await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY - innerHeight * 0.65));
+    const section = page.locator('#gallery-section');
+    await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY + (el.offsetHeight - innerHeight) * 0.2));
     await page.waitForTimeout(1100);
     const early = await gallery.locator('.pw-orbit-card').nth(3).locator('..').evaluate(el => getComputedStyle(el).transform);
-    await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY - innerHeight * 0.1));
+    await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + scrollY + (el.offsetHeight - innerHeight) * 0.68));
     await page.waitForTimeout(800);
     const late = await gallery.locator('.pw-orbit-card').nth(3).locator('..').evaluate(el => getComputedStyle(el).transform);
     assert.notEqual(early, late, 'gallery morph follows scroll position');

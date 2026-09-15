@@ -2,8 +2,8 @@
 // https://vault.hyperiux.com (user-supplied source)
 export function ringPosition(angle: number, radius: number) {
   const r = radius * 0.65;
-  const tilt = 31 * Math.PI / 180;
-  const rotation = -25 * Math.PI / 180;
+  const tilt = 43 * Math.PI / 180;
+  const rotation = -36 * Math.PI / 180;
   const z = -r * Math.cos(angle);
   const perspective = (r * 1.75) / (r * 1.75 + z * Math.cos(tilt));
   const positionScale = 1 + (perspective - 1) * 0.45;

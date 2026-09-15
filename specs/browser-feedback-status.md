@@ -9,9 +9,9 @@
 - Compact bound stamp album with three selectable location pages, visible
   perforations against darker paper, a centre fold and uneven print placement.
   Each page fits within 65svh; full-size photos remain available in the lightbox.
-- Ring projection adapted from the supplied Hyperiux source; a single smoothed
-  circle-to-ring transition begins with the gallery in view. Smaller prints
-  improve spacing; native scrolling is never captured.
+- Gallery pins within a native-scroll section: stack, line, tilted Ring,
+  landing on book pages, then the chapter browser. Reverse scroll restores
+  the sequence; reduced-motion skips pinning. Photos stay off the centre fold.
 - Requested parent/caption/invitation/deadline typography, white Maps button,
   revised dress heading, conversational gift description and tighter tap hint.
 - Larger desktop hero logo/date, reduced space above the envelope, revised RSVP copy.
@@ -24,15 +24,15 @@
 - Red YouTube icon; RSVP choices differentiated by icons, colour and selection.
 - Guest limit 5; inclusion note moved into the label; Home/End stepper support.
 
-## Awaiting User Assets
-
-- Real Pantika lyrics with timestamps (.lrc/.srt or text). Removed the previous
-  invented English placeholder lyrics; do not ship them as the song's lyrics.
+- Imported 49 original timed cues from the supplied captions (1).sbv. Both
+  start/end boundaries are respected, including instrumental gaps and seeking.
+- Mobile copy sizes corrected; mother's name corrected to Ratchatana's supplied
+  Thai spelling; Maps casing, dedication line break and Thai player subtitle.
 
 ## Verification
 
 - Production build and font regression check pass.
 - Visual/interaction tests: 320, 414, 503, 794, 893, 1280, 1920px.
 - Non-reduced-motion checks: 414px and 1401px, scroll morph and docking/return.
-- Six mocked YouTube playback/lifecycle tests pass; no real RSVP submitted.
+- Seven mocked YouTube playback/lifecycle/lyrics tests pass; no real RSVP submitted.
 - Physical iPhone/Safari testing remains outstanding.

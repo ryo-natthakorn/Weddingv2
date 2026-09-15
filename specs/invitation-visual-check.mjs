@@ -119,7 +119,7 @@ try {
     if (width >= 768) {
       const dedication = await page.locator('.song-dedication').evaluate(el => {
         const range = document.createRange(); range.selectNodeContents(el);
-        return [...range.getClientRects()].length;
+        return new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size;
       });
       assert.equal(dedication, 1, 'desktop song dedication is one line');
     }

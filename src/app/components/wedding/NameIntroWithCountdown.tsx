@@ -208,12 +208,13 @@ export function NameIntroWithCountdown() {
           transition={{ delay: 0.25, duration: 0.8 }}
           style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 56 }}
         >
-          <span style={parentStyle}>{t.parents_groom}</span>
-          <span style={parentStyle}>{t.parents_bride}</span>
+          <span className="invitation-parent" style={parentStyle}>{t.parents_groom}</span>
+          <span className="invitation-parent" style={parentStyle}>{t.parents_bride}</span>
         </motion.div>
 
         {/* 3. Invite line — centered */}
         <motion.p
+          className="invitation-invite"
           initial={{ opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.32, duration: 0.8 }}
@@ -288,7 +289,7 @@ export function NameIntroWithCountdown() {
               9.09em across the webfont and both fallbacks, far inside a /20
               box. Colour moves teal -> midBrown so it recedes in hue as well as
               in scale. */}
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
+          <p className="invitation-date" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
           </p>
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "28px", letterSpacing: 0, color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>

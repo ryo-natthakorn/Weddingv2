@@ -193,6 +193,7 @@ export function RSVPSection() {
 
   return (
     <section
+      className="rsvp-section"
       ref={ref}
       style={{
         padding: "44px 24px 48px",

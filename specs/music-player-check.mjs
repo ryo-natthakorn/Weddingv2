@@ -65,6 +65,19 @@ async function check(name, run) {
 }
 
 try {
+  await check('SBV lyrics follow playback, clear in gaps and update after seeking', async () => {
+    const page = await setup();
+    try {
+      await openInvitation(page);
+      await page.evaluate(() => { const p = window.musicTest.players[0]; p.time = 12; p.emit(1); });
+      await page.getByText('เชื่อไหม โลกของฉันมันเคยเป็นสีเทา', { exact: true }).waitFor();
+      await page.evaluate(() => { window.musicTest.players[0].time = 23.5; });
+      await page.waitForFunction(() => document.querySelector('[data-song-lyrics]').textContent.trim() === '');
+      await page.evaluate(() => { window.musicTest.players[0].time = 16; });
+      await page.getByText('จนเกือบจะหมดหวัง', { exact: true }).waitFor();
+      await page.screenshot({ path: 'C:/Users/Computer RC Herbal/AppData/Local/Temp/pantika-lyrics.png' });
+    } finally { await page.close(); }
+  });
   await check('StrictMode leaves one connected player and destroys it on unmount', async () => {
     const page = await setup();
     try {

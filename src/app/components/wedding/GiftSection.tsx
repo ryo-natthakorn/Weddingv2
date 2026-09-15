@@ -340,7 +340,7 @@ export function GiftSection() {
       id="gift-section"
       ref={ref}
       style={{
-        padding: "44px 24px 72px",
+        padding: "36px 24px 24px",
         background: "transparent",
         textAlign: "center",
         position: "relative",
@@ -356,7 +356,7 @@ export function GiftSection() {
         <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
         </p>
-        <Divider className="mb-12" />
+        <Divider className="mb-5" />
         <p style={{ fontSize: 16, lineHeight: 1.8, color: COLORS.midBrown, maxWidth: 440, margin: "0 auto", textWrap: "pretty" }}>
           {t.gift_description}
         </p>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Grid2X2, GalleryHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform, useSpring } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform, useSpring, useMotionValueEvent } from "motion/react";
 import type { MotionValue } from "motion/react";
 import type { PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
@@ -45,8 +45,8 @@ const MOSAIC_CSS = `
 .pw-book .pw-album-group[hidden] { display:none; }
 .pw-book .pw-album-group header { flex:none; border:0; margin:0 0 14px; padding:0; align-items:center; }
 .pw-book .pw-album-group h3 { background:#F8F4E5; padding:6px 18px; transform:rotate(-2deg); border:1px solid #C8BDA1; box-shadow:1px 2px 3px #3A2C1818; font-size:18px; color:#36564A; }
-.pw-book .pw-mosaic { flex:1; min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); gap:18px; padding:8px 4px; }
-.pw-book .pw-opening { flex:1; min-height:0; display:flex; justify-content:center; width:100%; max-width:none; padding:12px 0; }
+.pw-book .pw-mosaic { flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:18px 36px; padding:8px 4px; }
+.pw-book .pw-opening { flex:1; min-height:0; display:flex; justify-content:center; width:46%; max-width:none; padding:12px 0; margin-left:0; margin-right:auto; }
 .pw-book .pw-mosaic > *, .pw-book .pw-opening > * { width:100%; height:100%; min-height:0; margin:0; display:flex; align-items:center; justify-content:center; container-type:size; }
 .pw-book .pw-stamp { height:auto; width:min(90cqw,calc(90cqh * 0.75)); max-width:100%; aspect-ratio:3/4; padding:8px; filter:drop-shadow(0 2px 1px #584B3940); }
 .pw-book .pw-stamp img { width:100%; height:100% !important; object-fit:cover; }
@@ -408,11 +408,16 @@ function MorphPrint({ progress, children, i, radius, angle, count }: {
   const reduceMotion = useReducedMotion();
   const ring = ringPosition(angle, radius);
   const circleAngle = Math.PI / 2 - angle;
-  // One readable transition, with a pause at either end of the scroll range.
-  const x = useTransform(progress, [0, 0.15, 0.85, 1], [Math.cos(circleAngle) * radius * 0.8 - ring.x, Math.cos(circleAngle) * radius * 0.8 - ring.x, 0, 0]);
-  const y = useTransform(progress, [0, 0.15, 0.85, 1], [Math.sin(circleAngle) * radius * 0.8 - ring.y, Math.sin(circleAngle) * radius * 0.8 - ring.y, 0, 0]);
-  const opacity = useTransform(progress, [0, 1], [1, 1]);
-  return <motion.div style={{ position: "absolute", inset: 0, x: reduceMotion ? 0 : x, y: reduceMotion ? 0 : y, zIndex: Math.round(ring.depth * 100), opacity: reduceMotion ? 1 : opacity, pointerEvents: "none" }}>{children}</motion.div>;
+  const steps = [0, 0.12, 0.34, 0.48, 0.66, 0.78, 0.97, 1];
+  const lineX = (i / Math.max(1, count - 1) - 0.5) * radius * 2.25;
+  const pageX = (i < 6 ? -1 : 1) * radius * 0.78;
+  const pageY = ((i % 6) - 2.5) * 67;
+  const landingScale = 0.55;
+  const scale = useTransform(progress, [0, 0.78, 0.97, 1], [1, 1, landingScale, landingScale]);
+  const x = useTransform(progress, steps, [i * 1.5 - ring.x, i * 1.5 - ring.x, lineX - ring.x, Math.cos(circleAngle) * radius * 0.8 - ring.x, 0, 0, pageX - ring.x * landingScale, pageX - ring.x * landingScale]);
+  const y = useTransform(progress, steps, [-ring.y, -ring.y, Math.sin(i / count * Math.PI) * -32 - ring.y, Math.sin(circleAngle) * radius * 0.8 - ring.y, 0, 0, pageY - ring.y * landingScale, pageY - ring.y * landingScale]);
+  const opacity = useTransform(progress, [0, 0.94, 0.99, 1], [1, 1, 0, 0]);
+  return <motion.div style={{ position: "absolute", inset: 0, x: reduceMotion ? 0 : x, y: reduceMotion ? 0 : y, scale: reduceMotion ? 1 : scale, zIndex: Math.round(ring.depth * 100), opacity: reduceMotion ? 1 : opacity, pointerEvents: "none" }}>{children}</motion.div>;
 }
 
 export function GallerySection() {
@@ -420,12 +425,16 @@ export function GallerySection() {
   const { ref, inView } = useReveal("-80px");
   const [zoom, setZoom] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start 40%", "start 0%"] });
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 35, damping: 22, restDelta: 0.001 });
   const [active, setActive] = useState(0);
-  const [grid, setGrid] = useState(false);
-  const [chapter, setChapter] = useState(0);
   const reduceMotion = useReducedMotion();
+  const [grid, setGrid] = useState(false);
+  const [autoAlbum, setAutoAlbum] = useState(false);
+  useMotionValueEvent(smoothProgress, "change", value => setAutoAlbum(!reduceMotion && value >= 0.985));
+  const showAlbum = grid || autoAlbum;
+  const bookOpacity = useTransform(smoothProgress, [0.77, 0.9], [0, 1]);
+  const [chapter, setChapter] = useState(0);
   const orbitRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
@@ -434,11 +443,11 @@ export function GallerySection() {
   const step = (direction: number) => setActive(i => (i + direction + count) % count);
 
   useEffect(() => {
-    if (grid || !orbitRef.current) return;
+    if (showAlbum || !orbitRef.current) return;
     const observer = new ResizeObserver(([entry]) => setRadius(Math.min(240, entry.contentRect.width * 0.34)));
     observer.observe(orbitRef.current);
     return () => observer.disconnect();
-  }, [grid]);
+  }, [showAlbum]);
 
   const preWeddingLabel = lang === "TH" ? "พรีเวดดิ้ง" : "Pre-Wedding";
   const preWeddingEmptyText =
@@ -446,11 +455,13 @@ export function GallerySection() {
 
   return (
     <section
+      id="gallery-section"
       ref={sectionRef}
       style={{
-        padding: "48px 14px 56px",
+        padding: grid || reduceMotion ? "24px 14px 40px" : "0 14px",
+        height: grid || reduceMotion ? "auto" : "420svh",
         position: "relative",
-        overflow: "hidden",
+        overflow: "clip",
         background: "transparent",
       }}
     >
@@ -458,10 +469,10 @@ export function GallerySection() {
 
       <motion.div
         ref={ref}
-        initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
+        initial={false}
+        animate={{ opacity: 1 }}
         transition={{ duration: reduceMotion ? 0 : 0.9 }}
-        style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto" }}
+        style={{ position: grid || reduceMotion ? "relative" : "sticky", top: 0, paddingTop: 24, zIndex: 2, maxWidth: 680, margin: "0 auto", minHeight: grid || reduceMotion ? undefined : "100svh" }}
       >
         <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 4, textAlign: "center" }}>{t.gallery_label}</p>
 
@@ -493,9 +504,10 @@ export function GallerySection() {
           </div>
         ) : (
           <>
-          {!grid && <div
+          {!showAlbum && <div
             ref={orbitRef}
             className="pw-orbit"
+            style={{ height: "min(520px, calc(100svh - 200px))", minHeight: 260 }}
             role="region"
             aria-roledescription="carousel"
             aria-label={preWeddingLabel}
@@ -509,11 +521,12 @@ export function GallerySection() {
               if (!pointer.current) return;
               const dx = e.clientX - pointer.current.x;
               const dy = e.clientY - pointer.current.y;
-              if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { swiped.current = true; step(dx < 0 ? 1 : -1); }
+              if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) { swiped.current = true; step(dx < 0 ? 1 : -1); }
               pointer.current = null;
             }}
             onPointerCancel={() => { pointer.current = null; }}
           >
+            <motion.div aria-hidden className="pw-book pw-album-page" style={{ position: "absolute", inset: 0, height: "100%", minHeight: 0, opacity: reduceMotion ? 0 : bookOpacity, pointerEvents: "none" }} />
             {PRE_WEDDING_IMAGES.map((src, i) => {
               const angle = (i - active) * Math.PI * 2 / count;
               const ring = ringPosition(angle, radius);
@@ -535,8 +548,8 @@ export function GallerySection() {
               </motion.button></MorphPrint>;
             })}
           </div>}
-          <div className="pw-controls">
-            {!grid && <>
+          <div className="pw-controls" style={autoAlbum && !grid ? { display: "none" } : undefined}>
+            {!showAlbum && <>
               <ArrowButton direction="prev" onClick={() => step(-1)} disabled={count < 2} label={lang === "TH" ? "รูปก่อนหน้า" : "Previous photo"} />
               <span aria-live="polite" style={{ minWidth: 64, textAlign: "center", color: COLORS.navy }}>{active + 1} / {count}</span>
               <ArrowButton direction="next" onClick={() => step(1)} disabled={count < 2} label={lang === "TH" ? "รูปถัดไป" : "Next photo"} />
@@ -545,8 +558,8 @@ export function GallerySection() {
               {grid ? <GalleryHorizontal size={20} /> : <Grid2X2 size={20} />}
             </button>
           </div>
-          {grid && <>
-          <div className="pw-book-tabs" role="tablist" aria-label={lang === "TH" ? "สถานที่" : "Locations"} onKeyDown={event => {
+          {showAlbum && <>
+          <div className="pw-book-tabs" style={autoAlbum && !grid ? { position: "absolute", top: "calc(145px + min(520px, calc(100svh - 200px)))", left: 0, right: 0 } : undefined} role="tablist" aria-label={lang === "TH" ? "สถานที่" : "Locations"} onKeyDown={event => {
             const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
             const current = tabs.indexOf(document.activeElement as HTMLButtonElement);
             const next = event.key === "ArrowRight" ? (current + 1) % tabs.length : event.key === "ArrowLeft" ? (current - 1 + tabs.length) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
@@ -554,11 +567,11 @@ export function GallerySection() {
           }}>
             {PRE_WEDDING_GROUPS.map((photos, index) => photos.length > 0 && <button key={index} id={`album-tab-${index}`} role="tab" aria-selected={chapter === index} aria-controls={`album-page-${index}`} onClick={() => setChapter(index)}>{lang === "TH" ? ["เขาใหญ่", "สวนเบญจกิติ", "สะพานพุทธ"][index] || "ความทรงจำ" : ["Khao Yai", "Benjakitti", "Memorial Bridge"][index] || "Memories"}</button>)}
           </div>
-          <div className="pw-gallery pw-album-page pw-book" aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
+          <div className="pw-gallery pw-album-page pw-book" style={autoAlbum && !grid ? { height: "min(520px, calc(100svh - 200px))", minHeight: 260 } : undefined} aria-label={lang === "TH" ? "รูปพรีเวดดิ้ง" : "Pre-wedding photos"}>
             {PRE_WEDDING_GROUPS.map((photos, groupIndex) => photos.length > 0 && (
               <div key={groupIndex} className="pw-album-group" id={`album-page-${groupIndex}`} role="tabpanel" aria-labelledby={`album-tab-${groupIndex}`} hidden={chapter !== groupIndex}>
                 <header><h3>{lang === "TH" ? ["เขาใหญ่", "สวนเบญจกิติ", "สะพานพุทธ"][groupIndex] || "ความทรงจำ" : ["Khao Yai", "Benjakitti Park", "Memorial Bridge"][groupIndex] || "Memories"}</h3><span>{String(groupIndex + 1).padStart(2, "0")}</span></header>
-                <div className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"}>
+                <div className={groupIndex === 0 ? "pw-opening" : "pw-mosaic"} style={groupIndex === 0 ? undefined : { gridTemplateRows: `repeat(${Math.ceil(photos.length / 2)}, minmax(0, 1fr))` }}>
                 {photos.map(src => {
                   const i = PRE_WEDDING_IMAGES.indexOf(src);
                   return (

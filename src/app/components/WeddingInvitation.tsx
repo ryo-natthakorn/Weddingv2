@@ -381,6 +381,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
               <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: 0 }}>{t.map_address}</p>
               <motion.a
                 href={MAPS_LINK}
+                className="maps-link"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.04, y: -2 }}
