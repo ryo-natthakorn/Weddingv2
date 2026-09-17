@@ -9,11 +9,23 @@
   1.8 seconds, then rotates at 3 degrees/second. No book, categories or pinning.
 - Three.js perspective projection drives upright DOM photo buttons via Motion
   Values. Front photos stay larger; the back of the ring may be obscured.
-- Ring geometry is derived from the front print rather than fitted to the
-  viewport: neighbours meet edge to edge, the ring runs past the stage edges and
-  the stage clips it. Phone prints are about three times their former area and
-  no longer pile up half-overlapped. The far side rides above the near one, so
-  the blurred back row stays visible instead of hiding behind the front print.
+- The whole ring is visible again. It is sized from the ring's own on-screen
+  width, which is affordable only because the camera sits close at 1.8 radii:
+  strong perspective shrinks the far side hard, narrowing the ring and leaving
+  the near print room to stay reasonably large. At 414px the front print is
+  124px and the stage 242px tall. `?ring=clipped` still shows the previous
+  arrangement, where only the front print had to fit and the ring ran past the
+  stage edges at 248px; remove that override once the look is settled.
+- Prints are spaced 1.25 print widths apart, not 1.06. The old value was the
+  least that keeps two prints clear at the symmetric position, where they
+  straddle the front at equal depth and a z-order tie would pop; it never kept
+  them apart at rest, where neighbours overlapped the front print by about 14px.
+  That occlusion is correct, but two sheets of the same warm-white paper with
+  the same perforated edge gave the eye nothing to read it by, so the three
+  front prints merged into one mass. A soft halo around each print was tried as
+  the alternative and rejected: real spacing reads cleaner.
+- The far side rides above the near one, so the blurred back row stays visible
+  instead of hiding behind the front print.
 - The print casts its shadow on the page instead of wearing one around its
   outline. The old drop-shadow filter traced the perforated silhouette but was
   re-derived on every scale change, once a frame per print, and cost roughly a

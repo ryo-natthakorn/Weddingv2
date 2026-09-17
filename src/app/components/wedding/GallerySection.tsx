@@ -306,9 +306,20 @@ function Lightbox({
 /* Camera distance, in ring radii. A closer camera means stronger perspective:
    the far side of the ring shrinks harder, which narrows the ring on screen and
    so lets more of it fit, but flattens the back prints toward nothing. */
-const CAMERA = 3.4;
+const CAMERA = 1.8;
 const LIFT = .2664;                 // ring tilt, in card widths
 const PAD = 40;
+/* Spacing between neighbouring prints, as a multiple of the print width. 1.06
+   is the smallest value that keeps two prints clear of each other at the
+   symmetric position, where they straddle the front at equal depth — the one
+   position where a z-order tie could pop, and the reason the old ring's edges
+   flickered. It does not keep them apart anywhere else: with the ring resting
+   on a print its neighbours still overlapped it, by about 14px here. That
+   overlap is real occlusion and correct, but two sheets of the same warm-white
+   paper with the same perforated edge give the eye nothing to read it by, so
+   the three front prints merged into one mass. This is wide enough that they
+   clear each other at rest too. */
+const GAP = 1.25;
 /* Everything the projection needs, derived from the camera distance: how much
    the near and far prints are magnified, and the top and bottom of the ring in
    card widths, measured from the ring's centre. */
@@ -318,17 +329,16 @@ function optics(camera:number) {
   return { kFront, kBack, top, bottom, span: bottom-top };
 }
 type Geometry = { width:number; maxHeight:number; camera:number; fullRing:boolean; height:number; card:number; radius:number; lift:number; offset:number };
-/* By default the ring is sized from the viewport instead of being squeezed into
-   it: only the front print has to fit across the screen and the rest runs past
-   the stage edges, which clip it. Fitting all eleven prints inside a phone's
-   width is what used to drive the radius below the print size, so every
-   neighbour overlapped by half a stamp and the ring read as a pile.
-   `fullRing` sizes the print from the ring's own on-screen width instead, so
-   the whole circle is visible — at the cost of a much smaller front print. */
-function geometryFor(width:number, maxHeight:number, total:number, camera=CAMERA, fullRing=false):Geometry {
+/* The print is sized from the ring's own on-screen width, so the whole circle
+   is visible. That is only affordable because the camera sits close: strong
+   perspective shrinks the far side hard, which narrows the ring on screen and
+   leaves the near print room to stay reasonably large.
+   `fullRing: false` sizes the print from the viewport instead and lets the ring
+   run past the stage edges, which clip it. */
+function geometryFor(width:number, maxHeight:number, total:number, camera=CAMERA, fullRing=true):Geometry {
   const { kFront, top, bottom, span } = optics(camera);
   // Carousel radius: neighbours meet edge to edge at the front, plus a small gap.
-  const radiusPerCard = 1.06/(2*Math.tan(Math.PI/total)*kFront);
+  const radiusPerCard = GAP/(2*Math.tan(Math.PI/total)*kFront);
   /* How wide the ring gets on screen, in card widths. Not simply twice the
      radius: a print short of the camera plane is still magnified, so it swings
      out past the radius before it shrinks. The widest point sits nearer 70
@@ -347,13 +357,13 @@ function geometryFor(width:number, maxHeight:number, total:number, camera=CAMERA
   return { width, maxHeight, camera, fullRing, height: Math.round(card*span+PAD), card,
     radius: card*radiusPerCard, lift: LIFT*card, offset: -(top+bottom)/2*card };
 }
-/* Temporary, for comparing treatments on a real phone: `?ring=full` fits the
-   whole circle on screen and `?camera=2.2` moves the camera in. Neither changes
-   what guests see. */
+/* Temporary, for comparing on a real phone: `?ring=clipped` goes back to the
+   ring that ran past the screen edges, and `?camera=3.4` pulls the camera out.
+   Remove both once the look is settled. */
 function ringOptions() {
   const q = new URLSearchParams(window.location.search);
   const camera = Number(q.get("camera"));
-  return { fullRing: q.get("ring") === "full", camera: camera >= 1.3 && camera <= 8 ? camera : CAMERA };
+  return { fullRing: q.get("ring") !== "clipped", camera: camera >= 1.3 && camera <= 8 ? camera : CAMERA };
 }
 /* The print whose angle is nearest the camera. */
 export const frontIndex=(rotation:number,total:number)=>((Math.round(-rotation/(360/total))%total)+total)%total;
