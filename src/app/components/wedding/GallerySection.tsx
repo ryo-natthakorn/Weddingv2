@@ -1,12 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, useAnimationFrame, useMotionValueEvent, animate } from "motion/react";
 import type { MotionValue, PanInfo } from "motion/react";
 import { useLang } from "./wedding-context";
 import { Divider, COLORS } from "./shared";
-// Loaded only for `?gallery=webgl`, so guests on the default ring never download the renderer.
-const GalleryWebGL = lazy(() => import("./GalleryWebGL").then(m => ({ default: m.GalleryWebGL })));
 const PRE_WEDDING_MODULES = import.meta.glob(
   "../../../imports/pre-wedding/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
   { eager: true, query: "?url", import: "default" },
@@ -27,17 +25,21 @@ const PRE_WEDDING_IMAGES = PRE_WEDDING_GROUPS.flat();
 
 
 const STAMP_CSS = `
-.pw-orbit { position:relative; width:100%; height:min(560px,70svh); touch-action:pan-y; transition:filter .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1); }
+.pw-orbit { position:relative; width:100%; height:min(560px,70svh); overflow:hidden; overflow:clip; touch-action:pan-y; transition:filter .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1); }
 .pw-orbit[data-zoomed="true"] { filter:blur(7px); transform:scale(.93); }
 @media (prefers-reduced-motion: reduce) { .pw-orbit { transition:none; } }
-.pw-orbit[data-renderer="webgl"] { width:calc(100% + 32px); margin-inline:-16px; }
 .pw-orbit-card { position:absolute; left:50%; top:50%; padding:0; border:0; background:none; cursor:zoom-in; touch-action:pan-y; will-change:transform,opacity; }
 .pw-orbit-card img { display:block; width:100%; height:100%; object-fit:cover; }
+/* The print's shadow is a plain box-shadow on a sibling box rather than a
+   drop-shadow filter over the perforated mask: the filter had to re-derive the
+   silhouette's alpha every time perspective changed the print's scale, which is
+   once per frame, and that single property cost about a quarter of the frame
+   budget on a phone. A stamp is a rectangle to within a few notches, so the two
+   look the same. */
+.pw-orbit-card::before { content:""; position:absolute; inset:0; box-shadow:0 7px 8px rgba(61,34,21,.2); }
 .pw-orbit-card .pw-stamp { position:relative; width:100%; height:100%; box-sizing:border-box; }
 .pw-veil { position:absolute; inset:0; background:#F2E8D2; pointer-events:none; will-change:opacity; }
-.pw-orbit-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab; touch-action:pan-y; }
-.pw-orbit-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
-.pw-orbit:has(.pw-orbit-sr:focus-visible) { outline:2px solid #8A7030; outline-offset:4px; border-radius:20px; }
+.pw-orbit-card:focus-visible { outline:2px solid #8A7030; outline-offset:3px; }
 .pw-stamp {
   --stamp-pitch: 12px;
   --stamp-notch: 3.4px;
@@ -287,26 +289,30 @@ function Lightbox({
   );
 }
 
-type Geometry = { width:number; height:number; card:number; radius:number; lift:number; offset:number };
-function geometryFor(width:number, height:number):Geometry {
-  const mobile = width < 600;
-  // Phones get smaller prints on a wider, more tilted ring so neighbours overlap far less.
-  const target = mobile ? Math.max(118, Math.min(150,width*.36)) : Math.max(220, Math.min(280,width*.3));
-  const card = Math.min(target,(height-32)*.48,width-32);
-  const radius = Math.max(12,(width-32-card*.8)*(mobile ? .46 : .425));
-  const distance = radius*3.4;
-  const lift = Math.max(0, Math.min(radius * (mobile ? 1.9 : 1.2), height / 2 - card * 2 / 3 - 20)) * (distance-radius) / distance;
-  // The front row is drawn larger than the back, so a symmetric lift leaves the
-  // ring bottom-heavy; phones nudge it up to centre it in the stage.
-  const offset = mobile ? -lift * .5 : 0;
-  return { width,height,card,radius,lift,offset };
+/* Perspective factors at the front and back of the ring, and the print scale at
+   the back — the projection below draws the front print at its natural size. */
+const K_FRONT = 3.4/2.4, K_BACK = 3.4/4.4, S_BACK = 2.4/4.4;
+const LIFT = .2664;                 // ring tilt, in card widths
+const TOP = -LIFT*K_BACK - S_BACK*2/3, BOTTOM = LIFT*K_FRONT + 2/3;
+const SPAN = BOTTOM - TOP, PAD = 40;
+type Geometry = { width:number; maxHeight:number; height:number; card:number; radius:number; lift:number; offset:number };
+/* The ring is sized from the viewport instead of being squeezed into it: only
+   the front print has to fit across the screen and the rest of the ring runs
+   past the stage edges, which clip it. Fitting all eleven prints inside a
+   phone's width is what used to drive the radius below the print size, so every
+   neighbour overlapped by half a stamp and the ring read as a pile. */
+function geometryFor(width:number, maxHeight:number, total:number):Geometry {
+  const target = width < 600 ? Math.max(180, width*.65) : Math.max(260, Math.min(360, width*.36));
+  const card = Math.max(96, Math.min(target, width-24, (maxHeight-PAD)/SPAN));
+  // Carousel radius: neighbours meet edge to edge at the front, plus a small gap.
+  const radius = card/2/Math.tan(Math.PI/total)*1.06/K_FRONT;
+  return { width, maxHeight, height: Math.round(card*SPAN+PAD), card, radius,
+    lift: LIFT*card, offset: -(TOP+BOTTOM)/2*card };
 }
 /* The print whose angle is nearest the camera. */
 export const frontIndex=(rotation:number,total:number)=>((Math.round(-rotation/(360/total))%total)+total)%total;
 /* Blur changes in a few coarse steps: a filter repaints the whole print, so
-   writing a new blur every frame made the ring stutter on phones. Dimming is
-   done with an overlay's opacity instead, which the compositor handles alone. */
-const SHADOW="drop-shadow(0 7px 8px rgba(61,34,21,.2))";
+   writing a new blur every frame made the ring stutter on phones. */
 const BLUR_STEPS=["", "blur(1.2px) ", "blur(2.4px) "];
 // Project the supplied circular layout as upright billboards, retaining real
 // perspective without mirrored photo backs. Motion updates accessible DOM.
@@ -328,7 +334,7 @@ function CircularPrint({src,index,total,geometry,rotation,unfold,tabbable,onActi
       y:(Math.cos(a)*geometry.lift*k+geometry.offset)*p+(1-p)*(index%4-1.5)*2,
       scale:1+(scale-1)*p, depth:Math.round(1000+z), rotate:(1-p)*(index%5-2)*2,
       opacity:.5+focus*.5, veil:(1-focus)*.45,
-      filter:BLUR_STEPS[Math.min(2,Math.floor((1-focus)*3))]+SHADOW};
+      filter:BLUR_STEPS[Math.min(2,Math.floor((1-focus)*3))]};
   });
   const x=useTransform(position,p=>p.x), y=useTransform(position,p=>p.y);
   const scale=useTransform(position,p=>p.scale), rotate=useTransform(position,p=>p.rotate), zIndex=useTransform(position,p=>p.depth);
@@ -340,27 +346,21 @@ function CircularPrint({src,index,total,geometry,rotation,unfold,tabbable,onActi
     <span className="pw-stamp"><img src={src} alt="" draggable={false} loading="eager" decoding="async"/><motion.span className="pw-veil" style={{opacity:veil}}/></span>
   </motion.button>;
 }
-/* `?gallery=webgl` swaps in the WebGL ring for side-by-side comparison on a phone. */
-function wantsWebGL(){
-  if(new URLSearchParams(window.location.search).get("gallery")!=="webgl")return false;
-  try{const c=document.createElement("canvas");return !!(c.getContext("webgl2")||c.getContext("webgl"));}catch{return false;}
-}
 export function GallerySection(){
   const {lang,t}=useLang();
   const total=PRE_WEDDING_IMAGES.length, step=360/total;
-  const [webgl,setWebgl]=useState(wantsWebGL);
   const [reduced,setReduced]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const stage=useRef<HTMLDivElement>(null), started=useRef(false), lastFrame=useRef<number|null>(null);
+  const stage=useRef<HTMLDivElement>(null), started=useRef(false), lastFrame=useRef<number|null>(null), stageWidth=useRef(320);
   const [seen,setSeen]=useState(false), [visible,setVisible]=useState(false), [complete,setComplete]=useState(false);
-  const [hover,setHover]=useState(false), [focused,setFocused]=useState(false), [touching,setTouching]=useState(false), [hidden,setHidden]=useState(false);
+  const [hover,setHover]=useState(false), [focused,setFocused]=useState(false), [touching,setTouching]=useState(false);
+  const [hidden,setHidden]=useState(false), [scrolling,setScrolling]=useState(false);
   const [zoom,setZoom]=useState<number|null>(null);
   const [front,setFront]=useState(0), [interacted,setInteracted]=useState(false);
-  const [geometry,setGeometry]=useState(()=>geometryFor(320,460));
+  const [geometry,setGeometry]=useState(()=>geometryFor(320,460,total));
   const rotation=useMotionValue(0), unfold=useMotionValue(reduced?1:0);
   /* Drag and throw live in refs, not state — they change every frame. */
-  const spin=useRef<{x:number;r0:number;last:number;v:number;t:number;moved:number}|null>(null);
+  const spin=useRef<{x:number;y:number;r0:number;last:number;v:number;t:number;moved:number;locked:boolean}|null>(null);
   const inertia=useRef(0), suppressClick=useRef(false), turning=useRef<ReturnType<typeof animate>|null>(null);
-  const pick=useRef<((clientX:number,clientY:number)=>number|null)|null>(null);
   useMotionValueEvent(rotation,"change",r=>setFront(frontIndex(r,total)));
   const turnTo=useCallback((index:number)=>{
     const from=rotation.get(), delta=((-index*step-from)%360+540)%360-180;
@@ -374,26 +374,46 @@ export function GallerySection(){
     media.addEventListener('change',change);
     return ()=>media.removeEventListener('change',change);
   },[]);
+  /* Recompositing eleven prints while the page is moving is what made the ring
+     stutter exactly as a guest scrolled it into view. */
+  useEffect(()=>{
+    let idle:ReturnType<typeof setTimeout>;
+    const onScroll=()=>{setScrolling(true);clearTimeout(idle);idle=setTimeout(()=>setScrolling(false),150);};
+    window.addEventListener("scroll",onScroll,{passive:true});
+    return ()=>{window.removeEventListener("scroll",onScroll);clearTimeout(idle);};
+  },[]);
   useEffect(()=>{
     const node=stage.current;
     if(!node)return;
-    const resize=new ResizeObserver(([entry])=>setGeometry(geometryFor(entry.contentRect.width,entry.contentRect.height)));
+    /* Width drives the geometry; the stage's own height is an output of it, so
+       reading it back here would feed the observer its own result. */
+    const resize=new ResizeObserver(([entry])=>{
+      const width=entry.contentRect.width||320;
+      stageWidth.current=width;
+      const maxHeight=Math.min(560,window.innerHeight*.7);
+      setGeometry(current=>current.width===width&&current.maxHeight===maxHeight?current:geometryFor(width,maxHeight,total));
+    });
     resize.observe(node);
     const observer=new IntersectionObserver(([entry])=>{
-      setVisible(entry.isIntersecting);
+      setVisible(entry.intersectionRatio>=.4);
       if(entry.intersectionRatio>=.6)setSeen(true);
-    },{threshold:[0,.6]});
+    },{threshold:[0,.4,.6]});
     observer.observe(node);
     const visibility=()=>setHidden(document.hidden);
     const move=(e:PointerEvent)=>{
       const s=spin.current;
       if(!s)return;
-      const width=node.getBoundingClientRect().width||320, dx=e.clientX-s.x, now=performance.now();
+      const dx=e.clientX-s.x, dy=e.clientY-s.y, now=performance.now();
+      if(!s.locked){
+        if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+        // A mostly vertical drag belongs to the page: hand it back to the scroller.
+        if(Math.abs(dy)>Math.abs(dx)){spin.current=null;setTouching(false);return;}
+        s.locked=true;s.last=e.clientX;s.t=now;
+      }
       s.moved=Math.max(s.moved,Math.abs(dx));
-      if(s.moved<=8)return;
-      s.v=(e.clientX-s.last)/width*150/Math.max(8,now-s.t)*16;
+      s.v=(e.clientX-s.last)/stageWidth.current*150/Math.max(8,now-s.t)*16;
       s.last=e.clientX;s.t=now;
-      rotation.set((s.r0+dx/width*150)%360);
+      rotation.set((s.r0+dx/stageWidth.current*150)%360);
       setInteracted(true);
     };
     const release=()=>{
@@ -413,7 +433,7 @@ export function GallerySection(){
     window.addEventListener("pointerup",release);window.addEventListener("pointercancel",release);
     visibility();
     return ()=>{resize.disconnect();observer.disconnect();document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);};
-  },[rotation]);
+  },[rotation,total]);
   useEffect(()=>{
     if(reduced){unfold.set(1);setComplete(true);started.current=true;return;}
     if(!seen||started.current)return;
@@ -421,7 +441,7 @@ export function GallerySection(){
     const animation=animate(unfold,1,{duration:1.8,ease:[.22,1,.36,1],onComplete:()=>setComplete(true)});
     return ()=>{animation.stop();started.current=false;};
   },[seen,reduced,unfold]);
-  const paused=!complete||!visible||hidden||hover||focused||touching||zoom!==null||!!reduced;
+  const paused=!complete||!visible||hidden||hover||focused||touching||scrolling||zoom!==null||!!reduced;
   useEffect(()=>{lastFrame.current=null;},[paused]);
   useAnimationFrame(time=>{
     if(spin.current||turning.current){lastFrame.current=null;return;}
@@ -442,13 +462,12 @@ export function GallerySection(){
     else turnTo(index);
   };
   const arrow=(by:number)=>{setInteracted(true);turnTo((frontIndex(rotation.get(),total)+by+total)%total);};
-  const label=(index:number)=>lang==="TH"?`เปิดรูปที่ ${index+1} จาก ${total}`:`Open photo ${index+1} of ${total}`;
   return <section id="gallery-section" style={{padding:"40px 16px",maxWidth:1000,margin:"0 auto"}}>
     <style>{STAMP_CSS}</style>
     <p style={{fontSize:30,fontWeight:600,color:COLORS.navy,textAlign:"center",marginBottom:4}}>{t.gallery_label}</p>
     <Divider className="mb-4"/>
     <div ref={stage} className="pw-orbit" role="region" aria-label={lang==="TH"?"แกลเลอรีภาพถ่าย":"Photo gallery"}
-      data-gallery-ready={complete} data-gallery-paused={paused} data-zoomed={zoom!==null} data-renderer={webgl?"webgl":"dom"}
+      data-gallery-ready={complete} data-gallery-paused={paused} data-zoomed={zoom!==null} style={{height:geometry.height}}
       onPointerEnter={e=>{if(e.pointerType==="mouse")setHover(true);}}
       onPointerLeave={e=>{if(e.pointerType==="mouse")setHover(false);}}
       onPointerDown={e=>{
@@ -467,14 +486,7 @@ export function GallerySection(){
         const next=e.key==="Home"?0:e.key==="End"?buttons.length-1:(current+(e.key==="ArrowRight"?1:-1)+buttons.length)%buttons.length;
         rotation.set(-next*360/buttons.length);buttons[next]?.focus({preventScroll:true});
       }}>
-      {webgl
-        ? <>
-            <Suspense fallback={null}><GalleryWebGL images={PRE_WEDDING_IMAGES} rotation={rotation} unfold={unfold} pick={pick} onFail={()=>setWebgl(false)}
-              onClick={e=>{const index=pick.current?.(e.clientX,e.clientY);if(index!=null)activate(index);}}/></Suspense>
-            {PRE_WEDDING_IMAGES.map((src,index)=><button key={src} type="button" className="pw-orbit-sr" data-orbit-print="" tabIndex={index===front?0:-1}
-              aria-label={label(index)} onFocus={e=>{if(e.currentTarget.matches(":focus-visible"))rotation.set(-index*step);}} onClick={()=>activate(index)}/>)}
-          </>
-        : PRE_WEDDING_IMAGES.map((src,index)=><CircularPrint key={src} src={src} index={index} total={total} geometry={geometry} rotation={rotation} unfold={unfold} tabbable={index===front} onActivate={()=>activate(index)}/>)}
+      {PRE_WEDDING_IMAGES.map((src,index)=><CircularPrint key={src} src={src} index={index} total={total} geometry={geometry} rotation={rotation} unfold={unfold} tabbable={index===front} onActivate={()=>activate(index)}/>)}
     </div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:20,marginTop:12}}>
       <ArrowButton direction="prev" onClick={()=>arrow(-1)} disabled={false} label={lang==="TH"?"รูปก่อนหน้า":"Previous photo"}/>

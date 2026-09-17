@@ -26,9 +26,14 @@ try {
     const stopped=await read();await page.waitForTimeout(500);assert.equal(await read(),stopped,'hover pauses');
     await card.focus();await page.mouse.move(0,0);
     const focused=await read();await page.waitForTimeout(300);assert.equal(await read(),focused,'focus pauses');
+    // Home snaps the ring to print 0, so the front print sits exactly on centre.
+    await card.press('Home');
+    await page.waitForTimeout(150);
     const box=await card.boundingBox(), stage=await gallery.boundingBox();
-    assert.ok(box.width>80 && box.x>=stage.x+15 && box.x+box.width<=stage.x+stage.width-15);
-    assert.ok(box.y>=stage.y && box.y+box.height<=stage.y+stage.height);
+    assert.ok(box.width>80,'front print is large');
+    assert.ok(Math.abs(box.x+box.width/2-(stage.x+stage.width/2))<12,'front print centred');
+    assert.ok(box.x>=stage.x-1 && box.x+box.width<=stage.x+stage.width+1,'front print fits across the stage');
+    assert.ok(box.y>=stage.y-1 && box.y+box.height<=stage.y+stage.height+1,'front print fits down the stage');
     assert.ok(stage.height<=height*.7+1);
     await gallery.screenshot({path:join(tmpdir(),`circular-${width}.png`)});
     await card.press('Enter');await page.getByRole('dialog').waitFor();
@@ -37,9 +42,14 @@ try {
     await page.getByRole('dialog').waitFor({state:'detached'});
     assert.equal(await card.evaluate(el=>el===document.activeElement),true);
     assert.equal(await gallery.locator('.pw-orbit-card[tabindex="0"]').count(),1,'one tabbable print');
-    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,veil:+getComputedStyle(el.querySelector('.pw-veil')).opacity,opacity:+getComputedStyle(el).opacity})).sort((a,b)=>b.z-a.z));
+    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,veil:+getComputedStyle(el.querySelector('.pw-veil')).opacity,opacity:+getComputedStyle(el).opacity,blur:getComputedStyle(el).filter})).sort((a,b)=>b.z-a.z));
     assert.ok(depth[0].veil<depth.at(-1).veil,'front print clearer than back print');
     assert.ok(depth.every(d=>d.opacity>=.49),'no print fades out while turning');
+    assert.match(depth.at(-1).blur,/blur/,'back print still falls out of focus');
+    assert.equal(depth[0].blur,'none','front print is sharp');
+    /* The print's shadow must not ride on a filter: recomputing it from the
+       perforated mask on every scale change is what cost the frame budget. */
+    assert.ok(await gallery.locator('.pw-orbit-card').first().evaluate(el=>getComputedStyle(el,'::before').boxShadow!=='none'),'print keeps a shadow');
     const counter=page.locator('[data-gallery-counter]'), hint=page.locator('[data-gallery-hint]');
     const dialogs=()=>page.getByRole('dialog').count();
     const label=await counter.textContent();

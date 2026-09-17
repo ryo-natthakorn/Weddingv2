@@ -9,6 +9,20 @@
   1.8 seconds, then rotates at 3 degrees/second. No book, categories or pinning.
 - Three.js perspective projection drives upright DOM photo buttons via Motion
   Values. Front photos stay larger; the back of the ring may be obscured.
+- Ring geometry is derived from the front print rather than fitted to the
+  viewport: neighbours meet edge to edge, the ring runs past the stage edges and
+  the stage clips it. Phone prints are about three times their former area and
+  no longer pile up half-overlapped. The far side rides above the near one, so
+  the blurred back row stays visible instead of hiding behind the front print.
+- The print's shadow is a static box-shadow, not a drop-shadow filter over the
+  perforated mask; the filter was re-derived on every scale change and cost
+  roughly a quarter of the frame budget. Measured at 414px under 6x CPU
+  throttling: 179 frames per 3s with a 16.7ms 95th percentile and 2 frames over
+  32ms, against 169 / 33.3ms / 13 for the previous, much smaller ring.
+- Autorotation also pauses while the page is scrolling, and a mostly vertical
+  drag is handed back to the page scroller instead of turning the ring.
+- The ?gallery=webgl prototype, GalleryWebGL.tsx and the three dependency are
+  removed; the DOM ring is the only renderer.
 - ResizeObserver sizes the ring within 70svh, including short landscape screens.
   Hover, focus, touch, viewer, offscreen and hidden-tab states pause rotation;
   reduced motion immediately presents a static ring. Lightbox restores focus.
