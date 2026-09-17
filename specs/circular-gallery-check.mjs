@@ -17,6 +17,7 @@ try {
     await gallery.scrollIntoViewIfNeeded();
     await gallery.locator('img').evaluateAll(images=>Promise.all(images.map(img=>img.decode())));
     await page.waitForFunction(()=>document.querySelector('[data-gallery-ready="true"]'));
+    assert.equal(await page.locator('[data-gallery-hint]').evaluate(el=>getComputedStyle(el).opacity),'1','hint visible before use');
     await page.mouse.move(0,0);
     const card=gallery.getByRole('button').first();
     const read=()=>card.evaluate(el=>getComputedStyle(el).transform);
@@ -30,9 +31,36 @@ try {
     assert.ok(box.y>=stage.y && box.y+box.height<=stage.y+stage.height);
     assert.ok(stage.height<=height*.7+1);
     await gallery.screenshot({path:join(tmpdir(),`circular-${width}.png`)});
-    await card.press('Enter');await page.getByRole('dialog').waitFor();await page.keyboard.press('Escape');
+    await card.press('Enter');await page.getByRole('dialog').waitFor();
+    assert.match(await gallery.evaluate(el=>getComputedStyle(el).filter),/blur/,'ring recedes behind viewer');
+    await page.keyboard.press('Escape');
     await page.getByRole('dialog').waitFor({state:'detached'});
     assert.equal(await card.evaluate(el=>el===document.activeElement),true);
+    assert.equal(await gallery.locator('.pw-orbit-card[tabindex="0"]').count(),1,'one tabbable print');
+    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,blur:+(getComputedStyle(el).filter.match(/blur\(([\d.]+)px\)/)?.[1]??0)})).sort((a,b)=>b.z-a.z));
+    assert.ok(depth[0].blur<depth.at(-1).blur,'front print sharper than back print');
+    const counter=page.locator('[data-gallery-counter]'), hint=page.locator('[data-gallery-hint]');
+    const dialogs=()=>page.getByRole('dialog').count();
+    const label=await counter.textContent();
+    await page.getByRole('button',{name:/^(Next photo|รูปถัดไป)$/}).click();
+    await page.waitForTimeout(750);
+    assert.notEqual(await counter.textContent(),label,'next arrow turns ring');
+    assert.equal(await dialogs(),0,'arrow does not open viewer');
+    await page.waitForTimeout(450);
+    assert.equal(await hint.evaluate(el=>getComputedStyle(el).opacity),'0','hint fades after use');
+    const target=await gallery.locator('.pw-orbit-card').evaluateAll(els=>{const f=els.findIndex(el=>el.tabIndex===0);return (f+3)%els.length;});
+    await gallery.locator('.pw-orbit-card').nth(target).evaluate(el=>el.click());
+    await page.waitForTimeout(750);
+    assert.equal(await dialogs(),0,'back print does not open viewer');
+    assert.equal((await counter.textContent()).replace(/\s/g,''),`${target+1}/11`,'back print turns to front');
+    const sb=await gallery.boundingBox();
+    await page.mouse.move(sb.x+sb.width*.3,sb.y+sb.height*.5);await page.mouse.down();
+    const dragStart=await read();
+    await page.mouse.move(sb.x+sb.width*.3+120,sb.y+sb.height*.5,{steps:6});await page.mouse.up();
+    const thrown=await read();assert.notEqual(thrown,dragStart,'drag spins ring');
+    await page.waitForTimeout(120);assert.notEqual(await read(),thrown,'release keeps momentum');
+    assert.equal(await dialogs(),0,'drag does not open viewer');
+    await page.mouse.move(0,0);await page.waitForTimeout(2000);
     await page.getByRole('button',{name:'TH',exact:true}).focus();
     await page.evaluate(()=>scrollTo(0,0));
     await page.waitForTimeout(300);const offscreen=await read();await page.waitForTimeout(300);assert.equal(await read(),offscreen);
@@ -54,7 +82,7 @@ try {
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow');
     await page.emulateMedia({reducedMotion:'reduce'});await page.waitForTimeout(100);
     const reduced=await read();await page.waitForTimeout(300);assert.equal(await read(),reduced);
-    console.log(`PASS ${width}x${height}: rotation, hover/focus/offscreen/reduced pauses, geometry, viewer`);
+    console.log(`PASS ${width}x${height}: rotation, drag+throw, depth of field, front-only open, arrows, hint, pauses, geometry, viewer`);
     await page.close();
   }
 } finally {await browser.close();await server.close();}

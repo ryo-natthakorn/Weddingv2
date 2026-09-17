@@ -148,6 +148,12 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
             position: "fixed", inset: 0, zIndex: 9999,
             background: "linear-gradient(175deg, #EAC898 0%, #EDD8A8 30%, #F3E8CC 60%, #F8F1E6 100%)",
             overflow: "hidden", userSelect: "none",
+            /* One flow, not two independent absolute blocks: the monogram and the
+               ring slider are flex siblings, so they can never collide however
+               short the viewport gets. */
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            gap: "clamp(24px, 9vh, 88px)", padding: "clamp(20px, 5vh, 56px) 0",
+            boxSizing: "border-box",
           }}
         >
           {!reduceMotion && PETAL_CONFIG.map((p, i) => <Petal key={i} {...p} />)}
@@ -181,14 +187,9 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
             </motion.div>
           ))}
 
-          {/* PN Monogram + date — one centered unit, pushed up 60px from center
-              (keeping them together prevents the desktop/Windows overlap) */}
+          {/* PN Monogram + date — one centered unit, first flex child of the overlay */}
           <div
             style={{
-              position: "absolute",
-              top: "calc(50% - 60px)",
-              left: 0,
-              right: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -204,7 +205,7 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                width: "min(200px,50vw)",
+                width: "min(200px,42vh,50vw)",
                 height: "auto",
                 display: "block",
               }}
@@ -213,7 +214,7 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", marginRight: "-0.25em", color: "#8A7030", marginTop: 28 }}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 4.5vw, 2rem)", letterSpacing: "0.25em", marginRight: "-0.25em", color: "#8A7030", marginTop: "clamp(12px, 3vh, 28px)" }}
             >
               22 · 11 · 26
             </motion.p>
@@ -229,18 +230,14 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
               initial={reduceMotion ? { opacity: 0 } : { scaleX: 0 }}
               animate={reduceMotion ? { opacity: 1 } : { scaleX: 1 }}
               transition={{ delay: 1.3, duration: 0.8 }}
-              style={{ display: "block", width: 80, height: 1, background: "rgba(138,112,48,0.35)", margin: "20px auto 0" }}
+              style={{ display: "block", width: 80, height: 1, background: "rgba(138,112,48,0.35)", margin: "clamp(12px, 3vh, 20px) auto 0" }}
             />
           </div>
 
-          {/* Bottom area — hint + slider. The hint is always mounted (fading in place)
-              so its arrival never shifts the slider down. */}
+          {/* Hint + slider — second flex child. The hint is always mounted (fading in
+              place) so its arrival never shifts the slider down. */}
           <div
             style={{
-              position: "absolute",
-              bottom: "8vh",
-              left: 0,
-              right: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
