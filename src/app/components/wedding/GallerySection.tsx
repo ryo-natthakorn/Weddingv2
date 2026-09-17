@@ -303,25 +303,57 @@ function Lightbox({
   );
 }
 
-/* Perspective factors at the front and back of the ring, and the print scale at
-   the back — the projection below draws the front print at its natural size. */
-const K_FRONT = 3.4/2.4, K_BACK = 3.4/4.4, S_BACK = 2.4/4.4;
+/* Camera distance, in ring radii. A closer camera means stronger perspective:
+   the far side of the ring shrinks harder, which narrows the ring on screen and
+   so lets more of it fit, but flattens the back prints toward nothing. */
+const CAMERA = 3.4;
 const LIFT = .2664;                 // ring tilt, in card widths
-const TOP = -LIFT*K_BACK - S_BACK*2/3, BOTTOM = LIFT*K_FRONT + 2/3;
-const SPAN = BOTTOM - TOP, PAD = 40;
-type Geometry = { width:number; maxHeight:number; height:number; card:number; radius:number; lift:number; offset:number };
-/* The ring is sized from the viewport instead of being squeezed into it: only
-   the front print has to fit across the screen and the rest of the ring runs
-   past the stage edges, which clip it. Fitting all eleven prints inside a
-   phone's width is what used to drive the radius below the print size, so every
-   neighbour overlapped by half a stamp and the ring read as a pile. */
-function geometryFor(width:number, maxHeight:number, total:number):Geometry {
-  const target = width < 600 ? Math.max(180, width*.65) : Math.max(260, Math.min(360, width*.36));
-  const card = Math.max(96, Math.min(target, width-24, (maxHeight-PAD)/SPAN));
+const PAD = 40;
+/* Everything the projection needs, derived from the camera distance: how much
+   the near and far prints are magnified, and the top and bottom of the ring in
+   card widths, measured from the ring's centre. */
+function optics(camera:number) {
+  const kFront = camera/(camera-1), kBack = camera/(camera+1), sBack = (camera-1)/(camera+1);
+  const top = -LIFT*kBack - sBack*2/3, bottom = LIFT*kFront + 2/3;
+  return { kFront, kBack, top, bottom, span: bottom-top };
+}
+type Geometry = { width:number; maxHeight:number; camera:number; fullRing:boolean; height:number; card:number; radius:number; lift:number; offset:number };
+/* By default the ring is sized from the viewport instead of being squeezed into
+   it: only the front print has to fit across the screen and the rest runs past
+   the stage edges, which clip it. Fitting all eleven prints inside a phone's
+   width is what used to drive the radius below the print size, so every
+   neighbour overlapped by half a stamp and the ring read as a pile.
+   `fullRing` sizes the print from the ring's own on-screen width instead, so
+   the whole circle is visible — at the cost of a much smaller front print. */
+function geometryFor(width:number, maxHeight:number, total:number, camera=CAMERA, fullRing=false):Geometry {
+  const { kFront, top, bottom, span } = optics(camera);
   // Carousel radius: neighbours meet edge to edge at the front, plus a small gap.
-  const radius = card/2/Math.tan(Math.PI/total)*1.06/K_FRONT;
-  return { width, maxHeight, height: Math.round(card*SPAN+PAD), card, radius,
-    lift: LIFT*card, offset: -(TOP+BOTTOM)/2*card };
+  const radiusPerCard = 1.06/(2*Math.tan(Math.PI/total)*kFront);
+  /* How wide the ring gets on screen, in card widths. Not simply twice the
+     radius: a print short of the camera plane is still magnified, so it swings
+     out past the radius before it shrinks. The widest point sits nearer 70
+     degrees than 90 and moves with the camera, so sweep for it rather than
+     solving it — the ring turns, so every angle is reached. */
+  let halfRing = 0;
+  for (let deg = 0; deg <= 90; deg++) {
+    const a = deg*Math.PI/180, cos = Math.cos(a);
+    halfRing = Math.max(halfRing,
+      Math.sin(a)*radiusPerCard*(camera/(camera-cos)) + (camera-1)/(camera-cos)/2);
+  }
+  const ringPerCard = 2*halfRing;
+  const target = fullRing ? (width-16)/ringPerCard
+    : width < 600 ? Math.max(180, width*.65) : Math.max(260, Math.min(360, width*.36));
+  const card = Math.max(96, Math.min(target, width-24, (maxHeight-PAD)/span));
+  return { width, maxHeight, camera, fullRing, height: Math.round(card*span+PAD), card,
+    radius: card*radiusPerCard, lift: LIFT*card, offset: -(top+bottom)/2*card };
+}
+/* Temporary, for comparing treatments on a real phone: `?ring=full` fits the
+   whole circle on screen and `?camera=2.2` moves the camera in. Neither changes
+   what guests see. */
+function ringOptions() {
+  const q = new URLSearchParams(window.location.search);
+  const camera = Number(q.get("camera"));
+  return { fullRing: q.get("ring") === "full", camera: camera >= 1.3 && camera <= 8 ? camera : CAMERA };
 }
 /* The print whose angle is nearest the camera. */
 export const frontIndex=(rotation:number,total:number)=>((Math.round(-rotation/(360/total))%total)+total)%total;
@@ -340,7 +372,7 @@ function CircularPrint({src,index,total,geometry,rotation,unfold,tabbable,onActi
     const p=unfold.get(), a=(index*360/total+rotation.get())*Math.PI/180;
     const z=Math.cos(a)*geometry.radius;
     // Perspective from a camera at distance d whose view spans the stage: k = d/(d-z).
-    const d=geometry.radius*3.4, k=d/(d-z), scale=(d-geometry.radius)/(d-z);
+    const d=geometry.radius*geometry.camera, k=d/(d-z), scale=(d-geometry.radius)/(d-z);
     // Depth of field: the print nearest the camera is sharp and fully saturated;
     // the far side of the ring falls out of focus so it reads as a real circle.
     const focus=p*(z+geometry.radius)/(2*geometry.radius)+(1-p);
@@ -370,7 +402,8 @@ export function GallerySection(){
   const [hidden,setHidden]=useState(false), [scrolling,setScrolling]=useState(false);
   const [zoom,setZoom]=useState<number|null>(null);
   const [front,setFront]=useState(0), [interacted,setInteracted]=useState(false);
-  const [geometry,setGeometry]=useState(()=>geometryFor(320,460,total));
+  const [ring]=useState(ringOptions);
+  const [geometry,setGeometry]=useState(()=>geometryFor(320,460,total,ring.camera,ring.fullRing));
   const rotation=useMotionValue(0), unfold=useMotionValue(reduced?1:0);
   /* Drag and throw live in refs, not state — they change every frame. */
   const spin=useRef<{x:number;y:number;r0:number;last:number;v:number;t:number;moved:number;locked:boolean}|null>(null);
@@ -405,7 +438,7 @@ export function GallerySection(){
       const width=entry.contentRect.width||320;
       stageWidth.current=width;
       const maxHeight=Math.min(560,window.innerHeight*.7);
-      setGeometry(current=>current.width===width&&current.maxHeight===maxHeight?current:geometryFor(width,maxHeight,total));
+      setGeometry(current=>current.width===width&&current.maxHeight===maxHeight?current:geometryFor(width,maxHeight,total,ring.camera,ring.fullRing));
     });
     resize.observe(node);
     const observer=new IntersectionObserver(([entry])=>{
@@ -447,7 +480,7 @@ export function GallerySection(){
     window.addEventListener("pointerup",release);window.addEventListener("pointercancel",release);
     visibility();
     return ()=>{resize.disconnect();observer.disconnect();document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);};
-  },[rotation,total]);
+  },[rotation,total,ring]);
   useEffect(()=>{
     if(reduced){unfold.set(1);setComplete(true);started.current=true;return;}
     if(!seen||started.current)return;
