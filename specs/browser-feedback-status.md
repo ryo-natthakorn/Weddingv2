@@ -17,8 +17,14 @@
 - The print's shadow is a static box-shadow, not a drop-shadow filter over the
   perforated mask; the filter was re-derived on every scale change and cost
   roughly a quarter of the frame budget. Measured at 414px under 6x CPU
-  throttling: 179 frames per 3s with a 16.7ms 95th percentile and 2 frames over
-  32ms, against 169 / 33.3ms / 13 for the previous, much smaller ring.
+  throttling, over repeated 3s runs: about 170 frames with the filter gone
+  against about 130 with it, on prints three times the former area. Run-to-run
+  spread is around a dozen frames, so only that 40-frame gap is meaningful; the
+  new ring and the old smaller one are indistinguishable from each other.
+- Perforation mask ramp widened from 0.35px to 0.9px. A gradient mask is sampled
+  per pixel with no anti-aliasing, so the old ramp fell under one device pixel
+  even at dpr 3 and the notch arcs stair-stepped into cream specks along the
+  edge. The drop-shadow used to blur that away. No measurable frame cost.
 - Autorotation also pauses while the page is scrolling, and a mostly vertical
   drag is handed back to the page scroller instead of turning the ring.
 - The ?gallery=webgl prototype, GalleryWebGL.tsx and the three dependency are

@@ -43,7 +43,13 @@ const STAMP_CSS = `
 .pw-stamp {
   --stamp-pitch: 12px;
   --stamp-notch: 3.4px;
-  --stamp-edge: calc(var(--stamp-notch) + 0.35px);
+  /* The notch edge needs a real anti-aliasing ramp. A CSS gradient mask is
+     sampled per pixel with no anti-aliasing of its own, so a 0.35px ramp is
+     under one device pixel even on a dpr-3 phone: the arcs came out as visible
+     stair steps, each step a half-lit paper pixel reading as a cream speck
+     along the perforation. The drop-shadow filter used to blur that away; it is
+     gone, so the ramp has to do the work itself. Costs nothing. */
+  --stamp-edge: calc(var(--stamp-notch) + 0.9px);
   display: block;
   padding: 11px;
   background: #FFFDF7;

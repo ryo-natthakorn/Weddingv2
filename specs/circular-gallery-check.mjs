@@ -47,6 +47,18 @@ try {
     assert.ok(depth.every(d=>d.opacity>=.49),'no print fades out while turning');
     assert.match(depth.at(-1).blur,/blur/,'back print still falls out of focus');
     assert.equal(depth[0].blur,'none','front print is sharp');
+    /* Without a soft ramp the gradient mask stair-steps and the perforations
+       speckle with half-lit paper pixels. */
+    const feather=await gallery.locator('.pw-stamp').first().evaluate(el=>{
+      const probe=document.createElement('div');
+      probe.style.cssText='position:absolute;visibility:hidden;height:0';
+      el.appendChild(probe);
+      const read=v=>{probe.style.width=v;return parseFloat(getComputedStyle(probe).width);};
+      const edge=read('var(--stamp-edge)'), notch=read('var(--stamp-notch)');
+      probe.remove();
+      return edge-notch;
+    });
+    assert.ok(feather>=.8,`perforation edge needs an anti-aliasing ramp, got ${feather}px`);
     /* The print's shadow must not ride on a filter: recomputing it from the
        perforated mask on every scale change is what cost the frame budget. */
     assert.ok(await gallery.locator('.pw-orbit-card').first().evaluate(el=>getComputedStyle(el,'::before').boxShadow!=='none'),'print keeps a shadow');
