@@ -14,13 +14,19 @@
   the stage clips it. Phone prints are about three times their former area and
   no longer pile up half-overlapped. The far side rides above the near one, so
   the blurred back row stays visible instead of hiding behind the front print.
-- The print's shadow is a static box-shadow, not a drop-shadow filter over the
-  perforated mask; the filter was re-derived on every scale change and cost
-  roughly a quarter of the frame budget. Measured at 414px under 6x CPU
-  throttling, over repeated 3s runs: about 170 frames with the filter gone
-  against about 130 with it, on prints three times the former area. Run-to-run
-  spread is around a dozen frames, so only that 40-frame gap is meaningful; the
-  new ring and the old smaller one are indistinguishable from each other.
+- The print casts its shadow on the page instead of wearing one around its
+  outline. The old drop-shadow filter traced the perforated silhouette but was
+  re-derived on every scale change, once a frame per print, and cost roughly a
+  quarter of the frame budget. Replacing it with a box-shadow was cheap but
+  wrong: a box-shadow traces the border box, so a straight-edged band sat around
+  a notched stamp and read as a second rectangular layer under it, which is what
+  Ryo spotted on the phone. A soft ellipse cast under the print cannot disagree
+  with the silhouette, because it never follows it, and needs no filter.
+  Measured at 414px under 6x CPU throttling, over repeated 3s runs: about 170
+  frames with no filter against about 130 with it, on prints three times the
+  former area. Run-to-run spread is around a dozen frames and drifts with
+  machine load, so compare interleaved runs only; on that basis the cast shadow
+  is free, and the new ring and the old smaller one are indistinguishable.
 - Perforation mask ramp widened from 0.35px to 0.9px. A gradient mask is sampled
   per pixel with no anti-aliasing, so the old ramp fell under one device pixel
   even at dpr 3 and the notch arcs stair-stepped into cream specks along the

@@ -59,9 +59,16 @@ try {
       return edge-notch;
     });
     assert.ok(feather>=.8,`perforation edge needs an anti-aliasing ramp, got ${feather}px`);
-    /* The print's shadow must not ride on a filter: recomputing it from the
-       perforated mask on every scale change is what cost the frame budget. */
-    assert.ok(await gallery.locator('.pw-orbit-card').first().evaluate(el=>getComputedStyle(el,'::before').boxShadow!=='none'),'print keeps a shadow');
+    /* The print keeps a shadow, and it is cast under the print rather than
+       traced around it: a filter over the perforated mask cost the frame budget,
+       and a box-shadow traces the border box, which disagrees with the notched
+       silhouette and reads as a second layer. */
+    const shade=await gallery.locator('.pw-orbit-card').first().evaluate(el=>{
+      const s=getComputedStyle(el,'::before');
+      return { image:s.backgroundImage, box:s.boxShadow };
+    });
+    assert.match(shade.image,/gradient/,'print keeps a cast shadow');
+    assert.equal(shade.box,'none','the shadow must not trace the border box');
     const counter=page.locator('[data-gallery-counter]'), hint=page.locator('[data-gallery-hint]');
     const dialogs=()=>page.getByRole('dialog').count();
     const label=await counter.textContent();

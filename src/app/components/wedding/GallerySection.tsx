@@ -30,13 +30,21 @@ const STAMP_CSS = `
 @media (prefers-reduced-motion: reduce) { .pw-orbit { transition:none; } }
 .pw-orbit-card { position:absolute; left:50%; top:50%; padding:0; border:0; background:none; cursor:zoom-in; touch-action:pan-y; will-change:transform,opacity; }
 .pw-orbit-card img { display:block; width:100%; height:100%; object-fit:cover; }
-/* The print's shadow is a plain box-shadow on a sibling box rather than a
-   drop-shadow filter over the perforated mask: the filter had to re-derive the
-   silhouette's alpha every time perspective changed the print's scale, which is
-   once per frame, and that single property cost about a quarter of the frame
-   budget on a phone. A stamp is a rectangle to within a few notches, so the two
-   look the same. */
-.pw-orbit-card::before { content:""; position:absolute; inset:0; box-shadow:0 7px 8px rgba(61,34,21,.2); }
+/* The print casts its shadow on the page rather than wearing one around its
+   outline. A drop-shadow filter traced the perforated silhouette correctly but
+   re-derived it every time perspective changed the print's scale — once a frame,
+   per print — and cost about a quarter of the frame budget. A box-shadow was
+   cheap but traces the border box, so a straight-edged band sat around a notched
+   stamp and read as a second rectangular layer slipped underneath it. An ellipse
+   cast under the print cannot disagree with the silhouette, because it never
+   follows it, and it needs no filter. Sized in percentages so it holds at every
+   card size; it rides the card's own transform and opacity, so it shrinks and
+   fades with depth like the print above it. */
+.pw-orbit-card::before {
+  content:""; position:absolute; inset:auto 4% -4% 4%; height:7%;
+  background:radial-gradient(ellipse at 50% 30%, rgba(61,34,21,.30), rgba(61,34,21,0) 72%);
+  pointer-events:none;
+}
 .pw-orbit-card .pw-stamp { position:relative; width:100%; height:100%; box-sizing:border-box; }
 .pw-veil { position:absolute; inset:0; background:#F2E8D2; pointer-events:none; will-change:opacity; }
 .pw-orbit-card:focus-visible { outline:2px solid #8A7030; outline-offset:3px; }
