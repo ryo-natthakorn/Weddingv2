@@ -37,8 +37,9 @@ try {
     await page.getByRole('dialog').waitFor({state:'detached'});
     assert.equal(await card.evaluate(el=>el===document.activeElement),true);
     assert.equal(await gallery.locator('.pw-orbit-card[tabindex="0"]').count(),1,'one tabbable print');
-    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,blur:+(getComputedStyle(el).filter.match(/blur\(([\d.]+)px\)/)?.[1]??0)})).sort((a,b)=>b.z-a.z));
-    assert.ok(depth[0].blur<depth.at(-1).blur,'front print sharper than back print');
+    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,veil:+getComputedStyle(el.querySelector('.pw-veil')).opacity,opacity:+getComputedStyle(el).opacity})).sort((a,b)=>b.z-a.z));
+    assert.ok(depth[0].veil<depth.at(-1).veil,'front print clearer than back print');
+    assert.ok(depth.every(d=>d.opacity>=.49),'no print fades out while turning');
     const counter=page.locator('[data-gallery-counter]'), hint=page.locator('[data-gallery-hint]');
     const dialogs=()=>page.getByRole('dialog').count();
     const label=await counter.textContent();
