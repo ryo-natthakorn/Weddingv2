@@ -9,6 +9,44 @@
   1.8 seconds, then rotates at 3 degrees/second. No book, categories or pinning.
 - Three.js perspective projection drives upright DOM photo buttons via Motion
   Values. Front photos stay larger; the back of the ring may be obscured.
+- The whole ring is visible again. It is sized from the ring's own on-screen
+  width, which is affordable only because the camera sits close at 1.8 radii:
+  strong perspective shrinks the far side hard, narrowing the ring and leaving
+  the near print room to stay reasonably large. At 414px the front print is
+  124px and the stage 242px tall. `?ring=clipped` still shows the previous
+  arrangement, where only the front print had to fit and the ring ran past the
+  stage edges at 248px; remove that override once the look is settled.
+- Prints are spaced 1.25 print widths apart, not 1.06. The old value was the
+  least that keeps two prints clear at the symmetric position, where they
+  straddle the front at equal depth and a z-order tie would pop; it never kept
+  them apart at rest, where neighbours overlapped the front print by about 14px.
+  That occlusion is correct, but two sheets of the same warm-white paper with
+  the same perforated edge gave the eye nothing to read it by, so the three
+  front prints merged into one mass. A soft halo around each print was tried as
+  the alternative and rejected: real spacing reads cleaner.
+- The far side rides above the near one, so the blurred back row stays visible
+  instead of hiding behind the front print.
+- The print casts its shadow on the page instead of wearing one around its
+  outline. The old drop-shadow filter traced the perforated silhouette but was
+  re-derived on every scale change, once a frame per print, and cost roughly a
+  quarter of the frame budget. Replacing it with a box-shadow was cheap but
+  wrong: a box-shadow traces the border box, so a straight-edged band sat around
+  a notched stamp and read as a second rectangular layer under it, which is what
+  Ryo spotted on the phone. A soft ellipse cast under the print cannot disagree
+  with the silhouette, because it never follows it, and needs no filter.
+  Measured at 414px under 6x CPU throttling, over repeated 3s runs: about 170
+  frames with no filter against about 130 with it, on prints three times the
+  former area. Run-to-run spread is around a dozen frames and drifts with
+  machine load, so compare interleaved runs only; on that basis the cast shadow
+  is free, and the new ring and the old smaller one are indistinguishable.
+- Perforation mask ramp widened from 0.35px to 0.9px. A gradient mask is sampled
+  per pixel with no anti-aliasing, so the old ramp fell under one device pixel
+  even at dpr 3 and the notch arcs stair-stepped into cream specks along the
+  edge. The drop-shadow used to blur that away. No measurable frame cost.
+- Autorotation also pauses while the page is scrolling, and a mostly vertical
+  drag is handed back to the page scroller instead of turning the ring.
+- The ?gallery=webgl prototype, GalleryWebGL.tsx and the three dependency are
+  removed; the DOM ring is the only renderer.
 - ResizeObserver sizes the ring within 70svh, including short landscape screens.
   Hover, focus, touch, viewer, offscreen and hidden-tab states pause rotation;
   reduced motion immediately presents a static ring. Lightbox restores focus.
