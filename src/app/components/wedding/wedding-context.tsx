@@ -117,6 +117,9 @@ export const translations = {
     music_title: "Pantika (Proposal Song)",
     music_note: "♪ A song written with love",
     music_youtube: "Also on YouTube",
+    /* Read out for the hand-lettered note beside the floating ring — the note
+       itself is drawn as SVG strokes, so this is its only text form. */
+    music_play_me: "Play me",
   },
   TH: {
     invitation_pre: "ขอเชิญร่วมแบ่งปันความสุขในพิธีมงคลสมรส",
@@ -228,6 +231,7 @@ export const translations = {
     music_title: "Pantika (เพลงขอแต่งงาน)",
     music_note: "♪ เพลงที่เขียนด้วยความรัก",
     music_youtube: "ฟังบน YouTube",
+    music_play_me: "ลองกดฉันสิ",
   },
 };
 

@@ -7,7 +7,6 @@ import {
   FitLine,
   COLORS,
 } from "./shared";
-import ringImg from "../../../imports/Ring.svg";
 
 /* ── Countdown ── */
 function CountdownTimer() {
@@ -143,7 +142,7 @@ const NAME_FONT_SIZE = "min(43px, calc((100vw - 16px) / 17.5))";
    than 80% of the names it sits under (--name-size, published on the section). */
 const DATE_BLOCK_MAX = (px: number) => `min(${px}px, calc(var(--name-size) * 0.8))`;
 
-export function NameIntroWithCountdown() {
+export function NameIntroWithCountdown({ onRingSlot }: { onRingSlot?: (el: HTMLDivElement | null) => void }) {
   const { t, lang } = useLang();
   // Three independent triggers — the section is ~2 phone screens tall, so a
   // single trigger would fire the name/date animations while still off-screen.
@@ -241,18 +240,25 @@ export function NameIntroWithCountdown() {
             </span>
           </ClipReveal>
 
-          {/* Ring — large focal point */}
-          <motion.img
-            src={ringImg}
-            alt=""
-            aria-hidden
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={namesInView ? { opacity: 1, scale: 1 } : {}}
+          {/* Ring — large focal point, and the music player's resting place.
+              The ring is not drawn here any more: MusicPlayer portals itself
+              into this slot, so the same ring the guest sees between the names
+              is the one that later corkscrews out to the corner. The slot keeps
+              the ring's exact footprint whether or not it is standing in it, so
+              nothing reflows when it leaves.
+
+              The reveal is opacity only, deliberately: a scale on an ancestor
+              of the player would corrupt the box its flight is measured
+              against. */}
+          <motion.div
+            ref={onRingSlot}
+            data-music-ring-slot
+            initial={{ opacity: 0 }}
+            animate={namesInView ? { opacity: 1 } : {}}
             transition={{ delay: 0.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             style={{
-              width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
-              display: "block", margin: "26px auto",
-              filter: "drop-shadow(0 3px 10px rgba(27,74,92,0.2))",
+              width: "min(120px, 28vw)", aspectRatio: "1440 / 810",
+              margin: "26px auto",
             }}
           />
 

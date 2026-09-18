@@ -211,7 +211,9 @@ function Lightbox({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 1000,
+        /* Above the floating music player at 1300: this is a modal, and the
+           orbit cards below it already stack from 1000 up. */
+        zIndex: 1400,
         padding: "24px 16px",
       }}
     >

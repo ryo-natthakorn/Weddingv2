@@ -298,7 +298,7 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent({ onSongDockSlot }: { onSongDockSlot: (node: HTMLDivElement | null) => void }) {
+function InvitationContent({ onSongDockSlot, onRingSlot }: { onSongDockSlot: (node: HTMLDivElement | null) => void; onRingSlot: (node: HTMLDivElement | null) => void }) {
   const { t, lang } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroRef);
@@ -377,7 +377,7 @@ function InvitationContent({ onSongDockSlot }: { onSongDockSlot: (node: HTMLDivE
       <div style={grainLayer(POST_HERO_GRADIENT)}>
 
       {/* ═══ NAME INTRODUCTION ═══ */}
-      <NameIntroWithCountdown />
+      <NameIntroWithCountdown onRingSlot={onRingSlot} />
 
       {/* ═══ GALLERY ═══ */}
       <GallerySection />
@@ -582,6 +582,8 @@ export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
   const [songDockSlot, setSongDockSlot] = useState<HTMLDivElement | null>(null);
+  /* The ring between the names is where the player starts and returns to. */
+  const [ringSlot, setRingSlot] = useState<HTMLDivElement | null>(null);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -631,10 +633,10 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} dockSlot={songDockSlot} />
+        <MusicPlayer ref={musicRef} dockSlot={songDockSlot} ringSlot={ringSlot} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent onSongDockSlot={setSongDockSlot} />
+        <InvitationContent onSongDockSlot={setSongDockSlot} onRingSlot={setRingSlot} />
       </motion.div>
       </MusicStateProvider>
     </LangProvider>

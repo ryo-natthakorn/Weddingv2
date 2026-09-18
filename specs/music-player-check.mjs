@@ -124,6 +124,65 @@ try {
     } finally { await page.close(); }
   });
 
+  /* The ring is the player: it waits between the couple's names, leaves for
+     the corner once the guest has gone past them, and ends in the song
+     section. Nothing floats before that first move. */
+  const homeOf = page => page.evaluate(() => document.querySelector('[data-music-home]')?.dataset.musicHome ?? null);
+  const scrollPast = async (page, selector, offset) => {
+    await page.evaluate(([selector, offset]) => {
+      const el = document.querySelector(selector);
+      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - offset);
+    }, [selector, offset]);
+  };
+
+  await check('nothing floats until the guest has gone past the names', async () => {
+    const page = await setup();
+    try {
+      await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
+      await page.locator('[data-music-home]').waitFor({ state: 'attached' });
+      assert.equal(await homeOf(page), 'name');
+      assert.equal(
+        await page.evaluate(() => document.querySelector('[data-music-ring-slot]')
+          .contains(document.querySelector('[data-music-home]'))),
+        true,
+        'the ring waits between the names, not in a floating corner',
+      );
+    } finally { await page.close(); }
+  });
+
+  await check('the ring travels names → corner → song section, and back', async () => {
+    const page = await setup();
+    try {
+      await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
+      // The intro holds the page still for a beat after it opens.
+      await page.waitForFunction(() => { window.scrollTo(0, 300); return window.scrollY > 0; });
+
+      await scrollPast(page, '[data-music-ring-slot]', 420);
+      await page.waitForFunction(() => document.querySelector('[data-music-home]')?.dataset.musicHome === 'name');
+
+      await page.evaluate(() => window.scrollBy(0, 900));
+      await page.waitForFunction(() => document.querySelector('[data-music-home]')?.dataset.musicHome === 'float');
+      assert.equal(
+        await page.evaluate(() => getComputedStyle(document.querySelector('[data-music-home]').closest('div[style*="fixed"]') ?? document.body).position),
+        'fixed',
+        'the ring floats once the names are behind the guest',
+      );
+
+      await scrollPast(page, '[data-music-dock-slot]', 300);
+      await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
+      assert.equal(await homeOf(page), 'song');
+
+      await scrollPast(page, '[data-music-ring-slot]', 420);
+      await page.waitForFunction(() => document.querySelector('[data-music-home]')?.dataset.musicHome === 'name');
+      assert.equal(
+        await page.evaluate(() => document.querySelector('[data-music-ring-slot]')
+          .contains(document.querySelector('[data-music-home]'))),
+        true,
+        'and comes back to its place between the names',
+      );
+    } finally { await page.close(); }
+  });
+
   await check('opening requests playback inside the unlock gesture, only once', async () => {
     const page = await setup();
     try {
