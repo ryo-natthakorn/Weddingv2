@@ -78,10 +78,14 @@ try {
     assert.equal(await page.getByText('รวมผู้กรอกแบบฟอร์ม', { exact: true }).count(), 0);
     await page.getByRole('button', { name: 'ไม่สะดวกร่วมงาน', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: 'ไม่สะดวกร่วมงาน', exact: true }).getAttribute('aria-pressed'), 'true');
-    const song = page.getByRole('button', { name: 'ฟังเพลง', exact: true });
-    await song.scrollIntoViewIfNeeded();
+    await page.locator('[data-music-dock-slot]').scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
-    assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 0, 'floating button merges into song CTA');
+    assert.equal(
+      await page.evaluate(() => document.querySelector('[data-music-dock-slot]').contains(document.querySelector('[data-music-docked="true"]'))),
+      true,
+      'the floating player docks into the song section',
+    );
+    assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 1, 'the docked orb is still the one control');
     await page.screenshot({ path: join(output, `song-docked-${width}.png`), animations: 'disabled' });
     // One line from a tablet up, the two authored lines on a phone.
     const dedication = await page.locator('[data-song-dedication]').evaluate(el =>

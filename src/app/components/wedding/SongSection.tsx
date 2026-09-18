@@ -121,7 +121,7 @@ const dedicationStyle = {
   lineHeight: 1.8,
 } as const;
 
-export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor: (node: HTMLButtonElement | null) => void }) {
+export function SongSection({ onDockSlot }: { onDockSlot: (node: HTMLDivElement | null) => void }) {
   const { t } = useLang();
   const { ref, inView } = useReveal("-80px");
   const wide = useMinWidth(768);
@@ -150,9 +150,6 @@ export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor
 
         <StaffOfNotes inView={inView} />
 
-        <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: 0, lineHeight: 1.2, marginTop: 26 }}>
-          {t.song_title}
-        </h3>
         <div data-song-dedication style={{ marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
           {wide ? (
             <FitLine as="p" max={16} style={dedicationStyle}>{t.song_dedication_lines.join(" ")}</FitLine>
@@ -163,37 +160,17 @@ export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor
           )}
         </div>
 
-        <motion.button
-          ref={onAnchor}
-          id="song-play-button"
-          type="button"
-          onClick={onPlay}
-          whileHover={{ scale: 1.04, y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            marginTop: 28,
-            background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`,
-            border: "none",
-            borderRadius: 100,
-            padding: "14px 32px",
-            fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-            fontSize: "1rem",
-            letterSpacing: 0,
-            textTransform: "uppercase",
-            color: "#FFF8EE",
-            cursor: "pointer",
-            boxShadow: "0 8px 24px rgba(138,112,48,0.3)",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
-            <path d="M1.5 1.6C1.5 1.1 2 0.8 2.4 1.05L11.4 6.45C11.8 6.7 11.8 7.3 11.4 7.55L2.4 12.95C2 13.2 1.5 12.9 1.5 12.4V1.6Z" fill="#FFF8EE" />
-          </svg>
-          {t.song_play}
-        </motion.button>
+        {/* The dock slot. It starts empty: the floating player flies in here
+            and becomes this section's player, so the section never holds a
+            second control of its own. min-height keeps the layout steady while
+            the orb is still in the corner, and the slot grows when the card
+            opens inside it. */}
+        <div
+          ref={onDockSlot}
+          data-music-dock-slot
+          style={{ minHeight: 56, marginTop: 30, display: "flex", justifyContent: "center", alignItems: "flex-start" }}
+        />
+
       </motion.div>
     </section>
   );

@@ -23,16 +23,39 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-gallery-ready="true"]'));
     await gallery.locator('img').evaluateAll(images => Promise.all(images.map(img => img.decode())));
     await page.screenshot({ path: join(output, `morph-settled-${width}.png`) });
-    const song = page.getByRole('button', { name: 'ฟังเพลง', exact: true });
+    // The song section holds nothing but an empty slot until the orb flies in.
+    const slot = page.locator('[data-music-dock-slot]');
+    assert.equal(await page.getByRole('button', { name: 'ฟังเพลง', exact: true }).count(), 0, 'no second play control in the song section');
     const start = Date.now();
-    await song.scrollIntoViewIfNeeded();
+    await slot.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.querySelector('[data-music-docking="true"]'));
-    await page.waitForTimeout(650);
-    assert.equal(await page.locator('[data-music-docked="true"]').count(), 0, 'merge stays visible long enough to notice');
-    await page.screenshot({ path: join(output, `music-merging-${width}.png`) });
+    assert.equal(await page.locator('[data-music-docked="true"]').count(), 0, 'the flight is visible, not a cut');
+    await page.screenshot({ path: join(output, `music-flying-${width}.png`) });
     await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
-    assert.ok(Date.now() - start >= 1500, 'merge is not instantaneous');
-    await song.click();
+    assert.ok(Date.now() - start >= 150, 'the orb travels rather than teleporting');
+    assert.equal(
+      await page.evaluate(() => document.querySelector('[data-music-dock-slot]').contains(document.querySelector('[data-music-docked="true"]'))),
+      true,
+      'the orb lands inside the song section, in the page',
+    );
+    await page.screenshot({ path: join(output, `music-docked-${width}.png`) });
+    // Tapping the docked orb opens the card in the page, where it stands.
+    await page.getByRole('button', { name: 'Open music player' }).click();
+    await page.waitForTimeout(500);
+    assert.equal(
+      await page.evaluate(() => {
+        const dock = document.querySelector('[data-music-dock-slot]');
+        return dock.getBoundingClientRect().height > 200 && dock.childElementCount > 0;
+      }),
+      true,
+      'the card opens inside the slot and pushes the page down',
+    );
+    assert.equal(
+      await page.evaluate(() => [...document.querySelector('[data-music-dock-slot]').querySelectorAll('*')]
+        .filter((node) => (getComputedStyle(node).backdropFilter || '').includes('blur')).length),
+      0,
+      'the player card carries no backdrop blur',
+    );
     const youtube = page.locator('a[href="https://www.youtube.com/watch?v=p8iVeHphD3c"]');
     await youtube.locator('img').evaluate(img => img.decode());
     assert.ok((await youtube.locator('img').getAttribute('src')).includes('youtube-icon'));
@@ -41,7 +64,7 @@ try {
     await section.evaluate(el => el.scrollIntoView());
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
     await page.waitForFunction(() => !document.querySelector('[data-music-docking="true"]'));
-    console.log(`PASS ${width}px: circular gallery, visible merge duration, song control, floating return`);
+    console.log(`PASS ${width}px: circular gallery, visible flight, in-page card, floating return`);
     await page.close();
   }
 } finally {

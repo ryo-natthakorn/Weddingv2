@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView, useReducedMotion } from "motion/react";
-import { LangProvider, useLang } from "./wedding/wedding-context";
+import { LangProvider, MusicStateProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
 import { MusicPlayer, type MusicPlayerHandle } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
@@ -298,7 +298,7 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => void; onSongAnchor: (node: HTMLButtonElement | null) => void }) {
+function InvitationContent({ onSongDockSlot }: { onSongDockSlot: (node: HTMLDivElement | null) => void }) {
   const { t, lang } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroRef);
@@ -552,7 +552,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
       <GiftSection />
 
       {/* ═══ OUR SONG ═══ */}
-      <SongSection onPlay={onPlaySong} onAnchor={onSongAnchor} />
+      <SongSection onDockSlot={onSongDockSlot} />
 
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
@@ -581,7 +581,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
-  const [songAnchor, setSongAnchor] = useState<HTMLButtonElement | null>(null);
+  const [songDockSlot, setSongDockSlot] = useState<HTMLDivElement | null>(null);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -612,6 +612,7 @@ export function WeddingInvitation() {
 
   return (
     <LangProvider>
+      <MusicStateProvider>
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
@@ -630,11 +631,12 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} dockTarget={songAnchor} />
+        <MusicPlayer ref={musicRef} dockSlot={songDockSlot} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent onPlaySong={() => musicRef.current?.open()} onSongAnchor={setSongAnchor} />
+        <InvitationContent onSongDockSlot={setSongDockSlot} />
       </motion.div>
+      </MusicStateProvider>
     </LangProvider>
   );
 }

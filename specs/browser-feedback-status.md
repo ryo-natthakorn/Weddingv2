@@ -66,3 +66,11 @@
 - Copy: new Thai footer quote, RSVP title, hashtag subtitle and dress-code
   sentence; gift description is two fixed lines; the song dedication is the new
   two-line wording (one line from 768px up).
+- The song section starts empty: the "Pantika" heading and the "ฟังเพลง" button
+  are gone, and a 56px slot sits under the dedication. When that slot rises into
+  view the floating orb flies into it and becomes part of the page; tapping it
+  there opens the card in place and starts the song. Scrolling the slot away
+  collapses the card and flies the orb back to the corner.
+- The flight is a FLIP with a spring, a shadow that lifts and settles, a small
+  squash and one gold ripple on landing. The stretch, the fade into the old CTA
+  and the card's 16px backdrop blur are gone.

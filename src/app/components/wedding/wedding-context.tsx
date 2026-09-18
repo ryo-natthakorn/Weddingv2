@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 export type Lang = "EN" | "TH";
 
@@ -252,4 +252,48 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 
 export function useLang() {
   return useContext(LangContext);
+}
+
+
+/* ── Music state — what the player is doing, for the rest of the page ──
+
+   The floating player and the song section are siblings (see
+   WeddingInvitation.tsx), so the section cannot be handed this through props
+   without threading them through the whole invitation. It is deliberately tiny:
+   only the facts another section might want to react to.
+
+   docked   — the orb has been pulled into the song section's slot
+   landedAt — timestamp of the last landing, so a one-shot reaction can be keyed
+   cueAt    — start time of the lyric line currently showing (-1 between lines) */
+export type MusicState = {
+  playing: boolean;
+  docked: boolean;
+  landedAt: number;
+  cueAt: number;
+};
+
+const INITIAL_MUSIC_STATE: MusicState = { playing: false, docked: false, landedAt: 0, cueAt: -1 };
+
+const MusicStateContext = createContext<{
+  music: MusicState;
+  setMusic: (patch: Partial<MusicState>) => void;
+}>({ music: INITIAL_MUSIC_STATE, setMusic: () => {} });
+
+export function MusicStateProvider({ children }: { children: React.ReactNode }) {
+  const [music, setState] = useState<MusicState>(INITIAL_MUSIC_STATE);
+  const setMusic = useCallback((patch: Partial<MusicState>) => {
+    setState((current) => {
+      const next = { ...current, ...patch };
+      // Publishing an unchanged object would re-render every consumer on every
+      // scroll frame the player measures.
+      if ((Object.keys(patch) as (keyof MusicState)[]).every((key) => current[key] === next[key])) return current;
+      return next;
+    });
+  }, []);
+  const value = useMemo(() => ({ music, setMusic }), [music, setMusic]);
+  return <MusicStateContext.Provider value={value}>{children}</MusicStateContext.Provider>;
+}
+
+export function useMusicState() {
+  return useContext(MusicStateContext);
 }
