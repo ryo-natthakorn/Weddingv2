@@ -74,3 +74,28 @@
 - The flight is a FLIP with a spring, a shadow that lifts and settles, a small
   squash and one gold ripple on landing. The stretch, the fade into the old CTA
   and the card's 16px backdrop blur are gone.
+- The staff of notes has depth: three tiers of size and weight, a soft warm
+  shadow under each note, a shallow tilt, and scroll parallax so the nearer
+  notes travel further. The notes hop outward from the middle when the orb
+  lands, a small note leaves the player on every lyric line while the song
+  plays, and touching a note plucks it (bounce + ripple).
+
+## Verification
+
+- Production build clean.
+- New `specs/one-line-copy-check.mjs`: 320/360/375/390/412/414/430/540/600/768/
+  820/1000px in Thai and English, idle, RSVP form, confirmation and open
+  envelope — every fitted block renders the line count it claims, nothing
+  overflows, nothing falls under 13px, and the date block stays under the names.
+  No RSVP leaves the browser (https aborted plus a cross-origin fetch stub).
+- `specs/motion-feedback-check.mjs` (414 and 1401px, motion on): the flight is
+  visible rather than a cut, the orb lands inside the section, the card opens in
+  the slot and pushes the page down, nothing in the player is blurred, and the
+  orb returns to the corner when the slot leaves the viewport.
+- `specs/invitation-visual-check.mjs` and `specs/music-player-check.mjs` pass
+  unchanged in substance; gallery, intro, captions and regression specs pass.
+- Screenshots at 320/390/414/768px in both languages reviewed by hand.
+- Docking, plucking and the per-lyric notes checked at 414px with reduced motion
+  both off and on; the lyric notes were driven with the mocked player, since
+  YouTube is unreachable from this environment.
+- Physical iPhone 13 / iPhone 11 testing remains outstanding (CLAUDE.md rule).
