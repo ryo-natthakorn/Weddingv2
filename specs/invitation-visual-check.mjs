@@ -54,7 +54,7 @@ try {
     assert.equal(await page.getByRole('dialog').count(), 1);
     await page.keyboard.press('Escape');
     assert.equal(await orbit.getByRole('button').nth(1).evaluate(el => el === document.activeElement), true);
-    const mrt = page.getByText('โดย MRT', { exact: true }).locator('..').locator('..').locator('img');
+    const mrt = page.locator('.direction-row', { hasText: 'โดย MRT' }).locator('img');
     await mrt.scrollIntoViewIfNeeded();
     await mrt.screenshot({ path: join(output, `mrt-${width}.png`) });
     await page.getByRole('button', { name: 'แตะเพื่อร่วมใส่ซอง', exact: true }).scrollIntoViewIfNeeded();
@@ -64,7 +64,8 @@ try {
     await page.getByRole('button', { name: 'บันทึก QR', exact: true }).click({ trial: true });
     await page.locator('#gift-section').screenshot({ path: join(output, `envelope-open-${width}.png`), animations: 'disabled' });
     assert.ok(await page.locator('#gift-section').evaluate(el => el.getBoundingClientRect().height) >= giftHeight, 'expanded envelope reserves space for QR');
-    const heading = await page.getByText('ฟอร์มตอบรับคำเชิญ', { exact: true }).evaluate(el => {
+    // The kicker's size now lives on FitLine's rendered line, not its host.
+    const heading = await page.locator('[data-fit-text]', { hasText: /^ฟอร์มตอบรับคำเชิญ$/ }).first().evaluate(el => {
       const style = getComputedStyle(el);
       return { size: style.fontSize, weight: style.fontWeight, spacing: style.letterSpacing, color: style.color };
     });
@@ -82,26 +83,36 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
     assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 0, 'floating button merges into song CTA');
     await page.screenshot({ path: join(output, `song-docked-${width}.png`), animations: 'disabled' });
-    if (width >= 768) {
-      const dedication = await page.locator('.song-dedication').evaluate(el => {
-        const range = document.createRange(); range.selectNodeContents(el);
-        return new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size;
-      });
-      assert.equal(dedication, 1, 'desktop song dedication is one line');
-    }
-    for (const text of ['การตอบรับของท่านจะช่วยให้เราต้อนรับแขกทุกท่านได้อย่างทั่วถึง', 'Your reply helps us plan our day.']) {
-      if (text.startsWith('Your')) await page.getByRole('button', { name: 'EN', exact: true }).click();
-      const message = page.getByText(text, { exact: true });
+    // One line from a tablet up, the two authored lines on a phone.
+    const dedication = await page.locator('[data-song-dedication]').evaluate(el =>
+      [...el.querySelectorAll('[data-fit-text]')].reduce((count, node) => {
+        const range = document.createRange(); range.selectNodeContents(node);
+        return count + new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size;
+      }, 0));
+    assert.equal(dedication, width >= 768 ? 1 : 2, `${width}px song dedication line count`);
+    // The RSVP importance line is a FitLine now: one line, or the two authored
+    // lines on the narrowest phones. specs/one-line-copy-check.mjs owns the
+    // exhaustive per-width sweep; this keeps the visual record.
+    for (const lang of ['th', 'en']) {
+      if (lang === 'en') await page.getByRole('button', { name: 'EN', exact: true }).click();
+      const message = page.locator('.rsvp-importance');
       await message.scrollIntoViewIfNeeded();
       const lines = await message.evaluate(el => {
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        const rects = [...range.getClientRects()];
-        return { count: rects.length, fits: rects.every(rect => rect.left >= 0 && rect.right <= innerWidth) };
+        const rects = [...el.querySelectorAll('[data-fit-text]')].flatMap(node => {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return [...range.getClientRects()];
+        });
+        return {
+          claimed: Number(el.dataset.lines),
+          fits: rects.every(rect => rect.left >= -0.5 && rect.right <= innerWidth + 0.5),
+          tops: new Set(rects.map(rect => Math.round(rect.top))).size,
+        };
       });
       assert.equal(lines.fits, true, `${width}px RSVP must fit without overflow`);
-      assert.ok(lines.count <= 3, `${width}px RSVP should wrap naturally`);
-      await message.screenshot({ path: join(output, `rsvp-${text.startsWith('Your') ? 'en' : 'th'}-${width}.png`), animations: 'disabled' });
+      assert.equal(lines.tops, lines.claimed, `${width}px RSVP renders the lines it claims`);
+      assert.ok(lines.claimed <= 2, `${width}px RSVP breaks at most once`);
+      await message.screenshot({ path: join(output, `rsvp-${lang}-${width}.png`), animations: 'disabled' });
     }
     assert.deepEqual(errors, [], `${width}px browser exceptions`);
     console.log(`PASS ${width}x${height}: hero, circular gallery navigation, photo order, envelope, readable TH/EN RSVP`);

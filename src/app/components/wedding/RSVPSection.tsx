@@ -5,6 +5,7 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   Divider,
+  FitLine,
   COLORS,
 } from "./shared";
 
@@ -183,7 +184,6 @@ export function RSVPSection() {
 
   const labelStyle: React.CSSProperties = {
     fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-    fontSize: "1rem",
     letterSpacing: 0,
     textTransform: "uppercase",
     color: COLORS.lightBrown,
@@ -209,22 +209,25 @@ export function RSVPSection() {
         transition={{ duration: 0.9 }}
         style={{ maxWidth: 560, margin: "0 auto", position: "relative", zIndex: 2 }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
+        <FitLine as="p" max={30} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
           {t.rsvp_label}
-        </p>
+        </FitLine>
         <Divider className="mb-6" />
-        <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
+        {/* --fit-max comes from index.css: 30px on a phone, clamp(2rem,5vw,3rem)
+            from a tablet up — the same ceilings the old !important overrides
+            set, except the size below them is measured to fit. */}
+        <FitLine as="h2" className="rsvp-title" max="var(--fit-max)" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.2 }}>
           {t.rsvp_title}
-        </h2>
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "28px", fontWeight: 700, lineHeight: 1.5, color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: 0 }}>
+        </FitLine>
+        <FitLine as="p" className="rsvp-subtitle" max="var(--fit-max)" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 700, lineHeight: 1.5, color: COLORS.lightBrown, marginBottom: status === "idle" ? 28 : 48, letterSpacing: 0 }}>
           {t.rsvp_subtitle}
-        </p>
+        </FitLine>
 
         {/* Importance message — warm, gentle, between subtitle and form */}
         {status === "idle" && (
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: 0, marginBottom: 40, marginLeft: "auto", marginRight: "auto" }}>
+          <FitLine as="p" className="rsvp-importance" max="var(--fit-max)" lines={t.rsvp_importance_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, letterSpacing: 0, marginBottom: 40, marginLeft: "auto", marginRight: "auto" }}>
             {t.rsvp_importance}
-          </p>
+          </FitLine>
         )}
 
         <AnimatePresence mode="wait">
@@ -239,7 +242,7 @@ export function RSVPSection() {
             >
               {/* Name */}
               <div>
-                <label htmlFor="rsvp-name" style={labelStyle}>{t.rsvp_name}</label>
+                <FitLine as="label" htmlFor="rsvp-name" max={16} style={labelStyle}>{t.rsvp_name}</FitLine>
                 <input
                   id="rsvp-name"
                   type="text"
@@ -254,7 +257,7 @@ export function RSVPSection() {
 
               {/* Attending */}
               <div>
-                <label style={labelStyle}>{t.rsvp_attend}</label>
+                <FitLine as="label" max={16} style={labelStyle}>{t.rsvp_attend}</FitLine>
                 <div className="rsvp-options">
                   {(["yes", "no"] as const).map((val) => {
                     const isYes = val === "yes";
@@ -280,7 +283,6 @@ export function RSVPSection() {
                           background: selected ? accent : isYes ? "#E8F0E9" : "#FBF4EF",
                           cursor: "pointer",
                           fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-                          fontSize: "1rem",
                           minHeight: 54,
                           lineHeight: 1.6,
                           letterSpacing: 0,
@@ -296,8 +298,10 @@ export function RSVPSection() {
                           gap: 8,
                         }}
                       >
-                        {isYes ? <Check size={20} aria-hidden /> : <X size={20} aria-hidden />}
-                        {isYes ? t.rsvp_yes : t.rsvp_no}
+                        {isYes ? <Check size={20} aria-hidden style={{ flexShrink: 0 }} /> : <X size={20} aria-hidden style={{ flexShrink: 0 }} />}
+                        {/* The button's width comes from the grid, never from
+                            this label, so the label can be measured safely. */}
+                        <FitLine as="span" className="rsvp-choice-label" max={16}>{isYes ? t.rsvp_yes : t.rsvp_no}</FitLine>
                         {/* Burst particles — Yes button only */}
                         {isYes && burst.map((s) => (
                           <motion.span
@@ -326,9 +330,9 @@ export function RSVPSection() {
                   })}
                 </div>
                 {attendHint && (
-                  <p role="alert" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", color: COLORS.midBrown, letterSpacing: 0, marginTop: 8 }}>
+                  <FitLine as="p" role="alert" max={16} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, letterSpacing: 0, marginTop: 8 }}>
                     {lang === "TH" ? "กรุณาเลือกว่าจะมาร่วมงานหรือไม่" : "Please choose whether you can join us"}
-                  </p>
+                  </FitLine>
                 )}
               </div>
 
@@ -342,7 +346,7 @@ export function RSVPSection() {
                     transition={{ duration: 0.4 }}
                   >
                     <div>
-                      <label id="rsvp-guests-label" style={labelStyle}>{t.rsvp_guests}</label>
+                      <FitLine as="label" id="rsvp-guests-label" max={16} style={labelStyle}>{t.rsvp_guests}</FitLine>
                       {/* Stepper rather than a number field: on mobile a numeric
                           input summons the keypad and covers the form, and the
                           native spinners are far too small to hit. */}
@@ -419,9 +423,9 @@ export function RSVPSection() {
 
               {/* Error message */}
               {error && (
-                <p role="alert" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", color: "#C0392B", textAlign: "center" }}>
+                <FitLine as="p" role="alert" max={16} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: "#C0392B", textAlign: "center" }}>
                   {t.rsvp_error}
-                </p>
+                </FitLine>
               )}
 
               {/* Submit */}
@@ -462,7 +466,9 @@ export function RSVPSection() {
                 background: status === "submitted-yes" ? `rgba(27,42,74,0.06)` : "rgba(192,57,43,0.05)",
                 border: `1px solid ${status === "submitted-yes" ? "rgba(27,42,74,0.2)" : "rgba(192,57,43,0.2)"}`,
                 borderRadius: 20,
-                padding: "56px 40px",
+                // 40px side padding cost the Thai confirmation ~40px of line
+                // length — enough to fold it on a 390px phone.
+                padding: "40px 20px",
               }}
             >
               <motion.div
@@ -473,17 +479,22 @@ export function RSVPSection() {
               >
                 {status === "submitted-yes" ? "♥" : "✦"}
               </motion.div>
-              <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.4rem, 3.5vw, 2rem)", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.3 }}>
+              <FitLine as="h3" max="clamp(1.4rem, 3.5vw, 2rem)" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 500, color: COLORS.warmBrown, marginBottom: 12, lineHeight: 1.3 }}>
                 {name}
-              </h3>
-              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8 }}>
+              </FitLine>
+              <FitLine
+                as="p"
+                max={16}
+                lines={status === "submitted-yes" ? t.rsvp_thanks_lines : t.rsvp_sorry_lines}
+                style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8 }}
+              >
                 {status === "submitted-yes" ? t.rsvp_thanks : t.rsvp_sorry}
-              </p>
+              </FitLine>
               <button
                 onClick={resetForm}
-                style={{ marginTop: 28, minHeight: 44, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
+                style={{ marginTop: 28, minHeight: 44, background: "none", border: `1px solid rgba(138,107,75,0.3)`, borderRadius: 100, padding: "10px 24px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", letterSpacing: 0, color: COLORS.lightBrown, cursor: "pointer", textTransform: "uppercase" }}
               >
-                ← Go Back
+                <FitLine as="span" max={16}>← Go Back</FitLine>
               </button>
             </motion.div>
           )}

@@ -1,6 +1,24 @@
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
-import { useReveal, Divider, COLORS } from "./shared";
+import { useReveal, Divider, FitLine, COLORS } from "./shared";
+
+/* The dedication is two authored lines on a phone and one on a tablet upward.
+   That is a layout choice, not a size one, so it is read in JS rather than
+   rendering both and hiding one — a hidden copy would measure at zero width. */
+function useMinWidth(px: number) {
+  const [matches, setMatches] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(`(min-width: ${px}px)`).matches,
+  );
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${px}px)`);
+    const sync = () => setMatches(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, [px]);
+  return matches;
+}
 
 /* ───────────────────────────────────────────────────────────────
    OUR SONG
@@ -96,9 +114,17 @@ function StaffOfNotes({ inView }: { inView: boolean }) {
   );
 }
 
+const dedicationStyle = {
+  fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
+  fontWeight: 400,
+  color: COLORS.midBrown,
+  lineHeight: 1.8,
+} as const;
+
 export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor: (node: HTMLButtonElement | null) => void }) {
-  const { t, lang } = useLang();
+  const { t } = useLang();
   const { ref, inView } = useReveal("-80px");
+  const wide = useMinWidth(768);
 
   return (
     <section
@@ -117,9 +143,9 @@ export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 760, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
+        <FitLine as="p" max={30} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
           {t.music_label}
-        </p>
+        </FitLine>
         <Divider className="mb-10" />
 
         <StaffOfNotes inView={inView} />
@@ -127,9 +153,15 @@ export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor
         <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: 0, lineHeight: 1.2, marginTop: 26 }}>
           {t.song_title}
         </h3>
-        <p className="song-dedication" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
-          {lang === "TH" ? <>เรียวแอบแต่งเพลงนี้ให้หยี<span className="song-mobile-line"> เพื่อเซอร์ไพรส์หยีตอนขอแต่งงาน</span></> : t.song_dedication}
-        </p>
+        <div data-song-dedication style={{ marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
+          {wide ? (
+            <FitLine as="p" max={16} style={dedicationStyle}>{t.song_dedication_lines.join(" ")}</FitLine>
+          ) : (
+            t.song_dedication_lines.map((line: string) => (
+              <FitLine key={line} as="p" max={16} style={dedicationStyle}>{line}</FitLine>
+            ))
+          )}
+        </div>
 
         <motion.button
           ref={onAnchor}

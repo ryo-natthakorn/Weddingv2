@@ -41,3 +41,28 @@
   This does not establish playback on every device/network or physical audio output.
 - Circular gallery checked at 320, 366, 413, 681, 1049, 1401px and 844x390.
 - Physical iPhone/Safari testing remains outstanding.
+
+# One-line copy and player docking - 18 September 2026
+
+## Implemented
+
+- FitLine (`shared.tsx`): any sentence that must hold one line is now measured
+  against its container and scaled to fit, floor 13px, instead of being set at a
+  fixed px size. A hidden 100px copy of the same text is observed by a
+  ResizeObserver, so the webfont swap is caught — the failure mode of the two
+  earlier JS-measuring attempts.
+- Where 13px would still not fit, the sentence folds at a break point authored
+  in the copy (dress code, gift line 2, RSVP importance, both quote lines, the
+  English confirmation lines), never wherever the browser would choose.
+- Applied across the name/countdown block, venue and directions, program,
+  dress code and hashtag, RSVP, gift, song dedication and footer quote, in Thai
+  and English.
+- The closing date block (Sunday / date / venue) is capped at 80% of the names'
+  own size formula, so it can no longer out-scale them; the `.invitation-date`
+  30px override that caused that has been deleted.
+- Directions stack as centred columns below 600px; the RSVP Yes/No buttons stack
+  full width below 480px (was 360px); the confirmation card's padding is
+  40px/20px so the Thai thank-you keeps one line.
+- Copy: new Thai footer quote, RSVP title, hashtag subtitle and dress-code
+  sentence; gift description is two fixed lines; the song dedication is the new
+  two-line wording (one line from 768px up).

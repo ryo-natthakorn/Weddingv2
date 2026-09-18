@@ -27,18 +27,45 @@ optgroup {
 }
 
 .rsvp-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.song-dedication { text-wrap: pretty; }
-.maps-link { text-transform: none !important; }
+/* The Maps pill gets an explicit width so its FitLine label measures against a
+   box that does not itself depend on the label — an inline-flex pill hugging
+   its content would make measurement and layout chase each other. */
+.maps-link { text-transform: none !important; width: min(100%, 340px); }
+.maps-label { flex: 1 1 0%; min-width: 0; text-align: center; }
+
+/* Ceilings for FitLine (shared.tsx). FitLine resolves var(--fit-max) through a
+   hidden probe, so a media query can still hand a sentence a smaller maximum on
+   a phone than on a desktop — which is all the old font-size overrides here
+   did, except the size below the ceiling is now measured to fit rather than
+   fixed. The .invitation-date override that used to live here was the bug the
+   client reported: it forced the date to 30px, larger than the 22.7px names it
+   sits under. The date is sized from --name-size now. */
+.invitation-parent { --fit-max: 22px; }
+.invitation-invite { --fit-max: 20px; }
+.rsvp-title { --fit-max: clamp(2rem, 5vw, 3rem); }
+.rsvp-subtitle { --fit-max: 28px; }
+.rsvp-importance { --fit-max: 16px; }
 @media (max-width: 767px) {
-  .invitation-parent, .invitation-invite { font-size:14px !important; }
-  .invitation-date { font-size:30px !important; letter-spacing:0 !important; white-space:normal !important; line-height:1.4 !important; }
-  .rsvp-section > div > h2 { font-size:30px !important; }
-  .rsvp-section > div > p:nth-of-type(2) { font-size:24px !important; }
-  .rsvp-section > div > p:nth-of-type(3) { font-size:14px !important; }
-  .song-mobile-line { display:block; }
+  .invitation-parent, .invitation-invite { --fit-max: 14px; }
+  .rsvp-title { --fit-max: 30px; }
+  .rsvp-subtitle { --fit-max: 24px; }
+  .rsvp-importance { --fit-max: 14px; }
 }
-@media (min-width: 768px) { .song-dedication { white-space: nowrap; } }
-@media (max-width: 359px) { .rsvp-options { grid-template-columns: 1fr; } }
+
+/* Directions: below 600px each item becomes a centred column so its sentence
+   gets the full card width instead of the width left over beside a 48px mark
+   (the Grab line is the one that needed it). */
+.direction-row { display: flex; gap: 16px; align-items: center; text-align: left; }
+.direction-text { flex: 1 1 0%; min-width: 0; }
+@media (max-width: 599px) {
+  .direction-row { flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+  .direction-text { flex: 0 0 auto; width: 100%; }
+}
+
+/* Two half-width RSVP buttons only once there is room for both Thai labels
+   on one line; below that they stack full width. */
+@media (max-width: 479px) { .rsvp-options { grid-template-columns: 1fr; } }
+.rsvp-choice-label { flex: 1 1 0%; min-width: 0; }
 button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid #1B4A5C;
   outline-offset: 5px;
