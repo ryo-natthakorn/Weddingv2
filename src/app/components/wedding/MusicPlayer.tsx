@@ -1,10 +1,11 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useMotionTemplate, useTransform, animate } from "motion/react";
 import { LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
 import captions from "../../../imports/pantika.sbv?raw";
 import { parseSbv, lyricAt } from "./captions.mjs";
-import { useLang } from "./wedding-context";
+import { useLang, useMusicState } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
 
@@ -20,10 +21,19 @@ const LYRICS = parseSbv(captions);
 
 const ACCENT = "#8A7030";       // olive gold
 const ACCENT_DARK = "#6B5520";  // deeper gold
-const SURFACE = "rgba(253,250,245,0.94)";
+/* Nearly opaque: the card used to sit on a 16px backdrop blur, which smeared
+   the paper grain behind it and read as a piece of app chrome dropped onto the
+   invitation. Without the blur the surface has to carry legibility itself. */
+const SURFACE = "rgba(253,250,245,0.97)";
 const TEXT_PRIMARY = "#3A2C18";
 const TEXT_MUTED = "rgba(58,44,24,0.55)";
 const TEXT_DIM = "rgba(58,44,24,0.4)";
+
+/* The orb flies between the bottom-right corner and the song section's slot.
+   A spring for the flight, an ease-out for the landing — DESIGN.md's motion
+   pairing for "an object that was picked up and put down". */
+const FLIGHT = { type: "spring" as const, stiffness: 170, damping: 22 };
+const LAND_EASE = [0.22, 1, 0.36, 1] as const;
 
 declare global {
   interface Window {
@@ -70,8 +80,9 @@ function PetalTrail() {
   );
 }
 
-export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButtonElement | null }>(({ dockTarget }, ref) => {
+export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElement | null }>(({ dockSlot }, ref) => {
   const { t, lang } = useLang();
+  const { setMusic } = useMusicState();
   const reduceMotion = useReducedMotion();
   const playerRef = useRef<any>(null);
   const playerDivRef = useRef<HTMLDivElement>(null);
@@ -90,42 +101,62 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  /* `dock` is the intent (the slot is in view); `landed` is the fact (the
+     flight has finished). The two are kept apart because the specs — and the
+     song section — care about the moment of arrival, not the decision. */
   const [dock, setDock] = useState(false);
-  const [merged, setMerged] = useState(false);
-  const dockProgress = useMotionValue(0);
-  const targetX = useMotionValue(0);
-  const targetY = useMotionValue(0);
-  const dockX = useTransform(() => targetX.get() * dockProgress.get());
-  const dockY = useTransform(() => targetY.get() * dockProgress.get() - Math.sin(dockProgress.get() * Math.PI) * 32);
-  const dockOpacity = useTransform(dockProgress, [0, 0.82, 1], [1, 1, 0]);
-  const stretchX = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 1.25, 1, 0.65]);
-  const stretchY = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 0.85, 1, 0.65]);
+  const [landed, setLanded] = useState(false);
+  const orbRef = useRef<HTMLDivElement>(null);
+  /* Where the orb was standing when the dock decision flipped: the "first" box
+     of the FLIP below. */
+  const flightBox = useRef<DOMRect | null>(null);
+  const dockRef = useRef(false);
+  const expandedRef = useRef(false);
+  expandedRef.current = expanded;
+  const flightX = useMotionValue(0);
+  const flightY = useMotionValue(0);
+  /* 0 on the paper, 1 in the air — drives the shadow so the orb visibly lifts
+     off the page for the length of the flight and settles again on landing. */
+  const lift = useMotionValue(0);
+  const squash = useMotionValue(1);
+  const shadowOffset = useTransform(lift, [0, 1], [8, 22]);
+  const shadowBlur = useTransform(lift, [0, 1], [24, 46]);
+  const shadowAlpha = useTransform(lift, [0, 1], [0.4, 0.28]);
+  const orbShadow = useMotionTemplate`0 ${shadowOffset}px ${shadowBlur}px rgba(138,112,48,${shadowAlpha})`;
+  const [ripple, setRipple] = useState(0);
 
+  /* ── Dock decision — does the orb belong in the page or in the corner? ──
+     Hysteresis (140px in, 60px out) so an orb sitting near the threshold does
+     not flutter between the two while the guest nudges the page. */
   useEffect(() => {
-    setMerged(false);
-    const playback = animate(dockProgress, dock ? 1 : 0, {
-      duration: reduceMotion ? 0 : dock ? 1.9 : 0.8,
-      ease: [0.4, 0, 0.2, 1],
-      onComplete: () => setMerged(dock),
-    });
-    return () => playback.stop();
-  }, [dock, dockProgress, reduceMotion]);
-
-  useEffect(() => {
-    if (!dockTarget || expanded) { setDock(false); setMerged(false); return; }
+    if (!dockSlot) {
+      if (dockRef.current) { dockRef.current = false; setDock(false); }
+      return;
+    }
     let frame = 0;
     const measure = () => {
       frame = 0;
-      const rect = dockTarget.getBoundingClientRect();
-      const visible = rect.top > 80 && rect.bottom < window.innerHeight - 80;
-      const next = { x: rect.left + rect.width / 2 - (window.innerWidth - 52), y: rect.top + rect.height / 2 - (window.innerHeight - 52) };
-      targetX.set(next.x);
-      targetY.set(next.y);
-      setDock(visible);
+      const rect = dockSlot.getBoundingClientRect();
+      const risen = rect.top < window.innerHeight - 140 && rect.bottom > 160;
+      // Also undocks once the slot has scrolled off the top: an in-page orb up
+      // there is a control the guest can no longer reach.
+      const gone = rect.top > window.innerHeight - 60 || rect.bottom < 100;
+      const next = dockRef.current ? !gone : risen;
+      if (next === dockRef.current) return;
+      if (!next && expandedRef.current) {
+        // Collapse first, then let the next frame fly the orb home, so the
+        // guest sees the card close and the orb travel rather than a jump.
+        setExpanded(false);
+        frame = requestAnimationFrame(measure);
+        return;
+      }
+      flightBox.current = orbRef.current?.getBoundingClientRect() ?? null;
+      dockRef.current = next;
+      setDock(next);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
-    observer.observe(dockTarget);
+    observer.observe(dockSlot);
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     schedule();
@@ -134,7 +165,55 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [dockTarget, expanded, targetX, targetY]);
+  }, [dockSlot]);
+
+  /* ── The flight itself, as a FLIP ──
+     The orb is one element rendered into two different parents (the fixed
+     corner container, or a portal into the slot). React moves the node; this
+     measures where it used to be, puts it back there with a transform, and
+     springs that transform to nothing. Shared-layout (layoutId) would do the
+     same job, but it crossfades two elements across the fixed/in-flow boundary,
+     and a crossfade is exactly what the client asked to be rid of. */
+  useLayoutEffect(() => {
+    const el = orbRef.current;
+    const first = flightBox.current;
+    flightBox.current = null;
+    if (!el) return;
+    if (!first) { setLanded(dock); return; }
+    el.style.transform = "none";
+    const last = el.getBoundingClientRect();
+    const dx = first.left - last.left;
+    const dy = first.top - last.top;
+    el.style.transform = "";
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { setLanded(dock); return; }
+    const arrive = () => {
+      setLanded(dock);
+      if (dock) {
+        setRipple(Date.now());
+        setMusic({ landedAt: Date.now() });
+      }
+    };
+    if (reduceMotion) { flightX.set(0); flightY.set(0); arrive(); return; }
+    setLanded(false);
+    flightX.set(dx);
+    flightY.set(dy);
+    // Bridge this one frame by hand: motion values are flushed on the next
+    // animation frame, and without this the orb would flash at its new place.
+    el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+    const rise = animate(lift, 1, { duration: 0.16, ease: "easeOut" });
+    const flyX = animate(flightX, 0, FLIGHT);
+    const flyY = animate(flightY, 0, {
+      ...FLIGHT,
+      onComplete: () => {
+        animate(lift, 0, { duration: 0.32, ease: LAND_EASE });
+        animate(squash, [0.92, 1], { duration: 0.3, ease: LAND_EASE });
+        arrive();
+      },
+    });
+    return () => { rise.stop(); flyX.stop(); flyY.stop(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dock, expanded]);
+
   const [showTrail, setShowTrail] = useState(true);
 
   // Entry autoplay is best-effort in the unlock gesture. Never queue it for
@@ -291,9 +370,11 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
     if (expanded) setShowTrail(false);
   }, [expanded]);
 
-  /* ── Progress + lyric polling while playing ── */
+  /* ── Progress + lyric polling while playing ──
+     Runs whenever the song is playing, not only while the card is open: the
+     song section's notes follow the lyric cues through MusicStateContext. */
   useEffect(() => {
-    if (!expanded || !playing || buffering) return;
+    if (!playing || buffering) return;
     const interval = setInterval(() => {
       if (!playerRef.current || draggingRef.current) return;
       try {
@@ -305,7 +386,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       } catch {}
     }, 500);
     return () => clearInterval(interval);
-  }, [expanded, playing, buffering]);
+  }, [playing, buffering]);
 
   const togglePlay = useCallback(() => {
     if (failed) return;
@@ -376,33 +457,40 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   const cue = lyricAt(LYRICS, currentTime);
   if (cue) { currentLyric = cue.line; lyricKey = cue.t; }
 
+  /* What the rest of the page is allowed to know about the player. */
+  useEffect(() => {
+    setMusic({ playing, docked: dock && landed, cueAt: lyricKey });
+  }, [playing, dock, landed, lyricKey, setMusic]);
+
+  /* Tapping the docked orb also starts the song: in the page it stands where
+     the "ฟังเพลง" call to action used to, and a tap there always meant "play".
+     In the corner it only opens the card, as before. */
+  const openPlayer = () => {
+    setShowTrail(false);
+    setExpanded(true);
+    if (dockRef.current) startPlayback(true);
+  };
+
   const playbackActive = playing || buffering;
   const playbackIcon = (size: number) => buffering
     ? <LoaderCircle size={size} color="white" style={{ animation: reduceMotion ? undefined : "music-loading 1s linear infinite" }} />
     : playing ? <Pause size={size} fill="white" color="white" /> : <Play size={size} fill="white" color="white" />;
 
-  return (
+  const player = (
     <>
-      <style>{`@keyframes music-loading { to { transform: rotate(360deg); } }`}</style>
-      {/* Hidden YouTube player div — must stay in the DOM */}
-      <div style={{ position: "fixed", left: "-9999px", top: 0, width: 2, height: 2, overflow: "hidden", pointerEvents: "none" }}>
-        <div ref={playerDivRef} />
-      </div>
-
-      {/* Discovery cue — gold petals drifting into the button */}
-      <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <PetalTrail />}</AnimatePresence>
-
-      {/* COLLAPSED — 56px gold circle, bottom-right */}
-      <AnimatePresence>
+      {/* COLLAPSED — 56px gold circle: bottom-right, or standing in the song
+          section's slot once it has flown there. */}
+      <AnimatePresence initial={false}>
         {!expanded && (
           <motion.div
             key="collapsed"
+            ref={orbRef}
             initial={false}
-            exit={{ scale: 0 }}
-            data-music-docked={merged && !!dock}
-            data-music-docking={!!dock}
-            aria-hidden={merged && !!dock}
-            style={{ x: dockX, y: dockY, opacity: dockOpacity, position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56, pointerEvents: dock ? "none" : "auto" }}
+            exit={reduceMotion ? { opacity: 0 } : { scale: 0.7, opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            data-music-docked={dock && landed}
+            data-music-docking={dock}
+            style={{ x: flightX, y: flightY, position: "relative", width: 56, height: 56, zIndex: 2 }}
           >
             {/* Warm glow (stronger during discovery) */}
             <motion.div
@@ -425,19 +513,29 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
                 }}
               />
             )}
+            {/* One gold ripple on landing — the only mark the arrival leaves. */}
+            {!reduceMotion && ripple > 0 && (
+              <motion.span
+                key={ripple}
+                aria-hidden
+                initial={{ opacity: 0.5, scale: 0.85 }}
+                animate={{ opacity: 0, scale: 1.9 }}
+                transition={{ duration: 0.7, ease: LAND_EASE }}
+                style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `1.5px solid ${ACCENT}`, pointerEvents: "none" }}
+              />
+            )}
             <motion.button
-              tabIndex={dock ? -1 : 0}
-              onClick={() => setExpanded(true)}
+              onClick={openPlayer}
               aria-label="Open music player"
               style={{
-                scaleX: stretchX, scaleY: stretchY,
+                scaleY: squash,
+                boxShadow: orbShadow,
                 position: "relative",
                 width: 56, height: 56, borderRadius: "50%",
                 background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
                 border: "none",
                 cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 8px 24px rgba(138,112,48,0.4)",
               }}
             >
               {playbackIcon(18)}
@@ -446,30 +544,34 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
         )}
       </AnimatePresence>
 
-      {/* EXPANDED — 300px card, bottom-right, spring slide-up */}
-      <AnimatePresence>
+      {/* EXPANDED — 300px card. It grows from wherever the orb is standing:
+          in the page inside the dock slot (pushing the footer down), or up out
+          of the bottom-right corner. No backdrop blur either way. */}
+      <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
             key="expanded"
-            initial={{ opacity: 0, y: 40, scale: 0.9, transformOrigin: "bottom right" }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.88, y: dock ? -10 : 28 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: dock ? -10 : 28 }}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 26 }}
             style={{
-              position: "fixed",
-              bottom: 24,
-              right: 24,
-              zIndex: 1000,
-              width: "min(300px, calc(100vw - 32px))",
+              transformOrigin: dock ? "top center" : "bottom right",
+              width: dock ? "min(300px, 100%)" : "min(300px, calc(100vw - 32px))",
+              margin: dock ? "0 auto" : undefined,
               background: SURFACE,
               borderRadius: 20,
               boxShadow: "0 16px 50px rgba(61,34,21,0.22)",
               border: "1px solid rgba(138,112,48,0.18)",
-              backdropFilter: "blur(16px)",
               overflow: "hidden",
               padding: "13px 14px 14px",
             }}
           >
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: reduceMotion ? 0 : 0.15, duration: 0.25 }}
+            >
             {/* Header: thumbnail + title/subtitle + close */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <img
@@ -596,9 +698,34 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
               <img src={youtubeIcon} alt="" aria-hidden style={{ width: 40, height: 34, objectFit: "contain", flexShrink: 0 }} />
               {t.music_youtube}
             </a>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+    </>
+  );
+
+  return (
+    <>
+      <style>{`@keyframes music-loading { to { transform: rotate(360deg); } }`}</style>
+      {/* Hidden YouTube player div — must stay in the DOM */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, width: 2, height: 2, overflow: "hidden", pointerEvents: "none" }}>
+        <div ref={playerDivRef} />
+      </div>
+
+      {/* Discovery cue — gold petals drifting into the button */}
+      <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <PetalTrail />}</AnimatePresence>
+
+      {/* The player itself lives in exactly one place at a time: portalled into
+          the song section's slot when docked, in the fixed corner otherwise.
+          Moving the node is what the FLIP above animates. */}
+      {dock && dockSlot
+        ? createPortal(player, dockSlot)
+        : (
+          <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            {player}
+          </div>
+        )}
     </>
   );
 });

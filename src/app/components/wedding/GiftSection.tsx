@@ -4,6 +4,7 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   Divider,
+  FitLine,
   COLORS,
 } from "./shared";
 
@@ -281,14 +282,16 @@ function Envelope() {
       {/* Tap hint and save button share one fixed-height slot, both absolutely
           positioned, so swapping between them can't shift the closing line. */}
       <div style={{ position: "relative", width: "100%", height: 76, marginTop: open ? 8 : -82 }}>
-        <motion.p
+        <motion.div
           animate={{ opacity: open ? 0 : 1 }}
           transition={{ duration: reduceMotion ? 0 : 0.3 }}
           aria-hidden={open}
-          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0 }}
+          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          {t.gift_tap}
-        </motion.p>
+          <FitLine as="p" max={16} style={{ width: "100%", textAlign: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0 }}>
+            {t.gift_tap}
+          </FitLine>
+        </motion.div>
 
         {REAL_QR_URL && (
           <motion.div
@@ -320,9 +323,9 @@ function Envelope() {
               </svg>
               {t.gift_save}
             </motion.button>
-            <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.4, padding: "0 12px" }}>
+            <FitLine as="p" max={16} style={{ width: "100%", textAlign: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.4, padding: "0 12px", boxSizing: "border-box" }}>
               {t.gift_save_hint}
-            </span>
+            </FitLine>
           </motion.div>
         )}
       </div>
@@ -353,13 +356,20 @@ export function GiftSection() {
         transition={{ duration: reduceMotion ? 0 : 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <FitLine as="p" max={30} style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
-        </p>
+        </FitLine>
         <Divider className="mb-5" />
-        <p style={{ fontSize: 16, lineHeight: 1.8, color: COLORS.midBrown, maxWidth: 440, margin: "0 auto", textWrap: "pretty" }}>
-          {t.gift_description}
-        </p>
+        {/* Two authored lines rather than one reflowing paragraph: the second
+            one folds at its own break point on a narrow phone, so this block is
+            always two or three tidy lines and never a ragged four. */}
+        <div style={{ maxWidth: 440, margin: "0 auto" }}>
+          {t.gift_description_lines.map((line: { text: string; lines?: string[] }, i: number) => (
+            <FitLine key={i} as="p" max={16} lines={line.lines} style={{ lineHeight: 1.8, color: COLORS.midBrown }}>
+              {line.text}
+            </FitLine>
+          ))}
+        </div>
 
         <div style={{ marginTop: 36, marginBottom: 24 }}>
           <Envelope />
