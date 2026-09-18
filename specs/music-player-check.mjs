@@ -180,14 +180,37 @@ try {
     } finally { await page.close(); }
   });
 
-  await check('slow API does not start music unexpectedly after opening', async () => {
+  /* Opening the player is itself a request to play — the guest tapped a play
+     button — so on a slow API the tap is queued and honoured once the player
+     arrives, exactly like the card's own play button. What must never queue is
+     entry autoplay, which is covered by the unlock-gesture check above. */
+  await check('a slow API honours the tap that opened the player, exactly once', async () => {
     const page = await setup({ delayed: true });
     try {
       await openInvitation(page);
-      await page.evaluate(() => window.musicTest.players[0].ready());
       assert.equal(await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length), 0);
-      await page.getByRole('button', { name: 'Play', exact: true }).click();
+      await page.evaluate(() => window.musicTest.players[0].ready());
       assert.equal(await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length), 1);
+      await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
+    } finally { await page.close(); }
+  });
+
+  await check('a deliberate pause survives closing and re-opening the card', async () => {
+    const page = await setup();
+    try {
+      await openInvitation(page);
+      await page.evaluate(() => window.musicTest.players[0].emit(1));
+      await page.getByRole('button', { name: 'Pause', exact: true }).click();
+      await page.evaluate(() => window.musicTest.players[0].emit(2));
+      const afterPause = await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length);
+      await page.getByRole('button', { name: 'Close' }).click();
+      await page.getByRole('button', { name: 'Open music player' }).click();
+      await page.getByRole('button', { name: 'Play', exact: true }).waitFor();
+      assert.equal(
+        await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length),
+        afterPause,
+        're-opening must not restart a song the guest paused',
+      );
     } finally { await page.close(); }
   });
 

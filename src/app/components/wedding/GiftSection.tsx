@@ -12,6 +12,19 @@ import {
    following sections. The closed body sits lower in the same fixed stage. */
 const ENV_W = "min(380px, 100%)";
 const ENV_H = 320;
+
+/* Envelope palette — soft blush with a peach lean. The page behind it is the
+   warm cream tail of POST_HERO_GRADIENT (~#F0E8D7), against which the old
+   cream envelope was only a few percent lighter and all but disappeared. Pink
+   separates it while staying inside the printed card's warm family; the gold
+   heart seal below is left gold on purpose, as the one point of contact with
+   the invitation's own palette. */
+const ENV_BODY = "#FFF6F3";
+const ENV_BORDER = "#E7BDB4";
+const ENV_POCKET = "linear-gradient(160deg, #FBE4E2 0%, #F3C9C4 100%)";
+const ENV_FLAP = "linear-gradient(160deg, #FDECE9 0%, #F6D5CF 100%)";
+const ENV_SHADOW = "0 12px 24px rgba(120,70,60,0.16)";
+const ENV_FLAP_SHADOW = "0 4px 10px rgba(120,70,60,0.14)";
 /* QR display size, sized to clear both dimensions at every width. Content-
    layer padding (below) was trimmed from 18px/20px to 12px/16px specifically
    to free up more of this room without growing the envelope further. Available
@@ -137,7 +150,25 @@ function Envelope() {
             setOpen(true);
           }
         }}
-        animate={{ y: 0 }}
+        /* A small, periodic nudge — something shifting under the paper, not a
+           shake. Small amplitude and a long pause between beats keep it on the
+           right side of "delight is discovered, not announced". It stops for
+           good the moment the envelope is opened (`open` is a one-way latch).
+           Rotation lives on this node rather than a new inner wrapper because
+           `perspective` below is a style, not a transform, so rotating here
+           leaves the flap's preserve-3d context intact — an extra transformed
+           element between the two would flatten it. `whileHover`/`whileTap`
+           animate scale only, a separate channel, so they compose with this. */
+        animate={open || reduceMotion
+          ? { rotate: 0, x: 0, y: 0 }
+          : {
+              rotate: [0, -1.4, 1.6, -1.1, 0.8, 0],
+              x: [0, -2, 2.4, -1.6, 1, 0],
+              y: [0, -1, 1.2, -0.8, 0.5, 0],
+            }}
+        transition={open || reduceMotion
+          ? { duration: 0.2 }
+          : { duration: 0.75, repeat: Infinity, repeatDelay: 2.6, ease: "easeInOut" }}
         style={{
           position: "relative",
           width: ENV_W,
@@ -159,9 +190,9 @@ function Envelope() {
             inset: `0 0 ${open ? 20 : 100}px`,
             transition: reduceMotion ? "none" : "inset 0.5s ease",
             borderRadius: 6,
-            background: "#FFFDF7",
-            border: "1px solid #CDBF9F",
-            boxShadow: "0 12px 24px rgba(81,64,31,0.14)",
+            background: ENV_BODY,
+            border: `1px solid ${ENV_BORDER}`,
+            boxShadow: ENV_SHADOW,
             overflow: "visible",
           }}
         >
@@ -203,7 +234,7 @@ function Envelope() {
               bottom: 0,
               top: 0,
               clipPath: "polygon(0 12%, 50% 65%, 100% 12%, 100% 100%, 0 100%)",
-              background: "linear-gradient(160deg, #EEE4CD 0%, #E5D8B8 100%)",
+              background: ENV_POCKET,
               borderRadius: 6,
               pointerEvents: "none",
               opacity: open ? 0.55 : 1,
@@ -233,9 +264,9 @@ function Envelope() {
               width: "100%",
               height: "100%",
               clipPath: "polygon(0 0, 100% 0, 54% 96%, 50% 100%, 46% 96%)",
-              background: "linear-gradient(160deg, #F6EFDF 0%, #E7DBBE 100%)",
+              background: ENV_FLAP,
               borderRadius: "6px 6px 0 0",
-              boxShadow: "0 4px 10px rgba(61,34,21,0.12)",
+              boxShadow: ENV_FLAP_SHADOW,
             }}
           />
           {/* Heart seal at the flap tip — fades out as the flap lifts.

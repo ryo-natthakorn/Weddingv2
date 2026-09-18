@@ -30,10 +30,12 @@ const TEXT_MUTED = "rgba(58,44,24,0.55)";
 const TEXT_DIM = "rgba(58,44,24,0.4)";
 
 /* The orb flies between the bottom-right corner and the song section's slot.
-   A spring for the flight, an ease-out for the landing — DESIGN.md's motion
-   pairing for "an object that was picked up and put down". */
-const FLIGHT = { type: "spring" as const, stiffness: 170, damping: 22 };
+   A tween, not a spring: the flight happens while the guest is mid-scroll, and
+   a spring's overshoot on top of the page's own movement reads as a yank. One
+   long ease-out is the "picked up and put down" arc DESIGN.md asks for, and it
+   lands exactly once. */
 const LAND_EASE = [0.22, 1, 0.36, 1] as const;
+const FLIGHT = { duration: 0.62, ease: LAND_EASE };
 
 declare global {
   interface Window {
@@ -43,40 +45,78 @@ declare global {
 }
 
 /* Gold petals drifting INTO the button — a quiet "discovery" cue.
-   16 petals, 8–14px, 0.85 peak opacity, 5–7s drift — runs on mobile and
-   desktop for ~30s (or until the player is engaged). */
+   Nine petals, 6.5–9s drift, 0.55 peak opacity, nearly a second apart: sparse
+   enough that the eye follows one at a time rather than reading a swarm. Each
+   one is a small gradient leaf that turns slowly as it travels. */
 function PetalTrail() {
   const petals = useRef(
-    Array.from({ length: 16 }, (_, i) => ({
+    Array.from({ length: 9 }, (_, i) => ({
       id: i,
       dx: -(40 + Math.random() * 150),   // start to the left of the button
       dy: -(110 + Math.random() * 200),  // start above the button
-      size: 8 + Math.random() * 6,       // 8–14px
-      dur: 5 + Math.random() * 2,        // 5–7s
-      delay: i * 0.45 + Math.random() * 0.6,
+      size: 9 + Math.random() * 6,       // 9–15px
+      dur: 6.5 + Math.random() * 2.5,    // 6.5–9s
+      delay: i * 0.9 + Math.random() * 0.8,
       rot: Math.random() * 360,
+      spin: 30 + Math.random() * 40,     // how far it turns over the drift
     })),
   ).current;
 
   return (
-    <div style={{ position: "fixed", right: 52, bottom: 52, width: 0, height: 0, pointerEvents: "none", zIndex: 999 }} aria-hidden>
+    /* This wrapper exists purely so the AnimatePresence around <PetalTrail/>
+       has something to fade: without an `exit` the whole trail blinked out in
+       one frame the moment the song section came into view. */
+    <motion.div
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      style={{ position: "fixed", right: 52, bottom: 52, width: 0, height: 0, pointerEvents: "none", zIndex: 999 }}
+      aria-hidden
+    >
       {petals.map((p) => (
         <motion.div
           key={p.id}
-          initial={{ x: p.dx, y: p.dy, opacity: 0, scale: 0.5 }}
-          animate={{ x: [p.dx, 0], y: [p.dy, 0], opacity: [0, 0.85, 0], scale: [0.5, 1, 0.35] }}
-          transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
-          style={{
-            position: "absolute",
-            width: p.size,
-            height: p.size * 1.5,
-            borderRadius: "50% 50% 50% 0",
-            background: "#8A7030",
-            transform: `rotate(${p.rot}deg)`,
+          initial={{ x: p.dx, y: p.dy, opacity: 0, scale: 0.5, rotate: p.rot }}
+          /* `rotate` has to be a motion prop, not a `transform` in the inline
+             style: Framer owns the transform property once x/y/scale animate,
+             so a hand-written rotate() there was silently dropped and the
+             petals never turned. */
+          animate={{
+            x: [p.dx, 0],
+            y: [p.dy, 0],
+            opacity: [0, 0.55, 0],
+            scale: [0.5, 1, 0.35],
+            rotate: [p.rot, p.rot + p.spin],
           }}
-        />
+          transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: "absolute", width: p.size, height: p.size * 1.5 }}
+        >
+          <svg viewBox="0 0 12 18" width="100%" height="100%" style={{ display: "block", overflow: "visible" }}>
+            <defs>
+              <linearGradient id={`petal-${p.id}`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#D8BC74" />
+                <stop offset="55%" stopColor="#C6A34E" />
+                <stop offset="100%" stopColor="#8A7030" />
+              </linearGradient>
+            </defs>
+            {/* An asymmetric leaf: full curve on one side, a softer one on the
+                other, so it reads as a petal rather than a lozenge. */}
+            <path
+              d="M6 0.5C9.8 3.6 11.5 7.4 11.5 10.6C11.5 14.6 9 17.5 6 17.5C3 17.5 0.5 15 0.5 11.2C0.5 7.6 2.4 3.6 6 0.5Z"
+              fill={`url(#petal-${p.id})`}
+              opacity="0.85"
+            />
+            <path
+              d="M6 1.6C6.6 6 6.7 11.6 6 17"
+              stroke="#FDF6E6"
+              strokeOpacity="0.35"
+              strokeWidth="0.7"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -90,6 +130,9 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
   const draggingRef = useRef(false);
   const readyRef = useRef(false);
   const playbackWantedRef = useRef(false);
+  /* True once the guest has hit pause themselves, as opposed to playback never
+     having started. */
+  const userPausedRef = useRef(false);
   const pendingSeekRef = useRef<number | null>(null);
 
   const [playing, setPlaying] = useState(false);
@@ -107,14 +150,38 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
   const [dock, setDock] = useState(false);
   const [landed, setLanded] = useState(false);
   const orbRef = useRef<HTMLDivElement>(null);
-  /* Where the orb was standing when the dock decision flipped: the "first" box
-     of the FLIP below. */
+  /* The element the FLIP actually moves. It wraps both the orb and the card and
+     is rendered in every state, so it can always be measured — unlike `orbRef`,
+     which is attached to the collapsed branch only and is null (or a rect of
+     zeroes, mid-unmount) whenever the dock decision flips while the card is
+     open. Measuring that was what sent the orb flying in from the top-left
+     corner of the viewport. */
+  const stageRef = useRef<HTMLDivElement>(null);
+  /* Where the stage was standing when the dock decision flipped: the "first"
+     box of the FLIP below. */
   const flightBox = useRef<DOMRect | null>(null);
   const dockRef = useRef(false);
+  /* A dock decision taken while the card was open, held until the card has
+     finished closing. See the measure loop and `onExitComplete` below. */
+  const pendingDockRef = useRef<boolean | null>(null);
+  const measureRef = useRef<(() => void) | null>(null);
   const expandedRef = useRef(false);
   expandedRef.current = expanded;
-  const flightX = useMotionValue(0);
-  const flightY = useMotionValue(0);
+  /* The flight is driven by one value: 1 at the departure box, 0 on arrival.
+     Keeping it as a fraction rather than two pixel offsets is what lets the
+     scroll correction below fade out exactly in step with the travel. */
+  const flightT = useMotionValue(0);
+  const flightDelta = useRef({ dx: 0, dy: 0 });
+  /* Scroll travelled since the flight began. The FLIP's two boxes are
+     viewport-relative but one end of the trip is in normal flow, so without
+     this the orb drifts by however far the page moved during the 0.62s — and
+     the page is always moving, since scrolling is what triggers the flight. */
+  const scrollAdj = useMotionValue(0);
+  const stageX = useTransform(flightT, (t) => t * flightDelta.current.dx);
+  const stageY = useTransform(
+    [flightT, scrollAdj] as const,
+    ([t, adj]: number[]) => t * (flightDelta.current.dy + adj),
+  );
   /* 0 on the paper, 1 in the air — drives the shadow so the orb visibly lifts
      off the page for the length of the flight and settles again on landing. */
   const lift = useMotionValue(0);
@@ -143,17 +210,23 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
       const gone = rect.top > window.innerHeight - 60 || rect.bottom < 100;
       const next = dockRef.current ? !gone : risen;
       if (next === dockRef.current) return;
-      if (!next && expandedRef.current) {
-        // Collapse first, then let the next frame fly the orb home, so the
-        // guest sees the card close and the orb travel rather than a jump.
+      if (expandedRef.current) {
+        /* Never move house while the card is open, in either direction. The
+           card closes first and the decision waits in `pendingDockRef` until
+           AnimatePresence reports the exit finished — a single rAF is not
+           enough, because the 300px card is still occupying the slot then and
+           the flight would be measured against a layout nobody ever sees. */
+        pendingDockRef.current = next;
         setExpanded(false);
-        frame = requestAnimationFrame(measure);
         return;
       }
-      flightBox.current = orbRef.current?.getBoundingClientRect() ?? null;
+      flightBox.current = stageRef.current?.getBoundingClientRect() ?? null;
       dockRef.current = next;
       setDock(next);
     };
+    /* Held on a ref so the card's onExitComplete can resume a deferred
+       decision without re-subscribing this effect. */
+    measureRef.current = measure;
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
     observer.observe(dockSlot);
@@ -162,6 +235,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     schedule();
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
+      measureRef.current = null;
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
@@ -175,11 +249,12 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
      same job, but it crossfades two elements across the fixed/in-flow boundary,
      and a crossfade is exactly what the client asked to be rid of. */
   useLayoutEffect(() => {
-    const el = orbRef.current;
+    const el = stageRef.current;
     const first = flightBox.current;
     flightBox.current = null;
     if (!el) return;
     if (!first) { setLanded(dock); return; }
+    scrollAdj.set(0);
     el.style.transform = "none";
     const last = el.getBoundingClientRect();
     const dx = first.left - last.left;
@@ -193,26 +268,40 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
         setMusic({ landedAt: Date.now() });
       }
     };
-    if (reduceMotion) { flightX.set(0); flightY.set(0); arrive(); return; }
+    flightDelta.current = { dx, dy };
+    if (reduceMotion) { flightT.set(0); arrive(); return; }
     setLanded(false);
-    flightX.set(dx);
-    flightY.set(dy);
+    flightT.set(1);
     // Bridge this one frame by hand: motion values are flushed on the next
     // animation frame, and without this the orb would flash at its new place.
     el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+    /* The departure box is pinned to whichever end of the trip does not
+       scroll. Flying into the page, the orb left a fixed corner, so the start
+       has to slide with the page; flying back out it left a spot in the
+       document, so it slides the other way. The correction is multiplied by
+       the same remaining fraction as the travel itself (see `stageY`), so it
+       reaches zero on arrival instead of leaving the orb offset. */
+    const startScroll = window.scrollY;
+    const direction = dock ? 1 : -1;
+    const onScroll = () => scrollAdj.set((window.scrollY - startScroll) * direction);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const settle = () => {
+      window.removeEventListener("scroll", onScroll);
+      scrollAdj.set(0);
+    };
     const rise = animate(lift, 1, { duration: 0.16, ease: "easeOut" });
-    const flyX = animate(flightX, 0, FLIGHT);
-    const flyY = animate(flightY, 0, {
+    const fly = animate(flightT, 0, {
       ...FLIGHT,
       onComplete: () => {
+        settle();
         animate(lift, 0, { duration: 0.32, ease: LAND_EASE });
-        animate(squash, [0.92, 1], { duration: 0.3, ease: LAND_EASE });
+        animate(squash, [0.96, 1], { duration: 0.3, ease: LAND_EASE });
         arrive();
       },
     });
-    return () => { rise.stop(); flyX.stop(); flyY.stop(); };
+    return () => { rise.stop(); fly.stop(); settle(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dock, expanded]);
+  }, [dock]);
 
   const [showTrail, setShowTrail] = useState(true);
 
@@ -221,6 +310,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
   const startPlayback = useCallback((explicit = false) => {
     if (!readyRef.current && !explicit) return;
     if (playbackWantedRef.current) return;
+    if (explicit) userPausedRef.current = false;
     playbackWantedRef.current = true;
     setBuffering(true);
     if (readyRef.current && playerRef.current) {
@@ -394,6 +484,9 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     try {
       if (playbackWantedRef.current) {
         playbackWantedRef.current = false;
+        // Remembered so that re-opening the card does not undo a deliberate
+        // pause — see openPlayer below.
+        userPausedRef.current = true;
         setPlaying(false);
         setBuffering(false);
         if (readyRef.current) playerRef.current?.pauseVideo();
@@ -462,13 +555,14 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     setMusic({ playing, docked: dock && landed, cueAt: lyricKey });
   }, [playing, dock, landed, lyricKey, setMusic]);
 
-  /* Tapping the docked orb also starts the song: in the page it stands where
-     the "ฟังเพลง" call to action used to, and a tap there always meant "play".
-     In the corner it only opens the card, as before. */
+  /* Tapping the orb starts the song, wherever it is standing. A tap on a play
+     button means "play" — making the guest open the card and then find the
+     play button inside it was a step nobody took. The one exception is a
+     guest who deliberately paused: re-opening the card must not restart. */
   const openPlayer = () => {
     setShowTrail(false);
     setExpanded(true);
-    if (dockRef.current) startPlayback(true);
+    if (!userPausedRef.current) startPlayback(true);
   };
 
   const playbackActive = playing || buffering;
@@ -476,21 +570,49 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     ? <LoaderCircle size={size} color="white" style={{ animation: reduceMotion ? undefined : "music-loading 1s linear infinite" }} />
     : playing ? <Pause size={size} fill="white" color="white" /> : <Play size={size} fill="white" color="white" />;
 
+  /* A dock decision taken while the card was open resumes here, once the card
+     has actually left the layout — measuring any earlier reads a frame the
+     guest never sees, which is what used to throw the flight off course. */
+  const onCardExited = () => {
+    if (pendingDockRef.current === null) return;
+    pendingDockRef.current = null;
+    measureRef.current?.();
+  };
+
   const player = (
-    <>
-      {/* COLLAPSED — 56px gold circle: bottom-right, or standing in the song
-          section's slot once it has flown there. */}
-      <AnimatePresence initial={false}>
-        {!expanded && (
+    /* The stage is the element the FLIP moves, and the only one rendered in
+       every state: React re-parents this exact node between the corner and the
+       slot, so it is always measurable. Column layout in both homes means the
+       orb's centre never shifts sideways when the card comes and goes. */
+    <motion.div
+      ref={stageRef}
+      style={{
+        x: stageX,
+        y: stageY,
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: dock ? "center" : "flex-end",
+      }}
+    >
+      {/* One presence for both faces, `mode="wait"`: the orb is fully gone
+          before the card arrives and vice-versa. Running them as two
+          independent presences meant a stretch where both were on screen and
+          fighting for the same space — the "glimpse of the player" on open. */}
+      <AnimatePresence initial={false} mode="wait" onExitComplete={onCardExited}>
+        {!expanded ? (
+          /* COLLAPSED — 56px gold circle: bottom-right, or standing in the song
+             section's slot once it has flown there. */
           <motion.div
             key="collapsed"
             ref={orbRef}
-            initial={false}
+            initial={reduceMotion ? { opacity: 1 } : { scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { scale: 0.7, opacity: 0 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
             data-music-docked={dock && landed}
             data-music-docking={dock}
-            style={{ x: flightX, y: flightY, position: "relative", width: 56, height: 56, zIndex: 2 }}
+            style={{ position: "relative", width: 56, height: 56, zIndex: 2 }}
           >
             {/* Warm glow (stronger during discovery) */}
             <motion.div
@@ -541,20 +663,23 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
               {playbackIcon(18)}
             </motion.button>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* EXPANDED — 300px card. It grows from wherever the orb is standing:
-          in the page inside the dock slot (pushing the footer down), or up out
-          of the bottom-right corner. No backdrop blur either way. */}
-      <AnimatePresence initial={false}>
-        {expanded && (
+        ) : (
+          /* EXPANDED — 300px card. It grows from wherever the orb is standing:
+             in the page inside the dock slot (pushing the footer down), or up
+             out of the bottom-right corner. No backdrop blur either way. */
           <motion.div
             key="expanded"
             initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.88, y: dock ? -10 : 28 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: dock ? -10 : 28 }}
-            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 26 }}
+            /* The exit carries its own short tween: with `mode="wait"` the orb
+               cannot come back until this finishes, and a spring's tail would
+               make closing the card feel like it stuck. */
+            exit={reduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 0.9, y: dock ? -10 : 28, transition: { duration: 0.2, ease: LAND_EASE } }}
+            transition={reduceMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 260, damping: 26, restDelta: 0.5 }}
             style={{
               transformOrigin: dock ? "top center" : "bottom right",
               width: dock ? "min(300px, 100%)" : "min(300px, calc(100vw - 32px))",
@@ -567,11 +692,6 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
               padding: "13px 14px 14px",
             }}
           >
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: reduceMotion ? 0 : 0.15, duration: 0.25 }}
-            >
             {/* Header: thumbnail + title/subtitle + close */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <img
@@ -698,11 +818,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
               <img src={youtubeIcon} alt="" aria-hidden style={{ width: 40, height: 34, objectFit: "contain", flexShrink: 0 }} />
               {t.music_youtube}
             </a>
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </motion.div>
   );
 
   return (
