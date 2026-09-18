@@ -314,7 +314,11 @@ export function SongSection({ onDockSlot }: { onDockSlot: (node: HTMLDivElement 
         <div
           ref={onDockSlot}
           data-music-dock-slot
-          style={{ minHeight: 56, marginTop: 30, display: "flex", justifyContent: "center", alignItems: "flex-start" }}
+          /* Column, not row: the orb and the card are never both here at once
+             any more, but stacking them keeps the orb's horizontal centre fixed
+             regardless — a row would re-centre it around whatever else is in
+             the slot, and that lateral snap is what the flight used to inherit. */
+          style={{ minHeight: 56, marginTop: 30, display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "center" }}
         />
 
       </motion.div>
