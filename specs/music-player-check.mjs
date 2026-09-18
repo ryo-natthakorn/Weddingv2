@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createServer } from 'vite';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -14,6 +17,7 @@ const lifecycleHtml = `<div id="root"></div><script type="module">
   </script>`;
 await server.listen();
 const browser = await chromium.launch({ headless: true });
+const output = join(tmpdir(), 'wedding-refinement');
 const failures = [];
 
 async function setup({ delayed = false } = {}) {
@@ -98,7 +102,11 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-song-lyrics]').textContent.trim() === '');
       await page.evaluate(() => { window.musicTest.players[0].time = 16; });
       await page.getByText('จนเกือบจะหมดหวัง', { exact: true }).waitFor();
-      await page.screenshot({ path: 'C:/Users/Computer RC Herbal/AppData/Local/Temp/pantika-lyrics.png' });
+      // The other specs' output directory. This used to be a hardcoded Windows
+      // path, which on any other machine created that whole path as folders
+      // inside the repository.
+      await mkdir(output, { recursive: true });
+      await page.screenshot({ path: join(output, 'pantika-lyrics.png') });
     } finally { await page.close(); }
   });
   await check('StrictMode leaves one connected player and destroys it on unmount', async () => {
