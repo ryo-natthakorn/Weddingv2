@@ -1,9 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, useSpring, animate } from "motion/react";
 import { LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
 import captions from "../../../imports/pantika.sbv?raw";
 import { parseSbv, lyricAt } from "./captions.mjs";
+import { MusicNotes } from "./MusicNotes";
 import { useLang } from "./wedding-context";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
@@ -92,19 +93,20 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   const [expanded, setExpanded] = useState(false);
   const [dock, setDock] = useState(false);
   const [merged, setMerged] = useState(false);
+  const docking = useRef(false);
   const dockProgress = useMotionValue(0);
-  const targetX = useMotionValue(0);
-  const targetY = useMotionValue(0);
+  const targetX = useSpring(0, { stiffness: 65, damping: 24 });
+  const targetY = useSpring(0, { stiffness: 65, damping: 24 });
   const dockX = useTransform(() => targetX.get() * dockProgress.get());
   const dockY = useTransform(() => targetY.get() * dockProgress.get() - Math.sin(dockProgress.get() * Math.PI) * 32);
-  const dockOpacity = useTransform(dockProgress, [0, 0.82, 1], [1, 1, 0]);
-  const stretchX = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 1.25, 1, 0.65]);
-  const stretchY = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 0.85, 1, 0.65]);
+  const dockOpacity = useTransform(dockProgress, [0, 0.94, 1], [1, 1, 0]);
+  const stretchX = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 1.04, 1, 0.9]);
+  const stretchY = useTransform(dockProgress, [0, 0.55, 0.85, 1], [1, 0.98, 1, 0.9]);
 
   useEffect(() => {
     setMerged(false);
     const playback = animate(dockProgress, dock ? 1 : 0, {
-      duration: reduceMotion ? 0 : dock ? 1.9 : 0.8,
+      duration: reduceMotion ? 0 : 3,
       ease: [0.4, 0, 0.2, 1],
       onComplete: () => setMerged(dock),
     });
@@ -112,15 +114,22 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
   }, [dock, dockProgress, reduceMotion]);
 
   useEffect(() => {
-    if (!dockTarget || expanded) { setDock(false); setMerged(false); return; }
+    if (!dockTarget || expanded) { docking.current = false; setDock(false); setMerged(false); return; }
     let frame = 0;
     const measure = () => {
       frame = 0;
       const rect = dockTarget.getBoundingClientRect();
-      const visible = rect.top > 80 && rect.bottom < window.innerHeight - 80;
+      const margin = docking.current ? 40 : 100;
+      const visible = rect.top > margin && rect.bottom < window.innerHeight - margin;
+      docking.current = visible;
       const next = { x: rect.left + rect.width / 2 - (window.innerWidth - 52), y: rect.top + rect.height / 2 - (window.innerHeight - 52) };
-      targetX.set(next.x);
-      targetY.set(next.y);
+      if (reduceMotion) {
+        targetX.jump(next.x);
+        targetY.jump(next.y);
+      } else {
+        targetX.set(next.x);
+        targetY.set(next.y);
+      }
       setDock(visible);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
@@ -134,7 +143,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [dockTarget, expanded, targetX, targetY]);
+  }, [dockTarget, expanded, targetX, targetY, reduceMotion]);
   const [showTrail, setShowTrail] = useState(true);
 
   // Entry autoplay is best-effort in the unlock gesture. Never queue it for
@@ -392,6 +401,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
       {/* Discovery cue — gold petals drifting into the button */}
       <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <PetalTrail />}</AnimatePresence>
 
+      <MusicNotes dockTarget={dockTarget} progress={dockProgress} playing={playing} expanded={expanded} reduceMotion={!!reduceMotion} />
+
       {/* COLLAPSED — 56px gold circle, bottom-right */}
       <AnimatePresence>
         {!expanded && (
@@ -404,27 +415,6 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockTarget?: HTMLButt
             aria-hidden={merged && !!dock}
             style={{ x: dockX, y: dockY, opacity: dockOpacity, position: "fixed", bottom: 24, right: 24, zIndex: 1000, width: 56, height: 56, pointerEvents: dock ? "none" : "auto" }}
           >
-            {/* Warm glow (stronger during discovery) */}
-            <motion.div
-              animate={reduceMotion
-                ? { opacity: showTrail ? 0.7 : 0.35, scale: 1 }
-                : { opacity: showTrail ? [0.5, 0.9, 0.5] : [0.25, 0.45, 0.25], scale: [1, 1.18, 1] }}
-              transition={reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
-              style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(138,112,48,0.45) 0%, transparent 70%)", pointerEvents: "none" }}
-            />
-            {/* Pulse ring while playing — pure CSS keyframe (smooth, no jitter) */}
-            {playing && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  border: `1.5px solid ${ACCENT}`,
-                  animation: "pulse-ring 2.2s ease-in-out infinite",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
             <motion.button
               tabIndex={dock ? -1 : 0}
               onClick={() => setExpanded(true)}

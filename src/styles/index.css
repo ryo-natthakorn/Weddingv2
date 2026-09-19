@@ -43,11 +43,3 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid #1B4A5C;
   outline-offset: 5px;
 }
-
-/* Music player "now playing" pulse ring — pure CSS so it stays smooth
-   (replaces the jittery Framer Motion repeat). */
-@keyframes pulse-ring {
-  0%   { transform: scale(1);    opacity: 0.6; }
-  50%  { transform: scale(1.45); opacity: 0;   }
-  100% { transform: scale(1);    opacity: 0.6; }
-}

@@ -47,50 +47,14 @@ function StaffOfNotes({ inView }: { inView: boolean }) {
           strokeOpacity="0.32"
           strokeLinecap="round"
           fill="none"
-          initial={{ pathLength: 0 }}
+          initial={{ pathLength: reduceMotion ? 1 : 0 }}
           animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
-          transition={{ duration: 0.9, delay: i * 0.08, ease: "easeOut" }}
+          transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : i * 0.08, ease: "easeOut" }}
         />
       ))}
 
       {NOTES.map((n, i) => (
-        <motion.g
-          key={n.x}
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={
-            inView
-              ? reduceMotion
-                ? { opacity: 1, scale: 1 }
-                : { opacity: 1, scale: 1, y: [0, -3.5, 0] }
-              : { opacity: 0, scale: 0.6 }
-          }
-          transition={{
-            opacity: { duration: 0.4, delay: 0.6 + i * 0.11 },
-            scale: { duration: 0.5, delay: 0.6 + i * 0.11, ease: [0.22, 1, 0.36, 1] },
-            y: reduceMotion
-              ? undefined
-              : { repeat: Infinity, duration: 3.6 + i * 0.25, delay: 1.1 + i * 0.15, ease: "easeInOut" },
-          }}
-          style={{ transformOrigin: `${n.x}px ${n.y}px` }}
-        >
-          {/* stem first so the head laps over its foot, like a drawn note */}
-          <path
-            d={`M${n.x + 7.2} ${n.y - 1} L${n.x + 7.6} ${n.y - 29}`}
-            stroke={COLORS.gold}
-            strokeWidth="1.5"
-            strokeOpacity="0.75"
-            strokeLinecap="round"
-          />
-          <ellipse
-            cx={n.x}
-            cy={n.y}
-            rx="8"
-            ry="5.6"
-            fill={COLORS.gold}
-            fillOpacity="0.8"
-            transform={`rotate(-22 ${n.x} ${n.y})`}
-          />
-        </motion.g>
+        <circle key={n.x} data-music-note-target={i} cx={n.x} cy={n.y} r="1" fill="transparent" />
       ))}
     </svg>
   );
