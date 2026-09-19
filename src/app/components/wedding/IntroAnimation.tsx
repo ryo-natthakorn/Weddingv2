@@ -4,7 +4,9 @@ import ringImg from "../../../imports/Ring.svg";
 import pnLogo from "../../../imports/Logo.svg";
 
 interface Props {
-  onComplete: () => void;
+  /* Hands over the ring: the slider thumb's last box on screen, so the one
+     travelling ring can pick the journey up from exactly where it was left. */
+  onComplete: (ringBox: DOMRect | null) => void;
   onUnlock?: () => void;
 }
 
@@ -50,6 +52,11 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
   const [showHint, setShowHint] = useState(false);
   const unlockedRef = useRef(false);
   const musicStartedRef = useRef(false);
+  const ringRef = useRef<HTMLImageElement>(null);
+  /* Captured as the overlay starts to leave, while the ring is still laid out
+     at its final spot — by the time onComplete fires the exit is well under
+     way and the box would be a poor handover. */
+  const ringBox = useRef<DOMRect | null>(null);
 
   const startMusic = () => {
     if (!unlockedRef.current || musicStartedRef.current) return;
@@ -69,8 +76,9 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
     setIsDragging(false);
     setPos(100);
     setTimeout(() => {
+      ringBox.current = ringRef.current?.getBoundingClientRect() ?? null;
       setLeaving(true);
-      setTimeout(onComplete, 900);
+      setTimeout(() => onComplete(ringBox.current), 900);
     }, 700);
   };
 
@@ -306,8 +314,13 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={() => { setIsDragging(false); if (!unlockedRef.current) setPos(0); }}
-                  animate={unlocked ? { y: reduceMotion ? 0 : -80, opacity: 0, scale: reduceMotion ? 1 : 0.7 } : { y: 0, opacity: 1, scale: 1 }}
-                  transition={unlocked ? { duration: 0.6, ease: [0.22, 1, 0.36, 1] } : undefined}
+                  /* On unlock the thumb holds exactly where it stands and
+                     dissolves with the overlay around it. It used to fly up and
+                     shrink away, which is wrong now: this ring is not leaving,
+                     it is being handed to the page, and the page's copy appears
+                     at this very box. */
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
                   style={{
                     position: "absolute",
                     left: `calc(${pos / 100} * (100% - ${THUMB_W}px))`,
@@ -325,6 +338,7 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
                     />
                   )}
                   <img
+                    ref={ringRef}
                     src={ringImg}
                     alt=""
                     draggable={false}

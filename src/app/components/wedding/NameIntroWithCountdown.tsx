@@ -7,7 +7,6 @@ import {
   FitLine,
   COLORS,
 } from "./shared";
-import ringImg from "../../../imports/Ring.svg";
 
 /* ── Countdown ── */
 function CountdownTimer() {
@@ -143,7 +142,7 @@ const NAME_FONT_SIZE = "min(43px, calc((100vw - 16px) / 17.5))";
    than 80% of the names it sits under (--name-size, published on the section). */
 const DATE_BLOCK_MAX = (px: number) => `min(${px}px, calc(var(--name-size) * 0.8))`;
 
-export function NameIntroWithCountdown() {
+export function NameIntroWithCountdown({ onRingSlot }: { onRingSlot: (node: HTMLDivElement | null) => void }) {
   const { t, lang } = useLang();
   // Three independent triggers — the section is ~2 phone screens tall, so a
   // single trigger would fire the name/date animations while still off-screen.
@@ -241,18 +240,20 @@ export function NameIntroWithCountdown() {
             </span>
           </ClipReveal>
 
-          {/* Ring — large focal point */}
-          <motion.img
-            src={ringImg}
-            alt=""
-            aria-hidden
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={namesInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          {/* Ring — large focal point, and the ring's second home.
+              The artwork is not drawn here: it is the single travelling ring,
+              which flies in from the slider when the invitation opens and flies
+              on to the corner once this block has been read. This slot only
+              reserves its room. The room is reserved whether the ring is here
+              or away, so the two names never move — the gap between them is
+              part of the layout, not a consequence of where the ring is. */}
+          <div
+            ref={onRingSlot}
+            data-ring-slot
             style={{
-              width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
-              display: "block", margin: "26px auto",
-              filter: "drop-shadow(0 3px 10px rgba(27,74,92,0.2))",
+              height: "min(120px, 28vw)",
+              margin: "26px auto",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}
           />
 

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
 import { LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
+import ringImg from "../../../imports/Ring.svg";
 import captions from "../../../imports/pantika.sbv?raw";
 import { parseSbv, lyricAt } from "./captions.mjs";
 import { useLang, useMusicState } from "./wedding-context";
@@ -42,13 +43,41 @@ const TEXT_DIM = "rgba(58,44,24,0.4)";
    physics is gone (see the button's one static shadow below) and the length is
    back, which is the whole of "simple, gentle, playful". */
 const LAND_EASE = [0.22, 1, 0.36, 1] as const;
-const FLIGHT = { duration: 1.1, ease: LAND_EASE };
+const FLIGHT = { duration: 1.2, ease: LAND_EASE };
+
+/* ── The ring's journey ──
+   One ring makes one trip through the invitation, and it is the invitation's
+   own ring the whole way: the slider thumb you drag to open the card, then the
+   focal point between the two names, then the music control in the corner.
+
+   `intro`  — the intro overlay owns the artwork (it has to stay draggable), so
+              this component renders nothing at all.
+   `names`  — parked between the bride's and the groom's names. NOT a control:
+              no button, no glyph, no tap, no card. It is a wedding ring sitting
+              in a wedding invitation.
+   `corner` — bottom right, and from here on it is the player.
+   `song`   — docked into "Our Song", as before.
+
+   Sizes are resting sizes, expressed as a scale on a 56px box so that changing
+   them is a transform rather than a layout: nothing here reflows mid-flight. */
+type Home = "intro" | "names" | "corner" | "song";
+/* 72, not the 56 the gold disc used. The artwork is a slim knot ring drawn
+   inside a landscape frame, so `object-fit: contain` in a square box leaves the
+   ring itself about two thirds of the box wide — at 56 it read as a speck in
+   the corner rather than a control. 72 also keeps the tap target comfortably
+   over the 44px minimum. */
+const ORB = 72;
+const INTRO_RING = 80;
+const namesRingScale = () => Math.min(120, window.innerWidth * 0.28) / ORB;
+/* Where the ring is a music control rather than a picture. */
+const isPlayer = (home: Home) => home === "corner" || home === "song";
 /* How far the orb bows off the straight line, at mid-flight. Sideways travel
    across the page, not a hop off it — the invitation is flat paper. */
-const ARC = 28;
+const ARC = 20;
 /* One warm shadow, identical at rest, in the air and after landing. A shadow
-   that swells during the trip is the "airborne mass" cue this pass removes. */
-const ORB_SHADOW = "0 8px 24px rgba(138,112,48,0.35)";
+   that swells during the trip is the "airborne mass" cue this pass removes.
+   It sits on the ring artwork, not on a disc, so it is a drop-shadow. */
+const RING_SHADOW = "drop-shadow(0 6px 14px rgba(138,112,48,0.4))";
 
 declare global {
   interface Window {
@@ -57,105 +86,15 @@ declare global {
   }
 }
 
-/* Gold notes turning AROUND the button — a quiet "discovery" cue.
-   Nine notes, 6.5-9s drift, 0.55 peak opacity, nearly a second apart: sparse
-   enough that the eye follows one at a time rather than reading a swarm.
-
-   They used to be petals, and they used to end at x:0, y:0 — the orb's own
-   centre — so every one of them finished by sitting on top of the gold disc.
-   Now each note has its own angle and comes to rest on a circle of radius
-   TRAIL_RADIUS around the orb, fading out as it arrives, so the notes keep the
-   button company without ever touching it. Petals became notes at Ryo's
-   request: they are the same notes that settle onto the staff in "Our Song",
-   and reading as one object across the two sections is the point. */
-/* 76px, from a note's centre. The tallest note is 22px wide and 42 tall, so
-   half its diagonal is about 24: at this radius the nearest corner of the
-   biggest note is still ~52px from the orb's centre, comfortably outside the
-   28px disc and its glow. At 64 that worst case fell to 40px, which is exactly
-   the clearance the spec asserts — near enough to the line that the check
-   failed about one run in six. */
-const TRAIL_RADIUS = 76;
-/* Angles in degrees, screen convention (y down): 180 is due left, 270 straight
-   up. The arc stops short of due right and due down because the orb sits 52px
-   from both edges of the viewport, and a note out there would be clipped. */
-const TRAIL_ARC = [165, 285] as const;
-
-function NoteTrail() {
-  const notes = useRef(
-    Array.from({ length: 9 }, (_, i) => {
-      const spread = TRAIL_ARC[0] + ((TRAIL_ARC[1] - TRAIL_ARC[0]) * i) / 8;
-      // A little jitter so nine notes on an even fan do not read as a dial.
-      const a = ((spread + (Math.random() * 14 - 7)) * Math.PI) / 180;
-      return {
-        id: i,
-        dx: -(40 + Math.random() * 150),   // start to the left of the button
-        dy: -(110 + Math.random() * 200),  // start above the button
-        ex: Math.cos(a) * TRAIL_RADIUS,    // rest on the circle, never inside it
-        ey: Math.sin(a) * TRAIL_RADIUS,
-        size: 16 + Math.random() * 6,      // 16-22px wide
-        dur: 6.5 + Math.random() * 2.5,    // 6.5-9s
-        delay: i * 0.9 + Math.random() * 0.8,
-        rot: Math.random() * 24 - 12,
-        spin: 10 + Math.random() * 16,     // how far it turns over the drift
-      };
-    }),
-  ).current;
-
-  return (
-    /* This wrapper exists purely so the AnimatePresence around <NoteTrail/>
-       has something to fade: without an `exit` the whole trail blinked out in
-       one frame the moment the song section came into view.
-       right/bottom 52 puts its origin exactly on the orb's centre (24px inset
-       + 28px radius), which is what makes the circle above a circle around the
-       button rather than around the corner of the screen. */
-    <motion.div
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      style={{ position: "fixed", right: 52, bottom: 52, width: 0, height: 0, pointerEvents: "none", zIndex: 999 }}
-      aria-hidden
-    >
-      {notes.map((n) => (
-        <motion.div
-          key={n.id}
-          initial={{ x: n.dx, y: n.dy, opacity: 0, scale: 0.5, rotate: n.rot }}
-          /* `rotate` has to be a motion prop, not a `transform` in the inline
-             style: Framer owns the transform property once x/y/scale animate,
-             so a hand-written rotate() there was silently dropped and the
-             notes never turned. */
-          animate={{
-            x: [n.dx, n.ex],
-            y: [n.dy, n.ey],
-            /* Gone by the time it arrives: the last fifth of the drift is the
-               fade, so nothing is ever drawn at full strength beside the orb. */
-            opacity: [0, 0.55, 0.55, 0],
-            scale: [0.5, 1, 1, 0.8],
-            rotate: [n.rot, n.rot + n.spin],
-          }}
-          transition={{
-            duration: n.dur,
-            delay: n.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-            opacity: { duration: n.dur, delay: n.delay, repeat: Infinity, ease: "easeInOut", times: [0, 0.25, 0.8, 1] },
-            scale: { duration: n.dur, delay: n.delay, repeat: Infinity, ease: "easeInOut", times: [0, 0.25, 0.8, 1] },
-          }}
-          /* Centred on its own position, so `ex`/`ey` is where the note is,
-             not where its top-left corner is — the clearance from the disc is
-             measured from the centre outward. */
-          style={{ position: "absolute", width: n.size, height: n.size * 1.9, marginLeft: -n.size / 2, marginTop: -n.size * 0.95 }}
-        >
-          {/* The glyph is drawn around (0,0) with the stem reaching to -29 and
-              the head 8 wide, so the viewBox is offset to hold all of it. */}
-          <svg viewBox="-10 -32 21 40" width="100%" height="100%" style={{ display: "block", overflow: "visible" }}>
-            <MusicNote color="#C6A34E" />
-          </svg>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-}
-
-export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElement | null }>(({ dockSlot }, ref) => {
+export const MusicPlayer = forwardRef<MusicPlayerHandle, {
+  /* Where the ring rests between the names, and where it docks in "Our Song". */
+  namesSlot?: HTMLElement | null;
+  songSlot?: HTMLElement | null;
+  /* The slider thumb's last box, handed over when the intro finishes. Null
+     until then, which is also what keeps the ring off the screen while the
+     intro still owns it. */
+  released?: DOMRect | null;
+}>(({ namesSlot, songSlot, released }, ref) => {
   const { t, lang } = useLang();
   const { setMusic } = useMusicState();
   const reduceMotion = useReducedMotion();
@@ -179,26 +118,31 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  /* `dock` is the intent (the slot is in view); `landed` is the fact (the
-     flight has finished). The two are kept apart because the specs — and the
-     song section — care about the moment of arrival, not the decision. */
-  const [dock, setDock] = useState(false);
+  /* `home` is the intent (which anchor the ring belongs to now); `landed` is
+     the fact (the flight has finished). The two are kept apart because the
+     specs — and the song section — care about the moment of arrival, not the
+     decision. */
+  const [home, setHome] = useState<Home>("intro");
   const [landed, setLanded] = useState(false);
+  const player = isPlayer(home);
   const orbRef = useRef<HTMLDivElement>(null);
   /* The element the FLIP actually moves. It wraps both the orb and the card and
      is rendered in every state, so it can always be measured — unlike `orbRef`,
      which is attached to the collapsed branch only and is null (or a rect of
-     zeroes, mid-unmount) whenever the dock decision flips while the card is
+     zeroes, mid-unmount) whenever the ring's home flips while the card is
      open. Measuring that was what sent the orb flying in from the top-left
      corner of the viewport. */
   const stageRef = useRef<HTMLDivElement>(null);
-  /* Where the stage was standing when the dock decision flipped: the "first"
+  /* Where the stage was standing when the ring's home flipped: the "first"
      box of the FLIP below. */
   const flightBox = useRef<DOMRect | null>(null);
-  const dockRef = useRef(false);
-  /* A dock decision taken while the card was open, held until the card has
-     finished closing. See the measure loop and `onExitComplete` below. */
-  const pendingDockRef = useRef<boolean | null>(null);
+  const homeRef = useRef<Home>("intro");
+  /* A move decided while the card was open, held until the card has finished
+     closing. See the measure loop and `onExitComplete` below. */
+  const pendingHomeRef = useRef<Home | null>(null);
+  /* The ring's size, as a scale on the 56px stage. Animated on the same tween
+     as the travel, so a leg changes position and size as one movement. */
+  const ringScale = useMotionValue(1);
   const measureRef = useRef<(() => void) | null>(null);
   /* The beat between the card finishing its close and the orb setting off —
      see onCardExited. Held so an unmount mid-beat cannot call into a dead
@@ -229,44 +173,60 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
   );
   const [ripple, setRipple] = useState(0);
 
-  /* ── Dock decision — does the orb belong in the page or in the corner? ──
-     Hysteresis (140px in, 60px out) so an orb sitting near the threshold does
-     not flutter between the two while the guest nudges the page. */
+  /* ── Where does the ring belong now? ──
+     One decision, read off both slots, with hysteresis on each boundary so a
+     ring sitting near a threshold does not flutter while the guest nudges the
+     page. The ring never leaves `intro` on scroll — that leg is the handover
+     from the slider, below. */
   useEffect(() => {
-    if (!dockSlot) {
-      if (dockRef.current) { dockRef.current = false; setDock(false); }
-      return;
-    }
+    if (homeRef.current === "intro") return;
     let frame = 0;
     const measure = () => {
       frame = 0;
-      const rect = dockSlot.getBoundingClientRect();
-      const risen = rect.top < window.innerHeight - 140 && rect.bottom > 160;
-      // Also undocks once the slot has scrolled off the top: an in-page orb up
-      // there is a control the guest can no longer reach.
-      const gone = rect.top > window.innerHeight - 60 || rect.bottom < 100;
-      const next = dockRef.current ? !gone : risen;
-      if (next === dockRef.current) return;
+      const current = homeRef.current;
+      const song = songSlot?.getBoundingClientRect();
+      const names = namesSlot?.getBoundingClientRect();
+      /* "Our Song" claims the ring while its slot is properly on screen, and
+         gives it back once the slot is leaving in either direction — a control
+         above the fold is one the guest can no longer reach. */
+      const songRisen = !!song && song.top < window.innerHeight - 140 && song.bottom > 160;
+      const songGone = !song || song.top > window.innerHeight - 60 || song.bottom < 100;
+      /* The ring stays between the names until that block has been read and
+         scrolled past; it comes back if the guest scrolls up to the names
+         again. 60px of hysteresis between the two. */
+      const namesHome = !!names && names.bottom > 140;
+      const namesLeft = !names || names.bottom < 80;
+
+      let next: Home;
+      if (current === "song") next = songGone ? (namesHome ? "names" : "corner") : "song";
+      else if (songRisen) next = "song";
+      else if (current === "names") next = namesLeft ? "corner" : "names";
+      else next = namesHome ? "names" : "corner";
+
+      if (next === current) return;
       if (expandedRef.current) {
         /* Never move house while the card is open, in either direction. The
-           card closes first and the decision waits in `pendingDockRef` until
+           card closes first and the decision waits in `pendingHomeRef` until
            AnimatePresence reports the exit finished — a single rAF is not
            enough, because the 300px card is still occupying the slot then and
-           the flight would be measured against a layout nobody ever sees. */
-        pendingDockRef.current = next;
+           the flight would be measured against a layout nobody ever sees.
+           Only the corner <-> song legs can reach this: the card cannot be
+           open anywhere else. */
+        pendingHomeRef.current = next;
         setExpanded(false);
         return;
       }
       flightBox.current = stageRef.current?.getBoundingClientRect() ?? null;
-      dockRef.current = next;
-      setDock(next);
+      homeRef.current = next;
+      setHome(next);
     };
     /* Held on a ref so the card's onExitComplete can resume a deferred
        decision without re-subscribing this effect. */
     measureRef.current = measure;
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
-    observer.observe(dockSlot);
+    if (songSlot) observer.observe(songSlot);
+    if (namesSlot) observer.observe(namesSlot);
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     schedule();
@@ -276,7 +236,19 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [dockSlot]);
+  }, [namesSlot, songSlot, home]);
+
+  /* ── The handover from the slider ──
+     The intro keeps its own ring, because that one has to be draggable. When
+     the overlay is finished it reports where the thumb was standing, and the
+     ring picks the journey up from exactly that box. */
+  useEffect(() => {
+    if (!released || homeRef.current !== "intro") return;
+    flightBox.current = released;
+    ringScale.set(INTRO_RING / ORB);
+    homeRef.current = "names";
+    setHome("names");
+  }, [released, ringScale]);
 
   /* ── The flight itself, as a FLIP ──
      The orb is one element rendered into two different parents (the fixed
@@ -289,51 +261,64 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     const el = stageRef.current;
     const first = flightBox.current;
     flightBox.current = null;
-    if (!el) return;
-    if (!first) { setLanded(dock); return; }
+    /* The ring's resting size at this anchor. Everything is expressed against
+       the 56px stage, so the size change is a transform on the same tween as
+       the travel — one movement, no reflow. */
+    const targetScale = home === "names" ? namesRingScale() : 1;
+    if (!el || home === "intro") return;
+    const settleSize = () => {
+      if (reduceMotion) { ringScale.set(targetScale); return null; }
+      return animate(ringScale, targetScale, FLIGHT);
+    };
+    if (!first) { setLanded(true); settleSize(); return; }
     scrollAdj.set(0);
     el.style.transform = "none";
     const last = el.getBoundingClientRect();
-    const dx = first.left - last.left;
-    const dy = first.top - last.top;
+    /* Centres, not corners: the ring changes size between anchors (80px on the
+       slider, up to 120 between the names, 56 in the corner) and it grows about
+       its own middle, so matching top-left corners would make it jump sideways
+       at the handover. */
+    const dx = (first.left + first.width / 2) - (last.left + last.width / 2);
+    const dy = (first.top + first.height / 2) - (last.top + last.height / 2);
     el.style.transform = "";
-    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { setLanded(dock); return; }
     const arrive = () => {
-      setLanded(dock);
-      if (dock) {
+      setLanded(true);
+      if (home === "song") {
         setRipple(Date.now());
         setMusic({ landedAt: Date.now() });
       }
     };
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { arrive(); settleSize(); return; }
     /* Bow across whichever axis the trip does NOT mostly travel along, in the
        direction it is already drifting: an arc out and back in, rather than a
-       slide. */
+       slide. Never a rotation — the ring does not spin on any leg. */
     const vertical = Math.abs(dy) >= Math.abs(dx);
     flightDelta.current = {
       dx, dy,
       arcX: vertical ? (dx <= 0 ? -ARC : ARC) : 0,
       arcY: vertical ? 0 : (dy <= 0 ? -ARC : ARC),
     };
-    if (reduceMotion) { flightT.set(0); arrive(); return; }
+    if (reduceMotion) { flightT.set(0); arrive(); settleSize(); return; }
     setLanded(false);
     flightT.set(1);
     // Bridge this one frame by hand: motion values are flushed on the next
-    // animation frame, and without this the orb would flash at its new place.
+    // animation frame, and without this the ring would flash at its new place.
     el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
     /* The departure box is pinned to whichever end of the trip does not
-       scroll. Flying into the page, the orb left a fixed corner, so the start
+       scroll. Flying into the page, the ring left a fixed corner, so the start
        has to slide with the page; flying back out it left a spot in the
        document, so it slides the other way. The correction is multiplied by
        the same remaining fraction as the travel itself (see `stageY`), so it
-       reaches zero on arrival instead of leaving the orb offset. */
+       reaches zero on arrival instead of leaving the ring offset. */
     const startScroll = window.scrollY;
-    const direction = dock ? 1 : -1;
+    const direction = home === "corner" ? -1 : 1;
     const onScroll = () => scrollAdj.set((window.scrollY - startScroll) * direction);
     window.addEventListener("scroll", onScroll, { passive: true });
     const settle = () => {
       window.removeEventListener("scroll", onScroll);
       scrollAdj.set(0);
     };
+    const size = settleSize();
     const fly = animate(flightT, 0, {
       ...FLIGHT,
       onComplete: () => {
@@ -341,11 +326,20 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
         arrive();
       },
     });
-    return () => { fly.stop(); settle(); };
+    return () => { fly.stop(); size?.stop(); settle(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dock]);
+  }, [home]);
 
-  const [showTrail, setShowTrail] = useState(true);
+  /* The discovery cue: the ring nudges and says "play me". It replaces the
+     petal/note trail outright — the ring drawing its own attention is the cue
+     now. It only runs where the ring is a control, and it retires on a timer
+     or the moment the guest engages. */
+  const [showCue, setShowCue] = useState(true);
+  const cueShake = showCue && home === "corner" && !expanded && !reduceMotion;
+  /* Notes leaving the ring on the press that starts the song — the tap's own
+     acknowledgement. They are the only notes outside the song section, and
+     they exist only while the song is playing. */
+  const [burst, setBurst] = useState(0);
 
   // Entry autoplay is best-effort in the unlock gesture. Never queue it for
   // later: a slow connection must not unexpectedly start music mid-invitation.
@@ -368,6 +362,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
        otherwise sound simply starts from a corner button with no visible
        cause. Expanding also retires the note trail (see the effect below). */
     open: () => {
+      /* Guarded like the tap: the handle is public, and the ring is not a
+         player until it has reached the corner. */
+      if (!isPlayer(homeRef.current)) return;
+      setShowCue(false);
       setExpanded(true);
       startPlayback(true);
     },
@@ -495,11 +493,11 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
      It deliberately does NOT stop on autoplay alone — autoplay fires before
      the guest has had a chance to notice the drifting notes. ── */
   useEffect(() => {
-    const id = setTimeout(() => setShowTrail(false), 30000);
+    const id = setTimeout(() => setShowCue(false), 30000);
     return () => clearTimeout(id);
   }, []);
   useEffect(() => {
-    if (expanded) setShowTrail(false);
+    if (expanded) setShowCue(false);
   }, [expanded]);
 
   /* ── Progress + lyric polling while playing ──
@@ -522,7 +520,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
 
   const togglePlay = useCallback(() => {
     if (failed) return;
-    setShowTrail(false); // explicit user engagement retires the discovery cue
+    setShowCue(false); // explicit user engagement retires the discovery cue
+    if (!playbackWantedRef.current) setBurst(Date.now());
     try {
       if (playbackWantedRef.current) {
         playbackWantedRef.current = false;
@@ -594,17 +593,21 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
 
   /* What the rest of the page is allowed to know about the player. */
   useEffect(() => {
-    setMusic({ playing, docked: dock && landed, cueAt: lyricKey });
-  }, [playing, dock, landed, lyricKey, setMusic]);
+    setMusic({ playing, docked: home === "song" && landed, cueAt: lyricKey });
+  }, [playing, home, landed, lyricKey, setMusic]);
 
-  /* Tapping the orb starts the song, wherever it is standing. A tap on a play
+  /* Tapping the ring starts the song, wherever it is standing. A tap on a play
      button means "play" — making the guest open the card and then find the
      play button inside it was a step nobody took. The one exception is a
-     guest who deliberately paused: re-opening the card must not restart. */
+     guest who deliberately paused: re-opening the card must not restart.
+
+     Only where the ring IS a player, though. Between the names it is a wedding
+     ring in a wedding invitation, and nothing about it opens a card. */
   const openPlayer = () => {
-    setShowTrail(false);
+    if (!isPlayer(homeRef.current)) return;
+    setShowCue(false);
     setExpanded(true);
-    if (!userPausedRef.current) startPlayback(true);
+    if (!userPausedRef.current) { setBurst(Date.now()); startPlayback(true); }
   };
 
   const playbackActive = playing || buffering;
@@ -612,7 +615,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     ? <LoaderCircle size={size} color="white" style={{ animation: reduceMotion ? undefined : "music-loading 1s linear infinite" }} />
     : playing ? <Pause size={size} fill="white" color="white" /> : <Play size={size} fill="white" color="white" />;
 
-  /* A dock decision taken while the card was open resumes here, once the card
+  /* A move decided while the card was open resumes here, once the card
      has actually left the layout — measuring any earlier reads a frame the
      guest never sees, which is what used to throw the flight off course.
 
@@ -621,8 +624,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
      broken something. A short pause makes it two — the card folds back into the
      orb, then the orb sets off. */
   const onCardExited = () => {
-    if (pendingDockRef.current === null) return;
-    pendingDockRef.current = null;
+    if (pendingHomeRef.current === null) return;
+    pendingHomeRef.current = null;
     if (reduceMotion) { measureRef.current?.(); return; }
     resumeTimer.current = window.setTimeout(() => {
       resumeTimer.current = 0;
@@ -630,7 +633,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     }, 140);
   };
 
-  const player = (
+  const ring = (
     /* The stage is the element the FLIP moves, and the only one rendered in
        every state: React re-parents this exact node between the corner and the
        slot, so it is always measurable. Column layout in both homes means the
@@ -643,10 +646,38 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        alignItems: dock ? "center" : "flex-end",
+        alignItems: home === "corner" ? "flex-end" : "center",
       }}
     >
-      {/* One presence for both faces, `mode="wait"`: the orb is fully gone
+      {/* "play me" — the other half of the discovery cue. It sits above the
+          ring rather than beside it so it cannot be pushed off the right edge,
+          and it is aria-hidden: the button already has a label. */}
+      <AnimatePresence>
+        {showCue && home === "corner" && !expanded && (
+          <motion.span
+            key="play-me"
+            aria-hidden
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            style={{
+              fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
+              fontSize: "0.68rem",
+              fontWeight: 400,
+              letterSpacing: "0.08em",
+              color: ACCENT,
+              marginBottom: 6,
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}
+          >
+            {t.music_play_me}
+          </motion.span>
+        )}
+      </AnimatePresence>
+
+      {/* One presence for both faces, `mode="wait"`: the ring is fully gone
           before the card arrives and vice-versa. Running them as two
           independent presences meant a stretch where both were on screen and
           fighting for the same space — the "glimpse of the player" on open. */}
@@ -663,20 +694,24 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
             /* 0.3s, not 0.18s: the orb and the card trade places under
                `mode="wait"`, so anything quicker reads as a cut. */
             transition={{ duration: 0.3, ease: "easeOut" }}
-            data-music-docked={dock && landed}
-            data-music-docking={dock}
-            style={{ position: "relative", width: 56, height: 56, zIndex: 2 }}
+            data-music-docked={home === "song" && landed}
+            data-music-docking={home === "song"}
+            data-ring-home={home}
+            style={{ position: "relative", width: ORB, height: ORB, zIndex: 2 }}
           >
-            {/* Warm glow (stronger during discovery) */}
-            <motion.div
-              animate={reduceMotion
-                ? { opacity: showTrail ? 0.7 : 0.35, scale: 1 }
-                : { opacity: showTrail ? [0.5, 0.9, 0.5] : [0.25, 0.45, 0.25], scale: [1, 1.18, 1] }}
-              transition={reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
-              style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(138,112,48,0.45) 0%, transparent 70%)", pointerEvents: "none" }}
-            />
+            {/* Warm glow — only where the ring is a control. Between the names
+                it would read as a halo round the invitation's own artwork. */}
+            {player && (
+              <motion.div
+                animate={reduceMotion
+                  ? { opacity: showCue ? 0.7 : 0.35, scale: 1 }
+                  : { opacity: showCue ? [0.5, 0.9, 0.5] : [0.25, 0.45, 0.25], scale: [1, 1.18, 1] }}
+                transition={reduceMotion ? { duration: 0.3 } : { repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
+                style={{ position: "absolute", inset: 6, borderRadius: "50%", background: "radial-gradient(circle, rgba(138,112,48,0.38) 0%, transparent 68%)", pointerEvents: "none" }}
+              />
+            )}
             {/* Pulse ring while playing — pure CSS keyframe (smooth, no jitter) */}
-            {playing && (
+            {player && playing && (
               <div
                 style={{
                   position: "absolute",
@@ -699,21 +734,84 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
                 style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `1.5px solid ${ACCENT}`, pointerEvents: "none" }}
               />
             )}
-            <motion.button
-              onClick={openPlayer}
-              aria-label="Open music player"
-              style={{
-                boxShadow: ORB_SHADOW,
-                position: "relative",
-                width: 56, height: 56, borderRadius: "50%",
-                background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
-                border: "none",
-                cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
+            {/* The press's own acknowledgement: three notes drift off the ring
+                and fade. They do not persist — notes belong to the song, and
+                the song's own notes live on the staff in "Our Song". */}
+            <AnimatePresence>
+              {!reduceMotion && burst > 0 && [0, 1, 2].map((i) => (
+                <motion.svg
+                  key={`${burst}-${i}`}
+                  aria-hidden
+                  viewBox="-10 -32 21 40"
+                  width={15}
+                  height={29}
+                  initial={{ opacity: 0, x: 8, y: 8, scale: 0.6 }}
+                  animate={{ opacity: [0, 0.75, 0], x: 8 - i * 16, y: -22 - i * 12, scale: 1 }}
+                  transition={{ duration: 1.5, delay: i * 0.14, ease: "easeOut" }}
+                  style={{ position: "absolute", left: 20, top: 8, overflow: "visible", pointerEvents: "none", zIndex: 3 }}
+                >
+                  <MusicNote color={ACCENT} />
+                </motion.svg>
+              ))}
+            </AnimatePresence>
+
+            {/* THE RING.
+                One artwork, scaled between its resting sizes, and the only
+                thing the guest ever sees travelling. Where it is a control it
+                lives inside a real 56px button — the artwork is open in the
+                middle, so relying on its own pixels for the hit area would
+                leave a button with a hole in it. Where it is not, it is an
+                image and nothing more: no button, no glyph, not focusable.
+
+                The nudge (`cueShake`) is the whole discovery cue now that the
+                petal trail is gone; it runs at the corner only. It is a
+                wobble, never a turn — the ring does not spin anywhere. */}
+            <motion.div
+              data-ring-art
+              style={{ scale: ringScale, width: ORB, height: ORB, transformOrigin: "50% 50%" }}
+              animate={cueShake ? { rotate: [0, -5, 5, -3.5, 2, 0], x: [0, -3, 3, -2, 1, 0] } : { rotate: 0, x: 0 }}
+              transition={cueShake
+                ? { duration: 0.7, repeat: Infinity, repeatDelay: 2.5, ease: "easeInOut" }
+                : { duration: 0.3 }}
             >
-              {playbackIcon(18)}
-            </motion.button>
+              {player ? (
+                <button
+                  type="button"
+                  onClick={openPlayer}
+                  aria-label="Open music player"
+                  style={{
+                    position: "relative",
+                    width: ORB, height: ORB, borderRadius: "50%",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <img src={ringImg} alt="" aria-hidden draggable={false}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", filter: RING_SHADOW, pointerEvents: "none" }} />
+                  {/* No play glyph on the ring. The artwork is pale metal with
+                      a knot across its middle, and a triangle laid over that
+                      read as a smudge rather than a control — which is also
+                      what the "no solid gold disc" instruction rules out, since
+                      a glyph needs a disc behind it to be legible. The state is
+                      carried instead by "play me" below while idle, and by the
+                      pulse ring while the song runs. Buffering keeps a mark,
+                      because silence after a tap needs an answer. */}
+                  {buffering && (
+                    <LoaderCircle
+                      size={16}
+                      color={ACCENT_DARK}
+                      style={{ position: "relative", animation: reduceMotion ? undefined : "music-loading 1s linear infinite" }}
+                    />
+                  )}
+                </button>
+              ) : (
+                <img src={ringImg} alt="" aria-hidden draggable={false}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", filter: RING_SHADOW, pointerEvents: "none" }} />
+              )}
+            </motion.div>
           </motion.div>
         ) : (
           /* EXPANDED — 300px card. It grows from wherever the orb is standing:
@@ -721,24 +819,24 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
              out of the bottom-right corner. No backdrop blur either way. */
           <motion.div
             key="expanded"
-            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.88, y: dock ? -10 : 28 }}
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.88, y: home === "corner" ? 28 : -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             /* The exit carries its own short tween: with `mode="wait"` the orb
                cannot come back until this finishes, and a spring's tail would
                make closing the card feel like it stuck. */
             exit={reduceMotion
               ? { opacity: 0 }
-              : { opacity: 0, scale: 0.9, y: dock ? -10 : 28, transition: { duration: 0.34, ease: LAND_EASE } }}
+              : { opacity: 0, scale: 0.9, y: home === "corner" ? 28 : -10, transition: { duration: 0.34, ease: LAND_EASE } }}
             /* Softened from 260/26: the card used to snap open and shut too
-               fast to follow, and when a dock decision closes it on the guest's
+               fast to follow, and when a move closes it on the guest's
                behalf (below) they need to see it fold, not find it gone. */
             transition={reduceMotion
               ? { duration: 0 }
               : { type: "spring", stiffness: 190, damping: 24, restDelta: 0.5 }}
             style={{
-              transformOrigin: dock ? "top center" : "bottom right",
-              width: dock ? "min(300px, 100%)" : "min(300px, calc(100vw - 32px))",
-              margin: dock ? "0 auto" : undefined,
+              transformOrigin: home === "corner" ? "bottom right" : "top center",
+              width: home === "corner" ? "min(300px, calc(100vw - 32px))" : "min(300px, 100%)",
+              margin: home === "corner" ? undefined : "0 auto",
               background: SURFACE,
               borderRadius: 20,
               boxShadow: "0 16px 50px rgba(61,34,21,0.22)",
@@ -887,17 +985,16 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
         <div ref={playerDivRef} />
       </div>
 
-      {/* Discovery cue — gold notes turning around the button, never on it */}
-      <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <NoteTrail />}</AnimatePresence>
-
-      {/* The player itself lives in exactly one place at a time: portalled into
-          the song section's slot when docked, in the fixed corner otherwise.
-          Moving the node is what the FLIP above animates. */}
-      {dock && dockSlot
-        ? createPortal(player, dockSlot)
+      {/* The ring lives in exactly one place at a time: portalled into the
+          names slot or the song section's slot, or standing in the fixed
+          corner. Moving the node is what the FLIP above animates. While the
+          intro still owns the artwork, nothing is rendered here at all. */}
+      {home === "intro" ? null
+        : home === "names" && namesSlot ? createPortal(ring, namesSlot)
+        : home === "song" && songSlot ? createPortal(ring, songSlot)
         : (
           <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            {player}
+            {ring}
           </div>
         )}
     </>

@@ -208,3 +208,85 @@
   mid-flight bowed off its line, and the five notes at rest on the staff.
 - Physical iPhone 13 / iPhone 11 testing remains outstanding (CLAUDE.md rule) —
   the flight's new length is the thing to judge there.
+
+# The ring's journey, and a sealed envelope - 19 September 2026
+
+## Implemented
+
+- The wedding ring is now the thing that carries the invitation. One ring makes
+  one trip: the slider thumb the guest drags to open the card, then the focal
+  point between the bride's and the groom's names, then the music control in the
+  bottom-right corner, then docked into "Our Song" and back. It is the same
+  element throughout — the intro hands over the thumb's last box on screen and
+  the ring picks the journey up from exactly there.
+- Between the names it is NOT a control. No button, no play glyph, no tap
+  target, no shake, no label, and the card cannot be opened by tap, by keyboard
+  or through the player's public `open()` handle. It is a wedding ring sitting
+  in a wedding invitation. The player's behaviour switches on only at the corner.
+- The names slot keeps its room whether the ring is home or away, so the two
+  names never move.
+- Every leg is one gentle tween, 1.2s, ease [0.22, 1, 0.36, 1], with a 20px bow
+  off the straight line so it curves rather than slides. **No rotation on any
+  leg, in any state** — the "ควงสว่าน" is gone and the spec asserts its absence
+  numerically. Size changes between the resting sizes (80px on the slider, up to
+  120 between the names, 72 in the corner) ride the same tween as a transform,
+  so nothing reflows mid-flight.
+- The dock machinery was generalised rather than duplicated: the old boolean
+  dock became a four-anchor home, and the FLIP, the scroll correction and the
+  "never move house while the card is open" rule now run per leg. Only the
+  corner <-> song legs can have a card open to defer.
+- The corner ring is 72px, not the 56 the gold disc used. The artwork is a slim
+  knot ring inside a landscape frame, so `object-fit: contain` in a square box
+  leaves the ring about two thirds of the box wide; at 56 it read as a speck.
+  The song section's dock slot grew from 56 to 72 to match.
+- No play glyph on the ring. A white triangle over pale metal was invisible, and
+  giving it a disc to sit on is exactly the solid gold circle that was cut.
+  "play me" carries the idle state, the pulse ring carries playback, and
+  buffering keeps a small dark spinner because silence after a tap needs an
+  answer. Tapping opens the card, which has a full play/pause.
+- The petal/note trail that drew the eye to the player is deleted outright. Its
+  job passes to the ring itself: a nudge (±5 degrees and a few px, 0.7s, every
+  2.5s — deliberately stronger than the envelope's) with "play me" above it, at
+  the corner only, retiring after 30 seconds or on first engagement. This
+  departs from the "Petal Trail" named in CLAUDE.md, at Ryo's request.
+- The intro's own falling petals are untouched: they are weather on the cover,
+  not the attention cue that was cut.
+- Music notes now belong to the song. Three drift off the ring on the press that
+  starts playback, and the staff in "Our Song" fills only while the song is
+  playing — not merely on arrival. Pause, or scroll the ring away, and the notes
+  leave with it.
+- Envelope: the seal is sealing-wax red with a white heart, where it was gold
+  with cream. It nudges once a second (0.75s of movement, 0.25s still) instead
+  of once every 3.35. And it reads as closed: the flap is a triangle with zero
+  height at its left and right edges and the pocket's V only starts 12% down, so
+  a band of the near-white body showed between them and read as lining. A front
+  face in the flap's own tone now covers the whole body while closed, and fades
+  as the flap lifts.
+
+## Verification
+
+- Production build clean.
+- `specs/motion-feedback-check.mjs` at 414 and 1401px, motion on, with playback
+  mocked (the staff follows the song now, and YouTube is unreachable here): the
+  ring is not a button between the names and is one at the corner; across 30
+  samples in flight its transform carries no rotation and no squash and its
+  shadow never swells; the path bows off the straight line; each leg takes at
+  least 700ms; and the staff holds 0 notes before playback, 5 during, 0 after a
+  pause.
+- `specs/music-docking-check.mjs`, rewritten as the whole journey, at 414px with
+  reduced motion off and on: the hand-over from the slider, the rest between the
+  names, the move to the corner, docking and the return — with the card open on
+  both legs where a card can exist. It also proves that tapping or Entering the
+  ring between the names opens nothing and moves nothing, that the names' gap is
+  the same size whether the ring is home or away, and that six fast flicks leave
+  exactly one ring and no orphaned card.
+- `specs/music-player-check.mjs` (10 tests) passes; its "open the card" helper
+  now takes the ring to the corner first, since it is not a button before that.
+  The same applies to the invitation-visual, one-line-copy and circular-gallery
+  specs, which used that button as their "the invitation is open" probe and now
+  wait for the hand-over instead.
+- `captions`, `intro-layout` and `refine-regression` pass unchanged.
+- Reviewed by hand at 414px, dpr 3: the ring at rest between the names, the ring
+  at the corner with "play me", and the envelope closed, mid-nudge and open.
+- Physical iPhone 13 / iPhone 11 testing remains outstanding (CLAUDE.md rule).
+  The three legs and the strength of the nudge are judged there, not here.

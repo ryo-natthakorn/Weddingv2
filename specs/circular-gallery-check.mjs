@@ -12,7 +12,10 @@ try {
     await page.route(/^https:\/\//,r=>r.abort());
     await page.goto(server.resolvedUrls.local[0]);
     await page.getByRole('slider').press('Enter');
-    await page.getByRole('button',{name:'Open music player'}).click({trial:true});
+    // The invitation is open once the ring has been handed over by the slider.
+    // (It is not a button until it reaches the corner, so the old
+    // "Open music player" probe no longer marks this moment.)
+    await page.waitForFunction(() => document.querySelector('[data-ring-home]'));
     const gallery=page.locator('.pw-orbit');
     await gallery.scrollIntoViewIfNeeded();
     await gallery.locator('img').evaluateAll(images=>Promise.all(images.map(img=>img.decode())));

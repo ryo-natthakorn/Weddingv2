@@ -19,7 +19,10 @@ try {
     await page.route(/^https:\/\//, route => route.abort());
     await page.goto(server.resolvedUrls.local[0], { waitUntil: 'domcontentloaded' });
     await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
-    await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
+    // The invitation is open once the ring has been handed over by the slider.
+    // (It is not a button until it reaches the corner, so the old
+    // "Open music player" probe no longer marks this moment.)
+    await page.waitForFunction(() => document.querySelector('[data-ring-home]'));
     await page.waitForFunction(() => {
       const hero = document.querySelector('.wedding-hero-art img');
       return hero?.complete && hero.naturalWidth > 0;

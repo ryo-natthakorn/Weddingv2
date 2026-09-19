@@ -115,7 +115,10 @@ try {
       await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
       // The intro overlay locks scrolling until it finishes; wait it out.
       await page.getByRole('slider', { name: 'Slide to open the invitation' }).waitFor({ state: 'detached' });
-      await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
+      // The invitation is open once the ring has been handed over by the slider.
+      // (It is not a button until it reaches the corner, so the old
+      // "Open music player" probe no longer marks this moment.)
+      await page.waitForFunction(() => document.querySelector('[data-ring-home]'));
       if (lang === 'EN') await page.getByRole('button', { name: 'EN', exact: true }).click();
 
       const t = (th, en) => (lang === 'TH' ? th : en);

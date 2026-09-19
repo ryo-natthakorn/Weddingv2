@@ -57,8 +57,18 @@ async function setup({ delayed = false } = {}) {
   return page;
 }
 
+/* The ring is not a player until it has travelled: it opens the invitation as
+   the slider thumb, then rests between the two names, and only once that block
+   has been scrolled past does it become the control in the corner. Every test
+   below that wants the card has to take it that far first. */
 async function openInvitation(page) {
   await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
+  await page.waitForSelector('[data-ring-home]');
+  await page.evaluate(() => {
+    const slot = document.querySelector('[data-ring-slot]');
+    window.scrollTo(0, (slot?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 400);
+  });
+  await page.waitForFunction(() => document.querySelector('[data-ring-home="corner"]'));
   await page.getByRole('button', { name: 'Open music player' }).click();
 }
 
@@ -132,6 +142,13 @@ try {
         return window.musicTest.calls.filter(([type]) => type === 'play').length;
       });
       assert.equal(plays, 1, 'play must occur before the animation timeout');
+      // …and taking the ring to the corner and tapping it does not ask again.
+      await page.waitForSelector('[data-ring-home]');
+      await page.evaluate(() => {
+        const slot = document.querySelector('[data-ring-slot]');
+        window.scrollTo(0, (slot?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 400);
+      });
+      await page.waitForFunction(() => document.querySelector('[data-ring-home="corner"]'));
       await page.getByRole('button', { name: 'Open music player' }).click();
       assert.equal(await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length), 1);
     } finally { await page.close(); }

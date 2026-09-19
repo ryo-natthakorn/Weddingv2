@@ -298,7 +298,10 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent({ onSongDockSlot }: { onSongDockSlot: (node: HTMLDivElement | null) => void }) {
+function InvitationContent({ onRingSlot, onSongDockSlot }: {
+  onRingSlot: (node: HTMLDivElement | null) => void;
+  onSongDockSlot: (node: HTMLDivElement | null) => void;
+}) {
   const { t, lang } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroRef);
@@ -377,7 +380,7 @@ function InvitationContent({ onSongDockSlot }: { onSongDockSlot: (node: HTMLDivE
       <div style={grainLayer(POST_HERO_GRADIENT)}>
 
       {/* ═══ NAME INTRODUCTION ═══ */}
-      <NameIntroWithCountdown />
+      <NameIntroWithCountdown onRingSlot={onRingSlot} />
 
       {/* ═══ GALLERY ═══ */}
       <GallerySection />
@@ -582,6 +585,10 @@ export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
   const [songDockSlot, setSongDockSlot] = useState<HTMLDivElement | null>(null);
+  const [ringSlot, setRingSlot] = useState<HTMLDivElement | null>(null);
+  /* The slider thumb's last box, handed over when the intro is done. Until it
+     is set, the ring on screen is the intro's own. */
+  const [released, setReleased] = useState<DOMRect | null>(null);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -617,10 +624,11 @@ export function WeddingInvitation() {
         {showIntro && (
           <IntroAnimation
             onUnlock={() => musicRef.current?.play()}
-            onComplete={() => {
+            onComplete={(ringBox) => {
               // Belt-and-braces against a restored/nonzero offset surviving the
               // lock — the card must open on the hero.
               window.scrollTo(0, 0);
+              setReleased(ringBox);
               setShowIntro(false);
             }}
           />
@@ -631,10 +639,13 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} dockSlot={songDockSlot} />
       </motion.div>
+      {/* Outside the fade above on purpose: the ring is handed over from the
+          intro at full strength and sets off at once, so it must not be
+          dissolving in at the same time. It renders nothing until then. */}
+      <MusicPlayer ref={musicRef} namesSlot={ringSlot} songSlot={songDockSlot} released={released} />
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent onSongDockSlot={setSongDockSlot} />
+        <InvitationContent onRingSlot={setRingSlot} onSongDockSlot={setSongDockSlot} />
       </motion.div>
       </MusicStateProvider>
     </LangProvider>

@@ -33,14 +33,13 @@ function useMinWidth(px: number) {
    than a stock waveform or album-art card, so it reads as part of
    this invitation and not a music widget dropped into it.
 
-   The staff starts EMPTY. Its notes are the ones that have been
-   turning around the floating player all the way down the page:
-   when the orb docks into the slot below, they come up off it and
-   settle on the lines; when it leaves, they go with it. The five
-   notes that used to be printed here from the start are gone, along
-   with the depth they were given (three size tiers, per-note
-   shadows, scroll parallax) — that was decoration standing in for
-   the story this now tells.
+   The staff starts EMPTY, and it fills only while the song is
+   PLAYING. The ring docks into the slot below; press it, and the
+   notes come up off it and settle on these lines. Pause, or scroll
+   the ring away, and they leave with it. The five notes that used to
+   be printed here from the start are gone, along with the depth they
+   were given (three size tiers, per-note shadows, scroll parallax) —
+   that was decoration standing in for the story this now tells.
 ─────────────────────────────────────────────────────────────── */
 
 const STAFF_LINES = [20, 33, 46, 59, 72];
@@ -152,7 +151,7 @@ function StaffOfNotes({ inView }: { inView: boolean }) {
             key={note.x}
             note={note}
             index={i}
-            landed={music.docked}
+            landed={music.docked && music.playing}
             reduceMotion={reduceMotion}
           />
         ))}
@@ -233,7 +232,7 @@ export function SongSection({ onDockSlot }: { onDockSlot: (node: HTMLDivElement 
              any more, but stacking them keeps the orb's horizontal centre fixed
              regardless — a row would re-centre it around whatever else is in
              the slot, and that lateral snap is what the flight used to inherit. */
-          style={{ minHeight: 56, marginTop: 30, display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "center" }}
+          style={{ minHeight: 72, marginTop: 30, display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "center" }}
         />
 
       </motion.div>

@@ -16,13 +16,22 @@ const ENV_H = 320;
 /* Envelope palette — soft blush with a peach lean. The page behind it is the
    warm cream tail of POST_HERO_GRADIENT (~#F0E8D7), against which the old
    cream envelope was only a few percent lighter and all but disappeared. Pink
-   separates it while staying inside the printed card's warm family; the gold
-   heart seal below is left gold on purpose, as the one point of contact with
-   the invitation's own palette. */
+   separates it while staying inside the printed card's warm family; the seal
+   below is sealing-wax red with a white heart, the one strong colour on the
+   page and the thing that says "closed". */
 const ENV_BODY = "#FFF6F3";
 const ENV_BORDER = "#E7BDB4";
 const ENV_POCKET = "linear-gradient(160deg, #FBE4E2 0%, #F3C9C4 100%)";
 const ENV_FLAP = "linear-gradient(160deg, #FDECE9 0%, #F6D5CF 100%)";
+/* The face of a CLOSED envelope. Without it the near-white ENV_BODY showed
+   between the flap and the pocket and read as the lining — the envelope looked
+   half open. The flap is a triangle with zero height at its left and right
+   edges, and the pocket's V only starts 12% down, so there is a real band
+   between the two where the body used to show through. This covers the whole
+   body rect in paper, in the flap's own tone, so the only things visible while
+   closed are flap, front, and the pocket's V seam. It fades as the flap lifts,
+   which is what reveals the interior and the QR. */
+const ENV_FRONT = "linear-gradient(160deg, #FDECE9 0%, #F8DED8 100%)";
 const ENV_SHADOW = "0 12px 24px rgba(120,70,60,0.16)";
 const ENV_FLAP_SHADOW = "0 4px 10px rgba(120,70,60,0.14)";
 /* QR display size, sized to clear both dimensions at every width. Content-
@@ -166,9 +175,12 @@ function Envelope() {
               x: [0, -2, 2.4, -1.6, 1, 0],
               y: [0, -1, 1.2, -0.8, 0.5, 0],
             }}
+        /* One beat per second: 0.75s of movement, then a quarter-second still.
+           The old 2.6s pause made the envelope easy to scroll past without ever
+           seeing it move. */
         transition={open || reduceMotion
           ? { duration: 0.2 }
-          : { duration: 0.75, repeat: Infinity, repeatDelay: 2.6, ease: "easeInOut" }}
+          : { duration: 0.75, repeat: Infinity, repeatDelay: 0.25, ease: "easeInOut" }}
         style={{
           position: "relative",
           width: ENV_W,
@@ -225,6 +237,20 @@ function Envelope() {
             )}
           </motion.div>
 
+          {/* Envelope front — the whole face while closed (see ENV_FRONT) */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: ENV_FRONT,
+              borderRadius: 6,
+              pointerEvents: "none",
+              opacity: open ? 0 : 1,
+              transition: reduceMotion ? "none" : "opacity 0.5s ease",
+              zIndex: 1,
+            }}
+          />
+
           {/* Envelope front pocket (lower V) — sits over the card edges */}
           <div
             style={{
@@ -269,7 +295,7 @@ function Envelope() {
               boxShadow: ENV_FLAP_SHADOW,
             }}
           />
-          {/* Heart seal at the flap tip — fades out as the flap lifts.
+          {/* Red wax seal with a white heart, at the flap tip — fades out as the flap lifts.
               Centering lives on this static wrapper, not the animated
               motion.div below: Framer Motion owns the `transform` property
               once scale/opacity are animated on an element and silently
@@ -292,17 +318,19 @@ function Envelope() {
                 width: "100%",
                 height: "100%",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #A88030, #7A5520)",
+                /* Sealing wax, not gold: the seal is the one strong red on the
+                   page and it has to read as wax at 36px. */
+                background: "linear-gradient(135deg, #B3403A, #8E2B26)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
+                boxShadow: "0 3px 10px rgba(142,43,38,0.45)",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                 <path
                   d="M10 17.5C10 17.5 2 11.8 2 6.8C2 3.9 4.4 1.5 7.3 1.5C8.9 1.5 10 2.6 10 2.6C10 2.6 11.1 1.5 12.7 1.5C15.6 1.5 18 3.9 18 6.8C18 11.8 10 17.5 10 17.5Z"
-                  fill="#FFF8EE"
+                  fill="#FFFFFF"
                 />
               </svg>
             </motion.div>

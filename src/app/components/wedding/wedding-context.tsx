@@ -117,6 +117,9 @@ export const translations = {
     music_title: "Pantika (Proposal Song)",
     music_note: "♪ A song written with love",
     music_youtube: "Also on YouTube",
+    /* The whole invitation to press play. Two words, lowercase, in both
+       languages by choice — it is a label on an object, not a sentence. */
+    music_play_me: "play me",
   },
   TH: {
     invitation_pre: "ขอเชิญร่วมแบ่งปันความสุขในพิธีมงคลสมรส",
@@ -228,6 +231,7 @@ export const translations = {
     music_title: "Pantika (เพลงขอแต่งงาน)",
     music_note: "♪ เพลงที่เขียนด้วยความรัก",
     music_youtube: "ฟังบน YouTube",
+    music_play_me: "play me",
   },
 };
 
