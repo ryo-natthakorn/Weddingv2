@@ -5,6 +5,7 @@ import { LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
 import ringImg from "../../../imports/Ring.svg";
 import { PlayMeNote } from "./PlayMeNote";
+import { MusicNotes } from "./MusicNotes";
 import captions from "../../../imports/pantika.sbv?raw";
 import { parseSbv, lyricAt } from "./captions.mjs";
 import { useLang, useMusicState } from "./wedding-context";
@@ -67,13 +68,18 @@ const TEXT_PRIMARY = "#3A2C18";
 const TEXT_MUTED = "rgba(58,44,24,0.55)";
 const TEXT_DIM = "rgba(58,44,24,0.4)";
 
-/* The orb flies between the bottom-right corner and the song section's slot.
-   A tween, not a spring: the flight happens while the guest is mid-scroll, and
-   a spring's overshoot on top of the page's own movement reads as a yank. One
-   long ease-out is the "picked up and put down" arc DESIGN.md asks for, and it
-   lands exactly once. */
+/* The ring travels between its three homes.
+
+   A tween, not a spring: the trip happens while the guest is mid-scroll, and a
+   spring's overshoot on top of the page's own movement reads as a yank.
+
+   TRAVEL_EASE is symmetric on purpose. The ease-out this used to share with
+   LAND_EASE leaves at full speed and then crawls, which is what made the ring
+   feel snatched away and then slow. An object that is picked up and put down
+   builds up, carries, and sets down. */
 const LAND_EASE = [0.22, 1, 0.36, 1] as const;
-const FLIGHT = { duration: 0.62, ease: LAND_EASE };
+const TRAVEL_EASE = [0.4, 0.02, 0.2, 1] as const;
+const FLIGHT = { duration: 1.0, ease: TRAVEL_EASE };
 /* Leaving the names — or going back to them — the ring screws through space
    rather than sliding: a turn and a half about its own vertical axis, over a
    slightly longer trip so the turn has room to read. The float↔song leg is
@@ -81,12 +87,31 @@ const FLIGHT = { duration: 0.62, ease: LAND_EASE };
    client asked to keep.
 
    One full turn, not one and a half: the artwork is a flat picture of a ring,
-   so it passes edge-on at every quarter turn, and three of those in 0.8s reads
-   as a flicker rather than a screw. 360 also means both ends of the trip are
-   face-on, where half a turn extra would have it sitting mirrored at the
+   so it passes edge-on at every quarter turn, and three of those in one flight
+   reads as a flicker rather than a screw. 360 also means both ends of the trip
+   are face-on, where half a turn extra would have it sitting mirrored at the
    moment it leaves. */
-const NAME_FLIGHT = { duration: 0.8, ease: LAND_EASE };
+const NAME_FLIGHT = { duration: 1.25, ease: TRAVEL_EASE };
+/* The turn runs on its own clock. Derived from the travel value it inherited
+   the travel's curve, whipped through the whole rotation in the first third of
+   the trip and then sat still — the single biggest reason the corkscrew read as
+   jerky. A plain easeInOut over the same duration turns evenly. */
+const SPIN_EASE = "easeInOut" as const;
 const SPIN = 360;
+/* The lock screen draws the ring in an 80px box; between the names it is
+   min(120px, 28vw). It grows past that on the way up, so the held beat is a
+   focal point rather than a speck on an empty page, then settles back toward
+   the size it will be between the names.
+
+   The timing is tied to the intro's, which cannot move: the overlay leaves the
+   DOM at ~1.55s and the invitation fades in from 1.9s to 3.1s. So the ring
+   rises while the intro dissolves, holds through the handover, and descends as
+   the card appears underneath it — it pulls the page into view rather than
+   performing to a blank screen. */
+const HANDOFF_GROWTH = 1.8;
+const HANDOFF_SETTLE = 1.45;
+const HANDOFF_DURATION = 3.1;
+const HANDOFF_TIMES = [0, 0.32, 0.68, 1];
 
 declare global {
   interface Window {
@@ -97,8 +122,13 @@ declare global {
 
 export const MusicPlayer = forwardRef<
   MusicPlayerHandle,
-  { dockSlot?: HTMLElement | null; ringSlot?: HTMLElement | null }
->(({ dockSlot, ringSlot }, ref) => {
+  {
+    dockSlot?: HTMLElement | null;
+    ringSlot?: HTMLElement | null;
+    /* The ring's box on the lock screen at the moment the card was opened. */
+    handoffFrom?: DOMRect | null;
+  }
+>(({ dockSlot, ringSlot, handoffFrom }, ref) => {
   const { t, lang } = useLang();
   const { setMusic } = useMusicState();
   const reduceMotion = useReducedMotion();
@@ -170,9 +200,10 @@ export const MusicPlayer = forwardRef<
      this the orb drifts by however far the page moved during the 0.62s — and
      the page is always moving, since scrolling is what triggers the flight. */
   const scrollAdj = useMotionValue(0);
-  /* Degrees of corkscrew for the flight in progress — see SPIN below. */
+  /* Degrees of corkscrew for the flight in progress, and its own 1→0 clock. */
   const flightSpin = useRef(0);
-  const stageSpin = useTransform(flightT, (t) => t * flightSpin.current);
+  const spinT = useMotionValue(0);
+  const stageSpin = useTransform(spinT, (t) => t * flightSpin.current);
   const stageX = useTransform(flightT, (t) => t * flightDelta.current.dx);
   const stageY = useTransform(
     [flightT, scrollAdj] as const,
@@ -311,10 +342,11 @@ export const MusicPlayer = forwardRef<
     // Screws forward along the travel, so the turn reads the same going down
     // the page as coming back up.
     flightSpin.current = nameLeg ? (dy < 0 ? SPIN : -SPIN) : 0;
-    if (reduceMotion) { flightT.set(0); arrive(); return; }
+    if (reduceMotion) { flightT.set(0); spinT.set(0); arrive(); return; }
     setLanded(false);
     setFlying(true);
     flightT.set(1);
+    spinT.set(1);
     // Bridge this one frame by hand: motion values are flushed on the next
     // animation frame, and without this the orb would flash at its new place.
     el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
@@ -334,17 +366,19 @@ export const MusicPlayer = forwardRef<
       window.removeEventListener("scroll", onScroll);
       scrollAdj.set(0);
     };
-    const rise = animate(lift, 1, { duration: 0.16, ease: "easeOut" });
+    const travel = nameLeg ? NAME_FLIGHT : FLIGHT;
+    const rise = animate(lift, 1, { duration: 0.28, ease: "easeOut" });
+    const spin = animate(spinT, 0, { duration: travel.duration, ease: SPIN_EASE });
     const fly = animate(flightT, 0, {
-      ...(nameLeg ? NAME_FLIGHT : FLIGHT),
+      ...travel,
       onComplete: () => {
         settle();
-        animate(lift, 0, { duration: 0.32, ease: LAND_EASE });
-        animate(squash, [0.96, 1], { duration: 0.3, ease: LAND_EASE });
+        animate(lift, 0, { duration: 0.45, ease: LAND_EASE });
+        animate(squash, [0.98, 1], { duration: 0.4, ease: LAND_EASE });
         arrive();
       },
     });
-    return () => { rise.stop(); fly.stop(); settle(); };
+    return () => { rise.stop(); spin.stop(); fly.stop(); settle(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [home]);
 
@@ -662,6 +696,62 @@ export const MusicPlayer = forwardRef<
     ? <LoaderCircle size={size} color="white" style={{ animation: reduceMotion ? undefined : "music-loading 1s linear infinite" }} />
     : playing ? <Pause size={size} fill="white" color="white" /> : <Play size={size} fill="white" color="white" />;
 
+  /* ── The ring's first journey ──
+     It unlocked the card as the slider's knob; rather than evaporating there
+     and reappearing between the couple's names, it lifts off, holds a beat to
+     introduce itself, then glides down and leads the guest into the
+     invitation. Three beats on one timeline, because the intro's own is fixed
+     and this has to run alongside it: the overlay leaves the DOM at ~1.55s and
+     the scroll unlocks at 1.6s. */
+  const [handoffDone, setHandoffDone] = useState(false);
+  /* Derived, not held in an effect: an effect would settle one commit after the
+     intro hid its own ring, and that commit is a frame with no ring on screen
+     at all — the exact blink this journey exists to remove. Nothing flies for a
+     guest who asked for less motion. */
+  const handoffRunning = !!handoffFrom && !handoffDone && !reduceMotion;
+  const handoffCentreX = handoffFrom
+    ? window.innerWidth / 2 - (handoffFrom.left + handoffFrom.width / 2)
+    : 0;
+
+  const handoffRing = handoffRunning && handoffFrom && (
+    <motion.div
+      aria-hidden
+      initial={{ x: 0, y: 0, scale: 1, opacity: 1, rotateY: 0 }}
+      animate={{
+        /* rise to the middle ─── hold ─── and away down the page.
+           It drifts to the horizontal centre on the way up because that is
+           where it is going: the ring's place between the names is centred,
+           and so is the descent that leads there. */
+        x: [0, handoffCentreX, handoffCentreX, handoffCentreX],
+        y: [0, -84, -92, window.innerHeight - handoffFrom.top + 110],
+        scale: [1, HANDOFF_GROWTH, HANDOFF_GROWTH, HANDOFF_SETTLE],
+        opacity: [1, 1, 1, 0],
+        rotateY: [0, 0, 24, 384],
+      }}
+      transition={{
+        duration: HANDOFF_DURATION,
+        times: HANDOFF_TIMES,
+        ease: ["easeOut", "easeInOut", TRAVEL_EASE],
+      }}
+      onAnimationComplete={() => setHandoffDone(true)}
+      style={{
+        position: "fixed",
+        left: handoffFrom.left,
+        top: handoffFrom.top,
+        width: handoffFrom.width,
+        height: handoffFrom.height,
+        /* Above the intro overlay's 9999, so the lift is visible through the
+           dissolve rather than behind it. */
+        zIndex: 10000,
+        pointerEvents: "none",
+        transformPerspective: 900,
+        filter: "drop-shadow(0 6px 18px rgba(27,74,92,0.25))",
+      }}
+    >
+      <img src={ringImg} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+    </motion.div>
+  );
+
   /* A move decided while the card was open resumes here, once the card has
      actually left the layout — measuring any earlier reads a frame the guest
      never sees, which is what used to throw the flight off course. */
@@ -874,6 +964,8 @@ export const MusicPlayer = forwardRef<
         display: "flex",
         flexDirection: "column",
         alignItems: inPage ? "center" : "flex-end",
+        // While the overlay copy is flying in, this is the same ring.
+        opacity: handoffRunning ? 0 : 1,
       }}
     >
       {/* One presence for both faces, `mode="wait"`: the orb is fully gone
@@ -900,7 +992,7 @@ export const MusicPlayer = forwardRef<
             {/* The note, and the jiggle under it, are the whole discovery cue:
                 they run only while the ring is floating and unengaged. */}
             <AnimatePresence>
-              {cueing && <PlayMeNote key="note" label={t.music_play_me} lang={lang} />}
+              {cueing && <PlayMeNote key="note" label={t.music_play_me} />}
             </AnimatePresence>
 
             {/* The halo behind the ring.
@@ -929,21 +1021,11 @@ export const MusicPlayer = forwardRef<
                 }}
               />
             )}
-            {/* Pulse ring while playing — pure CSS keyframe (smooth, no jitter).
-                An ellipse, not a circle: the ring artwork is 16:9, and a circle
-                around it would enclose mostly empty space. */}
-            {playing && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: "-12% -6%",
-                  borderRadius: "50%",
-                  border: `1.5px solid ${ACCENT}`,
-                  animation: "pulse-ring 2.2s ease-in-out infinite",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
+            {/* Notes drifting up from behind the ring while the song plays.
+                This is where a pulse ring used to sit: a halo says "this
+                control is active", notes say the ring is singing, which is what
+                it is here for. */}
+            {playing && !reduceMotion && <MusicNotes />}
             {/* One gold ripple on landing — the only mark the arrival leaves. */}
             {!reduceMotion && ripple > 0 && (
               <motion.span
@@ -1001,6 +1083,11 @@ export const MusicPlayer = forwardRef<
       <div style={{ position: "fixed", left: "-9999px", top: 0, width: 2, height: 2, overflow: "hidden", pointerEvents: "none" }}>
         <div ref={playerDivRef} />
       </div>
+
+      {/* Portalled to the body on purpose: the wrapper this component sits in
+          is held at opacity 0 until the intro finishes (WeddingInvitation),
+          and the first two beats of the journey happen inside that window. */}
+      {handoffRing && createPortal(handoffRing, document.body)}
 
       {/* The ring lives in exactly one place at a time: portalled into the
           names' ring slot, or the song section's slot, or standing in the fixed

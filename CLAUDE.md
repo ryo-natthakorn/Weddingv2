@@ -111,6 +111,14 @@ CHECK every single section — this was missed before:
 DONE WHEN: every piece of text on every section renders in
 TT Interphases. Search the codebase for "Cormorant", "Jost",
 "Great Vibes" — zero results should remain.
+
+ONE AGREED EXCEPTION (added later, at the client's request):
+the small hand-written note beside the floating ring player
+("ลองกดฉันสิ" / "Play me") is set in Sriracha, a Thai+Latin
+handwriting face self-hosted in src/imports/fonts/. It has to
+look hand-written and TT Interphases cannot. It applies to
+that note ONLY — see PlayMeNote.tsx and src/styles/fonts.css.
+Do not "fix" this back out.
 ```
 
 ## Global: Language Toggle — `LangToggle.tsx`

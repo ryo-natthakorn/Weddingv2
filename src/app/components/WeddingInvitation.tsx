@@ -584,6 +584,9 @@ export function WeddingInvitation() {
   const [songDockSlot, setSongDockSlot] = useState<HTMLDivElement | null>(null);
   /* The ring between the names is where the player starts and returns to. */
   const [ringSlot, setRingSlot] = useState<HTMLDivElement | null>(null);
+  /* Where the ring was standing on the lock screen when the guest opened the
+     card. The player flies it in from there. */
+  const [ringRelease, setRingRelease] = useState<DOMRect | null>(null);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -619,6 +622,7 @@ export function WeddingInvitation() {
         {showIntro && (
           <IntroAnimation
             onUnlock={() => musicRef.current?.play()}
+        onRingRelease={setRingRelease}
             onComplete={() => {
               // Belt-and-braces against a restored/nonzero offset surviving the
               // lock — the card must open on the hero.
@@ -633,7 +637,7 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} dockSlot={songDockSlot} ringSlot={ringSlot} />
+        <MusicPlayer ref={musicRef} dockSlot={songDockSlot} ringSlot={ringSlot} handoffFrom={ringRelease} />
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
         <InvitationContent onSongDockSlot={setSongDockSlot} onRingSlot={setRingSlot} />

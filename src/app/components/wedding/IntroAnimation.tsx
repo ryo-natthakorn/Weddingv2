@@ -6,6 +6,12 @@ import pnLogo from "../../../imports/Logo.svg";
 interface Props {
   onComplete: () => void;
   onUnlock?: () => void;
+  /* Called once, the moment the card is unlocked, with the ring's box on
+     screen at that instant. The ring is the card's mascot: rather than
+     evaporating here and reappearing between the couple's names, it lifts off
+     this slider and carries the guest in. MusicPlayer takes it from here — see
+     the handoff in MusicPlayer.tsx. */
+  onRingRelease?: (rect: DOMRect) => void;
 }
 
 const Petal = memo(function Petal({ x, delay, size, duration }: { x: number; delay: number; size: number; duration: number }) {
@@ -40,8 +46,9 @@ const THUMB_W = 72;
 const UNLOCK_AT = 88;
 const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-export function IntroAnimation({ onComplete, onUnlock }: Props) {
+export function IntroAnimation({ onComplete, onUnlock, onRingRelease }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLImageElement>(null);
   const reduceMotion = useReducedMotion();
   const [pos, setPos] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -65,6 +72,10 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
   const triggerUnlock = () => {
     if (unlockedRef.current) return;
     unlockedRef.current = true;
+    /* Measured before any of the exit animation runs, so the ring is handed
+       over from exactly where the guest last saw it. */
+    const box = ringRef.current?.getBoundingClientRect();
+    if (box) onRingRelease?.(box);
     setUnlocked(true);
     setIsDragging(false);
     setPos(100);
@@ -325,6 +336,7 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
                     />
                   )}
                   <img
+                    ref={ringRef}
                     src={ringImg}
                     alt=""
                     draggable={false}
@@ -332,6 +344,10 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
                       width: 80, height: 80, objectFit: "contain",
                       filter: "drop-shadow(0 4px 12px rgba(27,74,92,0.25))",
                       pointerEvents: "none",
+                      /* Handed over on unlock: the player now draws this ring
+                         in a fixed layer above the intro and flies it out. Two
+                         rings on screen at once would give the game away. */
+                      opacity: unlocked ? 0 : 1,
                     }}
                   />
                 </motion.div>

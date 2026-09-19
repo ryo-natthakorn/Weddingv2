@@ -135,6 +135,37 @@ try {
     }, [selector, offset]);
   };
 
+  /* The ring is the card's mascot: it unlocks the invitation as the slider's
+     knob, then carries the guest in. It must never blink out of existence on
+     the way — that gap is the whole reason this journey exists. */
+  await check('the ring carries over from the lock screen without a gap', async () => {
+    const page = await browser.newPage({ viewport: { width: 414, height: 896 }, reducedMotion: 'no-preference' });
+    try {
+      await page.route(/^https:\/\//, route => route.abort());
+      await page.goto(server.resolvedUrls.local[0]);
+      const visibleRings = () => page.evaluate(() => [...document.querySelectorAll('img[src*="Ring"]')]
+        .filter(el => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight
+            && getComputedStyle(el).opacity !== '0';
+        }).length);
+
+      await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
+      let gaps = 0;
+      for (let i = 0; i < 9; i++) {
+        if (await visibleRings() === 0) gaps += 1;
+        await page.waitForTimeout(120);
+      }
+      assert.equal(gaps, 0, 'the ring vanished mid-handover');
+
+      // And it ends up where it lives, between the couple's names.
+      await page.waitForFunction(
+        () => document.querySelector('[data-music-ring-slot] [data-music-home]') !== null,
+        { timeout: 8000 },
+      );
+    } finally { await page.close(); }
+  });
+
   await check('nothing floats until the guest has gone past the names', async () => {
     const page = await setup();
     try {
