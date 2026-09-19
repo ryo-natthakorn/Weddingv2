@@ -4,6 +4,7 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   Divider,
+  FitLine,
   COLORS,
 } from "./shared";
 
@@ -11,6 +12,28 @@ import {
    following sections. The closed body sits lower in the same fixed stage. */
 const ENV_W = "min(380px, 100%)";
 const ENV_H = 320;
+
+/* Envelope palette — soft blush with a peach lean. The page behind it is the
+   warm cream tail of POST_HERO_GRADIENT (~#F0E8D7), against which the old
+   cream envelope was only a few percent lighter and all but disappeared. Pink
+   separates it while staying inside the printed card's warm family; the seal
+   below is sealing-wax red with a white heart, the one strong colour on the
+   page and the thing that says "closed". */
+const ENV_BODY = "#FFF6F3";
+const ENV_BORDER = "#E7BDB4";
+const ENV_POCKET = "linear-gradient(160deg, #FBE4E2 0%, #F3C9C4 100%)";
+const ENV_FLAP = "linear-gradient(160deg, #FDECE9 0%, #F6D5CF 100%)";
+/* The face of a CLOSED envelope. Without it the near-white ENV_BODY showed
+   between the flap and the pocket and read as the lining — the envelope looked
+   half open. The flap is a triangle with zero height at its left and right
+   edges, and the pocket's V only starts 12% down, so there is a real band
+   between the two where the body used to show through. This covers the whole
+   body rect in paper, in the flap's own tone, so the only things visible while
+   closed are flap, front, and the pocket's V seam. It fades as the flap lifts,
+   which is what reveals the interior and the QR. */
+const ENV_FRONT = "linear-gradient(160deg, #FDECE9 0%, #F8DED8 100%)";
+const ENV_SHADOW = "0 12px 24px rgba(120,70,60,0.16)";
+const ENV_FLAP_SHADOW = "0 4px 10px rgba(120,70,60,0.14)";
 /* QR display size, sized to clear both dimensions at every width. Content-
    layer padding (below) was trimmed from 18px/20px to 12px/16px specifically
    to free up more of this room without growing the envelope further. Available
@@ -136,7 +159,28 @@ function Envelope() {
             setOpen(true);
           }
         }}
-        animate={{ y: 0 }}
+        /* A small, periodic nudge — something shifting under the paper, not a
+           shake. Small amplitude and a long pause between beats keep it on the
+           right side of "delight is discovered, not announced". It stops for
+           good the moment the envelope is opened (`open` is a one-way latch).
+           Rotation lives on this node rather than a new inner wrapper because
+           `perspective` below is a style, not a transform, so rotating here
+           leaves the flap's preserve-3d context intact — an extra transformed
+           element between the two would flatten it. `whileHover`/`whileTap`
+           animate scale only, a separate channel, so they compose with this. */
+        animate={open || reduceMotion
+          ? { rotate: 0, x: 0, y: 0 }
+          : {
+              rotate: [0, -1.4, 1.6, -1.1, 0.8, 0],
+              x: [0, -2, 2.4, -1.6, 1, 0],
+              y: [0, -1, 1.2, -0.8, 0.5, 0],
+            }}
+        /* One beat per second: 0.75s of movement, then a quarter-second still.
+           The old 2.6s pause made the envelope easy to scroll past without ever
+           seeing it move. */
+        transition={open || reduceMotion
+          ? { duration: 0.2 }
+          : { duration: 0.75, repeat: Infinity, repeatDelay: 0.25, ease: "easeInOut" }}
         style={{
           position: "relative",
           width: ENV_W,
@@ -158,9 +202,9 @@ function Envelope() {
             inset: `0 0 ${open ? 20 : 100}px`,
             transition: reduceMotion ? "none" : "inset 0.5s ease",
             borderRadius: 6,
-            background: "#FFFDF7",
-            border: "1px solid #CDBF9F",
-            boxShadow: "0 12px 24px rgba(81,64,31,0.14)",
+            background: ENV_BODY,
+            border: `1px solid ${ENV_BORDER}`,
+            boxShadow: ENV_SHADOW,
             overflow: "visible",
           }}
         >
@@ -193,6 +237,20 @@ function Envelope() {
             )}
           </motion.div>
 
+          {/* Envelope front — the whole face while closed (see ENV_FRONT) */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: ENV_FRONT,
+              borderRadius: 6,
+              pointerEvents: "none",
+              opacity: open ? 0 : 1,
+              transition: reduceMotion ? "none" : "opacity 0.5s ease",
+              zIndex: 1,
+            }}
+          />
+
           {/* Envelope front pocket (lower V) — sits over the card edges */}
           <div
             style={{
@@ -202,7 +260,7 @@ function Envelope() {
               bottom: 0,
               top: 0,
               clipPath: "polygon(0 12%, 50% 65%, 100% 12%, 100% 100%, 0 100%)",
-              background: "linear-gradient(160deg, #EEE4CD 0%, #E5D8B8 100%)",
+              background: ENV_POCKET,
               borderRadius: 6,
               pointerEvents: "none",
               opacity: open ? 0.55 : 1,
@@ -232,12 +290,12 @@ function Envelope() {
               width: "100%",
               height: "100%",
               clipPath: "polygon(0 0, 100% 0, 54% 96%, 50% 100%, 46% 96%)",
-              background: "linear-gradient(160deg, #F6EFDF 0%, #E7DBBE 100%)",
+              background: ENV_FLAP,
               borderRadius: "6px 6px 0 0",
-              boxShadow: "0 4px 10px rgba(61,34,21,0.12)",
+              boxShadow: ENV_FLAP_SHADOW,
             }}
           />
-          {/* Heart seal at the flap tip — fades out as the flap lifts.
+          {/* Red wax seal with a white heart, at the flap tip — fades out as the flap lifts.
               Centering lives on this static wrapper, not the animated
               motion.div below: Framer Motion owns the `transform` property
               once scale/opacity are animated on an element and silently
@@ -260,17 +318,19 @@ function Envelope() {
                 width: "100%",
                 height: "100%",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #A88030, #7A5520)",
+                /* Sealing wax, not gold: the seal is the one strong red on the
+                   page and it has to read as wax at 36px. */
+                background: "linear-gradient(135deg, #B3403A, #8E2B26)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 3px 10px rgba(138,112,48,0.45)",
+                boxShadow: "0 3px 10px rgba(142,43,38,0.45)",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                 <path
                   d="M10 17.5C10 17.5 2 11.8 2 6.8C2 3.9 4.4 1.5 7.3 1.5C8.9 1.5 10 2.6 10 2.6C10 2.6 11.1 1.5 12.7 1.5C15.6 1.5 18 3.9 18 6.8C18 11.8 10 17.5 10 17.5Z"
-                  fill="#FFF8EE"
+                  fill="#FFFFFF"
                 />
               </svg>
             </motion.div>
@@ -281,14 +341,16 @@ function Envelope() {
       {/* Tap hint and save button share one fixed-height slot, both absolutely
           positioned, so swapping between them can't shift the closing line. */}
       <div style={{ position: "relative", width: "100%", height: 76, marginTop: open ? 8 : -82 }}>
-        <motion.p
+        <motion.div
           animate={{ opacity: open ? 0 : 1 }}
           transition={{ duration: reduceMotion ? 0 : 0.3 }}
           aria-hidden={open}
-          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0 }}
+          style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          {t.gift_tap}
-        </motion.p>
+          <FitLine as="p" max={16} style={{ width: "100%", textAlign: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0 }}>
+            {t.gift_tap}
+          </FitLine>
+        </motion.div>
 
         {REAL_QR_URL && (
           <motion.div
@@ -320,9 +382,9 @@ function Envelope() {
               </svg>
               {t.gift_save}
             </motion.button>
-            <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.4, padding: "0 12px" }}>
+            <FitLine as="p" max={16} style={{ width: "100%", textAlign: "center", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.4, padding: "0 12px", boxSizing: "border-box" }}>
               {t.gift_save_hint}
-            </span>
+            </FitLine>
           </motion.div>
         )}
       </div>
@@ -353,13 +415,20 @@ export function GiftSection() {
         transition={{ duration: reduceMotion ? 0 : 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 520, margin: "0 auto" }}
       >
-        <p style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
+        <FitLine as="p" max={30} style={{ position: "relative", zIndex: 3, fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 14, lineHeight: 1.6 }}>
           {t.gift_heading}
-        </p>
+        </FitLine>
         <Divider className="mb-5" />
-        <p style={{ fontSize: 16, lineHeight: 1.8, color: COLORS.midBrown, maxWidth: 440, margin: "0 auto", textWrap: "pretty" }}>
-          {t.gift_description}
-        </p>
+        {/* Two authored lines rather than one reflowing paragraph: the second
+            one folds at its own break point on a narrow phone, so this block is
+            always two or three tidy lines and never a ragged four. */}
+        <div style={{ maxWidth: 440, margin: "0 auto" }}>
+          {t.gift_description_lines.map((line: { text: string; lines?: string[] }, i: number) => (
+            <FitLine key={i} as="p" max={16} lines={line.lines} style={{ lineHeight: 1.8, color: COLORS.midBrown }}>
+              {line.text}
+            </FitLine>
+          ))}
+        </div>
 
         <div style={{ marginTop: 36, marginBottom: 24 }}>
           <Envelope />

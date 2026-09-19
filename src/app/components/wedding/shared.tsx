@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import type { CSSProperties } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { motion, useInView } from "motion/react";
 
 export function useReveal(margin = "-60px") {
@@ -188,3 +188,207 @@ export const COLORS = {
   paperShadow: "#D4B896", // paper shadow tone
 };
 
+
+/* ── FitLine — one sentence, one line, at the largest size that fits ──
+
+   Every string on this card used to be set at a fixed px size, so Thai
+   sentences that fit on a 430px phone wrapped on a 390px one. FitLine sets the
+   text `white-space: nowrap` and scales the font-size to the container instead:
+
+     fontSize = clamp(min, containerWidth / (measuredWidth / 100), max)
+
+   The width is measured from a hidden copy of the same text rendered at 100px
+   in the same family/weight/style/transform, so the ratio is exact and
+   resolution-independent. The copy is observed by a ResizeObserver, which is
+   what makes this safe where two earlier JS-measuring attempts failed (see the
+   NAME_FONT_SIZE note in NameIntroWithCountdown.tsx): when `font-display: swap`
+   replaces the fallback face with TT Interphases the hidden copy's width
+   changes, the observer fires, and the size is recomputed. Observing the
+   container — which does not change width on a font swap — is what went stale
+   before.
+
+   `min` (13px, the client's floor) is a hard floor. A sentence that would need
+   to go below it breaks instead — but only at a break point authored in the
+   copy: pass `lines={[...]}` and each entry is rendered as its own fitted line.
+   The browser never picks the break itself, because the text is nowrap.
+
+   Notes for callers:
+   • `max` accepts any CSS length (px, rem, clamp(), var()) — it is resolved
+     through a hidden probe, so media-query-driven `var(--fit-max)` works. Avoid
+     `em`: it would resolve against the size this component is computing.
+   • letter-spacing must be in `em` (or 0) — a px value does not scale with the
+     font-size, so the measurement would not hold.
+   • the container's width must not depend on this text (no width:fit-content /
+     inline-flex ancestor sizing to content), or measurement and layout chase
+     each other. Give such a parent an explicit width and this a flex basis of 0.
+
+   The rendered line count is published as `data-lines`, plus `data-one-line` /
+   `data-two-lines`, which specs/one-line-copy-check.mjs asserts against. */
+const FIT_MEASURE_PX = 100;
+
+const fitMeasurerBox: CSSProperties = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: 0,
+  height: 0,
+  overflow: "hidden",
+  visibility: "hidden",
+  pointerEvents: "none",
+};
+
+const fitMeasurerText: CSSProperties = {
+  display: "inline-block",
+  whiteSpace: "nowrap",
+  fontSize: `${FIT_MEASURE_PX}px`,
+};
+
+export function FitLine({
+  as: Tag = "div",
+  max,
+  min = 13,
+  lines,
+  className,
+  style,
+  children,
+  ...rest
+}: {
+  as?: any;
+  max: number | string;
+  min?: number;
+  lines?: ReactNode[];
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+  [key: string]: any;
+}) {
+  const hostRef = useRef<HTMLElement | null>(null);
+  const probeRef = useRef<HTMLSpanElement | null>(null);
+  const wholeRef = useRef<HTMLSpanElement | null>(null);
+  const partRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const segments = lines && lines.length > 1 ? lines : null;
+  const segCount = segments ? segments.length : 0;
+  const [fit, setFit] = useState<{ stacked: boolean; sizes: number[] }>({ stacked: false, sizes: [] });
+  const fitRef = useRef(fit);
+  fitRef.current = fit;
+
+  const measure = useCallback(() => {
+    const host = hostRef.current;
+    const probe = probeRef.current;
+    const whole = wholeRef.current;
+    if (!host || !probe || !whole) return;
+    const cs = getComputedStyle(host);
+    const avail = host.clientWidth - parseFloat(cs.paddingLeft || "0") - parseFloat(cs.paddingRight || "0");
+    if (!(avail > 0)) return;
+    const maxPx = parseFloat(getComputedStyle(probe).fontSize) || 16;
+    const floor = Math.min(min, maxPx);
+    // 0.997 absorbs sub-pixel rounding: nowrap text cannot wrap, so a hair too
+    // wide would overflow the card rather than fold.
+    const sizeFor = (el: HTMLSpanElement | null) => {
+      const width = el?.getBoundingClientRect().width ?? 0;
+      if (!(width > 0)) return maxPx;
+      return Math.round((avail / (width / FIT_MEASURE_PX)) * 0.997 * 100) / 100;
+    };
+    const clampSize = (value: number) => Math.min(maxPx, Math.max(floor, value));
+    const onOneLine = sizeFor(whole);
+    const next = segments && onOneLine < min
+      ? { stacked: true, sizes: segments.map((_, i) => clampSize(sizeFor(partRefs.current[i]))) }
+      : { stacked: false, sizes: [clampSize(onOneLine)] };
+    const prev = fitRef.current;
+    if (
+      prev.stacked === next.stacked &&
+      prev.sizes.length === next.sizes.length &&
+      prev.sizes.every((value, i) => value === next.sizes[i])
+    ) return;
+    setFit(next);
+  }, [max, min, segments]);
+
+  // Every render: the text itself may have changed (language toggle).
+  useLayoutEffect(measure);
+
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver(() => measure());
+    if (hostRef.current) observer.observe(hostRef.current);
+    if (wholeRef.current) observer.observe(wholeRef.current);
+    partRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segCount, measure]);
+
+  const rendered = fit.stacked && segments
+    ? segments.map((segment, i) => (
+        <span key={i} data-fit-text="" style={{ display: "block", whiteSpace: "nowrap", fontSize: fit.sizes[i] ?? min }}>
+          {segment}
+        </span>
+      ))
+    : (
+        <span data-fit-text="" style={{ display: "block", whiteSpace: "nowrap", fontSize: fit.sizes[0] ?? undefined }}>
+          {children}
+        </span>
+      );
+  const lineCount = fit.stacked && segments ? segments.length : 1;
+
+  return (
+    <Tag
+      ref={hostRef}
+      className={className}
+      style={style}
+      data-fit-line=""
+      data-lines={lineCount}
+      {...(lineCount === 1 ? { "data-one-line": "" } : {})}
+      {...(lineCount === 2 ? { "data-two-lines": "" } : {})}
+      {...rest}
+    >
+      {rendered}
+      <span aria-hidden data-fit-measure="" style={fitMeasurerBox}>
+        {/* resolves `max` — any CSS length, including var() set by a media query */}
+        <span ref={probeRef} style={{ fontSize: typeof max === "number" ? `${max}px` : max }} />
+        <span ref={wholeRef} style={fitMeasurerText}>{children}</span>
+        {segments?.map((segment, i) => (
+          <span
+            key={i}
+            ref={(el) => { partRefs.current[i] = el; }}
+            style={fitMeasurerText}
+          >
+            {segment}
+          </span>
+        ))}
+      </span>
+    </Tag>
+  );
+}
+
+/* ── One music note, drawn once ──
+   The corner trail around the player and the notes that come to rest on the
+   staff in "Our Song" are the same object seen in two places, so they have to
+   be the same drawing: a stem laid down first and a head lapped over its foot,
+   the way a note is written by hand rather than set in a font.
+
+   Coordinates are SVG user units, so the caller's viewBox decides the size;
+   `scale` turns about the head. No shadow and no depth tier — the note is ink
+   on paper, not an object floating above it. */
+export function MusicNote({
+  x = 0,
+  y = 0,
+  scale = 1,
+  opacity = 1,
+  color = COLORS.gold,
+}: {
+  x?: number;
+  y?: number;
+  scale?: number;
+  opacity?: number;
+  color?: string;
+}) {
+  return (
+    <g
+      data-music-note=""
+      transform={`translate(${x} ${y}) scale(${scale})`}
+      opacity={opacity}
+      style={{ transformOrigin: "0 0" }}
+    >
+      <path d="M7.2 -1 L7.6 -29" stroke={color} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <ellipse cx="0" cy="0" rx="8" ry="5.6" fill={color} transform="rotate(-22)" />
+    </g>
+  );
+}

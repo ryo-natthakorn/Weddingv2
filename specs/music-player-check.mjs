@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createServer } from 'vite';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -14,6 +17,7 @@ const lifecycleHtml = `<div id="root"></div><script type="module">
   </script>`;
 await server.listen();
 const browser = await chromium.launch({ headless: true });
+const output = join(tmpdir(), 'wedding-refinement');
 const failures = [];
 
 async function setup({ delayed = false } = {}) {
@@ -53,8 +57,18 @@ async function setup({ delayed = false } = {}) {
   return page;
 }
 
+/* The ring is not a player until it has travelled: it opens the invitation as
+   the slider thumb, then rests between the two names, and only once that block
+   has been scrolled past does it become the control in the corner. Every test
+   below that wants the card has to take it that far first. */
 async function openInvitation(page) {
   await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
+  await page.waitForSelector('[data-ring-home]');
+  await page.evaluate(() => {
+    const slot = document.querySelector('[data-ring-slot]');
+    window.scrollTo(0, (slot?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 400);
+  });
+  await page.waitForFunction(() => document.querySelector('[data-ring-home="corner"]'));
   await page.getByRole('button', { name: 'Open music player' }).click();
 }
 
@@ -98,7 +112,11 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-song-lyrics]').textContent.trim() === '');
       await page.evaluate(() => { window.musicTest.players[0].time = 16; });
       await page.getByText('จนเกือบจะหมดหวัง', { exact: true }).waitFor();
-      await page.screenshot({ path: 'C:/Users/Computer RC Herbal/AppData/Local/Temp/pantika-lyrics.png' });
+      // The other specs' output directory. This used to be a hardcoded Windows
+      // path, which on any other machine created that whole path as folders
+      // inside the repository.
+      await mkdir(output, { recursive: true });
+      await page.screenshot({ path: join(output, 'pantika-lyrics.png') });
     } finally { await page.close(); }
   });
   await check('StrictMode leaves one connected player and destroys it on unmount', async () => {
@@ -124,6 +142,13 @@ try {
         return window.musicTest.calls.filter(([type]) => type === 'play').length;
       });
       assert.equal(plays, 1, 'play must occur before the animation timeout');
+      // …and taking the ring to the corner and tapping it does not ask again.
+      await page.waitForSelector('[data-ring-home]');
+      await page.evaluate(() => {
+        const slot = document.querySelector('[data-ring-slot]');
+        window.scrollTo(0, (slot?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 400);
+      });
+      await page.waitForFunction(() => document.querySelector('[data-ring-home="corner"]'));
       await page.getByRole('button', { name: 'Open music player' }).click();
       assert.equal(await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length), 1);
     } finally { await page.close(); }
@@ -172,14 +197,37 @@ try {
     } finally { await page.close(); }
   });
 
-  await check('slow API does not start music unexpectedly after opening', async () => {
+  /* Opening the player is itself a request to play — the guest tapped a play
+     button — so on a slow API the tap is queued and honoured once the player
+     arrives, exactly like the card's own play button. What must never queue is
+     entry autoplay, which is covered by the unlock-gesture check above. */
+  await check('a slow API honours the tap that opened the player, exactly once', async () => {
     const page = await setup({ delayed: true });
     try {
       await openInvitation(page);
-      await page.evaluate(() => window.musicTest.players[0].ready());
       assert.equal(await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length), 0);
-      await page.getByRole('button', { name: 'Play', exact: true }).click();
+      await page.evaluate(() => window.musicTest.players[0].ready());
       assert.equal(await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length), 1);
+      await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
+    } finally { await page.close(); }
+  });
+
+  await check('a deliberate pause survives closing and re-opening the card', async () => {
+    const page = await setup();
+    try {
+      await openInvitation(page);
+      await page.evaluate(() => window.musicTest.players[0].emit(1));
+      await page.getByRole('button', { name: 'Pause', exact: true }).click();
+      await page.evaluate(() => window.musicTest.players[0].emit(2));
+      const afterPause = await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length);
+      await page.getByRole('button', { name: 'Close' }).click();
+      await page.getByRole('button', { name: 'Open music player' }).click();
+      await page.getByRole('button', { name: 'Play', exact: true }).waitFor();
+      assert.equal(
+        await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length),
+        afterPause,
+        're-opening must not restart a song the guest paused',
+      );
     } finally { await page.close(); }
   });
 

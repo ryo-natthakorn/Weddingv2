@@ -12,7 +12,10 @@ try {
     await page.route(/^https:\/\//,r=>r.abort());
     await page.goto(server.resolvedUrls.local[0]);
     await page.getByRole('slider').press('Enter');
-    await page.getByRole('button',{name:'Open music player'}).click({trial:true});
+    // The invitation is open once the ring has been handed over by the slider.
+    // (It is not a button until it reaches the corner, so the old
+    // "Open music player" probe no longer marks this moment.)
+    await page.waitForFunction(() => document.querySelector('[data-ring-home]'));
     const gallery=page.locator('.pw-orbit');
     await gallery.scrollIntoViewIfNeeded();
     await gallery.locator('img').evaluateAll(images=>Promise.all(images.map(img=>img.decode())));
@@ -26,9 +29,14 @@ try {
     const stopped=await read();await page.waitForTimeout(500);assert.equal(await read(),stopped,'hover pauses');
     await card.focus();await page.mouse.move(0,0);
     const focused=await read();await page.waitForTimeout(300);assert.equal(await read(),focused,'focus pauses');
+    // Home snaps the ring to print 0, so the front print sits exactly on centre.
+    await card.press('Home');
+    await page.waitForTimeout(150);
     const box=await card.boundingBox(), stage=await gallery.boundingBox();
-    assert.ok(box.width>80 && box.x>=stage.x+15 && box.x+box.width<=stage.x+stage.width-15);
-    assert.ok(box.y>=stage.y && box.y+box.height<=stage.y+stage.height);
+    assert.ok(box.width>80,'front print is large');
+    assert.ok(Math.abs(box.x+box.width/2-(stage.x+stage.width/2))<12,'front print centred');
+    assert.ok(box.x>=stage.x-1 && box.x+box.width<=stage.x+stage.width+1,'front print fits across the stage');
+    assert.ok(box.y>=stage.y-1 && box.y+box.height<=stage.y+stage.height+1,'front print fits down the stage');
     assert.ok(stage.height<=height*.7+1);
     await gallery.screenshot({path:join(tmpdir(),`circular-${width}.png`)});
     await card.press('Enter');await page.getByRole('dialog').waitFor();
@@ -37,9 +45,33 @@ try {
     await page.getByRole('dialog').waitFor({state:'detached'});
     assert.equal(await card.evaluate(el=>el===document.activeElement),true);
     assert.equal(await gallery.locator('.pw-orbit-card[tabindex="0"]').count(),1,'one tabbable print');
-    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,veil:+getComputedStyle(el.querySelector('.pw-veil')).opacity,opacity:+getComputedStyle(el).opacity})).sort((a,b)=>b.z-a.z));
+    const depth=await gallery.locator('.pw-orbit-card').evaluateAll(els=>els.map(el=>({z:+el.style.zIndex,veil:+getComputedStyle(el.querySelector('.pw-veil')).opacity,opacity:+getComputedStyle(el).opacity,blur:getComputedStyle(el).filter})).sort((a,b)=>b.z-a.z));
     assert.ok(depth[0].veil<depth.at(-1).veil,'front print clearer than back print');
     assert.ok(depth.every(d=>d.opacity>=.49),'no print fades out while turning');
+    assert.match(depth.at(-1).blur,/blur/,'back print still falls out of focus');
+    assert.equal(depth[0].blur,'none','front print is sharp');
+    /* Without a soft ramp the gradient mask stair-steps and the perforations
+       speckle with half-lit paper pixels. */
+    const feather=await gallery.locator('.pw-stamp').first().evaluate(el=>{
+      const probe=document.createElement('div');
+      probe.style.cssText='position:absolute;visibility:hidden;height:0';
+      el.appendChild(probe);
+      const read=v=>{probe.style.width=v;return parseFloat(getComputedStyle(probe).width);};
+      const edge=read('var(--stamp-edge)'), notch=read('var(--stamp-notch)');
+      probe.remove();
+      return edge-notch;
+    });
+    assert.ok(feather>=.8,`perforation edge needs an anti-aliasing ramp, got ${feather}px`);
+    /* The print keeps a shadow, and it is cast under the print rather than
+       traced around it: a filter over the perforated mask cost the frame budget,
+       and a box-shadow traces the border box, which disagrees with the notched
+       silhouette and reads as a second layer. */
+    const shade=await gallery.locator('.pw-orbit-card').first().evaluate(el=>{
+      const s=getComputedStyle(el,'::before');
+      return { image:s.backgroundImage, box:s.boxShadow };
+    });
+    assert.match(shade.image,/gradient/,'print keeps a cast shadow');
+    assert.equal(shade.box,'none','the shadow must not trace the border box');
     const counter=page.locator('[data-gallery-counter]'), hint=page.locator('[data-gallery-hint]');
     const dialogs=()=>page.getByRole('dialog').count();
     const label=await counter.textContent();

@@ -10,11 +10,11 @@ const html = `<div id="root"></div><script type="module">
 import React, {useState} from 'react'; import {createRoot} from 'react-dom/client';
 import {MusicPlayer} from '/src/app/components/wedding/MusicPlayer.tsx';
 import {SongSection} from '/src/app/components/wedding/SongSection.tsx';
-import {LangProvider} from '/src/app/components/wedding/wedding-context.tsx';
+import {LangProvider, MusicStateProvider} from '/src/app/components/wedding/wedding-context.tsx';
 import '/src/styles/index.css';
-function App(){const [anchor,setAnchor]=useState(null);return React.createElement(LangProvider,null,
-React.createElement(MusicPlayer,{dockTarget:anchor}),React.createElement('div',{style:{height:1400}}),
-React.createElement(SongSection,{onAnchor:setAnchor,onPlay:()=>{}}),React.createElement('div',{style:{height:500}}));}
+function App(){const [anchor,setAnchor]=useState(null);return React.createElement(LangProvider,null,React.createElement(MusicStateProvider,null,
+React.createElement(MusicPlayer,{songSlot:anchor,released:new DOMRect(100,100,80,80)}),React.createElement('div',{style:{height:1400}}),
+React.createElement(SongSection,{onDockSlot:setAnchor}),React.createElement('div',{style:{height:500}})));}
 createRoot(document.getElementById('root')).render(React.createElement(App));</script>`;
 try {
   for (const [width, reducedMotion] of [[414,'no-preference'],[1280,'no-preference'],[414,'reduce']]) {
@@ -30,13 +30,14 @@ try {
     await page.goto(new URL('/__handoff', server.resolvedUrls.local[0]).href);
     await page.waitForFunction(()=>window.testPlayer);
     await page.evaluate(()=>window.testPlayer.options.events.onStateChange({data:1}));
-    await page.waitForTimeout(250);
+    await page.waitForFunction(()=>document.querySelector('[data-ring-home="corner"]'));
+    await page.waitForTimeout(3200);
     assert.equal(await page.locator('[data-music-note]').count(),5);
     await page.evaluate(()=>{window.originalNotes=[...document.querySelectorAll('[data-music-note]')];});
     assert.equal(await page.evaluate(()=>document.getAnimations().some(a=>a.animationName==='pulse-ring')),false);
     await page.screenshot({path:join(tmpdir(),`music-orbit-${width}-${reducedMotion}.png`)});
     const start=Date.now();
-    await page.locator('#song-play-button').evaluate(el=>window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-620,behavior:'instant'}));
+    await page.locator('[data-music-dock-slot]').evaluate(el=>window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-620,behavior:'instant'}));
     await page.waitForFunction(()=>document.querySelector('[data-music-docking="true"]'));
     if(reducedMotion==='no-preference') {
       await page.waitForTimeout(1600);
@@ -58,9 +59,9 @@ try {
     await page.waitForFunction(()=>document.querySelector('[data-music-docking="false"]'));
     if(reducedMotion==='no-preference') {
       await page.waitForTimeout(1500);
-      assert.notEqual(await page.locator('[data-music-docking]').evaluate(el=>getComputedStyle(el).transform),'none');
+      assert.notEqual(await page.locator('[data-music-docking]').evaluate(el=>getComputedStyle(el.parentElement).transform),'none');
       // Reverse the transfer before it finishes; the same notes must survive.
-      await page.locator('#song-play-button').evaluate(el=>window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-620,behavior:'instant'}));
+      await page.locator('[data-music-dock-slot]').evaluate(el=>window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-620,behavior:'instant'}));
       await page.waitForFunction(()=>document.querySelector('[data-music-docked="true"]'));
       assert.equal(await page.evaluate(()=>window.originalNotes.every(n=>n.isConnected)),true);
     }

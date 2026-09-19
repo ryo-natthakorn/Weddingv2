@@ -1,25 +1,33 @@
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useLang } from "./wedding-context";
-import { useReveal, Divider, COLORS } from "./shared";
+import { useReveal, Divider, FitLine, COLORS } from "./shared";
 
-/* ───────────────────────────────────────────────────────────────
-   OUR SONG
-   ----------------------------------------------------------------
-   Sits after the gift envelope. The floating MusicPlayer already
-   handles playback, so this section's job is not to be a second
-   player — it is the dedication. It hands the tap off to the
-   existing player via onPlay.
+/* The dedication is two authored lines on a phone and one on a tablet upward.
+   That is a layout choice, not a size one, so it is read in JS rather than
+   rendering both and hiding one — a hidden copy would measure at zero width. */
+function useMinWidth(px: number) {
+  const [matches, setMatches] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(`(min-width: ${px}px)`).matches,
+  );
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${px}px)`);
+    const sync = () => setMatches(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, [px]);
+  return matches;
+}
 
-   The staff is drawn in the same hand-inked language as
-   HandDrawnDivider (wavy strokes revealed by pathLength) rather
-   than a stock waveform or album-art card, so it reads as part of
-   this invitation and not a music widget dropped into it.
-─────────────────────────────────────────────────────────────── */
+/* The staff exposes measured landing points. MusicPlayer owns one persistent
+   set of notes in viewport space, so changing the ring's portal never replaces
+   the notes or restarts their journey. */
 
 const STAFF_LINES = [20, 33, 46, 59, 72];
 
 /* A rising-then-settling contour — a shape someone chose, not five
-   random heights. */
+   random heights. These are where the notes come to rest. */
 const NOTES = [
   { x: 58, y: 59 },
   { x: 104, y: 46 },
@@ -32,38 +40,50 @@ function StaffOfNotes({ inView }: { inView: boolean }) {
   const reduceMotion = useReducedMotion();
 
   return (
-    <svg
-      viewBox="0 0 300 96"
-      width="100%"
-      style={{ display: "block", maxWidth: 300, margin: "0 auto", overflow: "visible" }}
-      aria-hidden
-    >
-      {STAFF_LINES.map((y, i) => (
-        <motion.path
-          key={y}
-          d={`M12 ${y} Q 85 ${y - 1.6}, 152 ${y} T 288 ${y}`}
-          stroke={COLORS.gold}
-          strokeWidth="1"
-          strokeOpacity="0.32"
-          strokeLinecap="round"
-          fill="none"
-          initial={{ pathLength: reduceMotion ? 1 : 0 }}
-          animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
-          transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : i * 0.08, ease: "easeOut" }}
-        />
-      ))}
+    /* A shallow tilt, so the notes sit on the staff the way a card lies on a
+       table. Static — it is depth of field, not motion. */
+    <div style={{ perspective: 620, maxWidth: 300, margin: "0 auto" }}>
+      <svg
+        id="song-staff"
+        viewBox="0 0 300 108"
+        width="100%"
+        style={{ display: "block", overflow: "visible", transform: "rotateX(8deg)", pointerEvents: "none" }}
+        aria-hidden
+      >
+        {STAFF_LINES.map((y, i) => (
+          <motion.path
+            key={y}
+            d={`M12 ${y} Q 85 ${y - 1.6}, 152 ${y} T 288 ${y}`}
+            stroke={COLORS.gold}
+            strokeWidth="1"
+            strokeOpacity="0.32"
+            strokeLinecap="round"
+            fill="none"
+            initial={{ pathLength: 0 }}
+            animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : i * 0.08, ease: "easeOut" }}
+          />
+        ))}
 
-      {NOTES.map((n, i) => (
-        <circle key={n.x} data-music-note-target={i} cx={n.x} cy={n.y} r="1" fill="transparent" />
-      ))}
-    </svg>
+        {NOTES.map((note, i) => (
+          <circle key={note.x} data-music-note-target={i} cx={note.x} cy={note.y} r="1" fill="transparent" />
+        ))}
+      </svg>
+    </div>
   );
 }
 
-export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor: (node: HTMLButtonElement | null) => void }) {
-  const { t, lang } = useLang();
-  const { ref, inView } = useReveal("-80px");
+const dedicationStyle = {
+  fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
+  fontWeight: 400,
+  color: COLORS.midBrown,
+  lineHeight: 1.8,
+} as const;
 
+export function SongSection({ onDockSlot }: { onDockSlot: (node: HTMLDivElement | null) => void }) {
+  const { t } = useLang();
+  const { ref, inView } = useReveal("-80px");
+  const wide = useMinWidth(768);
   return (
     <section
       style={{
@@ -81,51 +101,38 @@ export function SongSection({ onPlay, onAnchor }: { onPlay: () => void; onAnchor
         transition={{ duration: 0.9 }}
         style={{ position: "relative", zIndex: 2, maxWidth: 760, margin: "0 auto" }}
       >
-        <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
+        <FitLine as="p" max={30} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>
           {t.music_label}
-        </p>
+        </FitLine>
         <Divider className="mb-10" />
 
         <StaffOfNotes inView={inView} />
 
-        <h3 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.8rem, 6vw, 2.6rem)", fontWeight: 600, color: COLORS.navy, letterSpacing: 0, lineHeight: 1.2, marginTop: 26 }}>
-          {t.song_title}
-        </h3>
-        <p className="song-dedication" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.8, marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
-          {lang === "TH" ? <>เรียวแอบแต่งเพลงนี้ให้หยี<span className="song-mobile-line"> เพื่อเซอร์ไพรส์หยีตอนขอแต่งงาน</span></> : t.song_dedication}
-        </p>
+        <div data-song-dedication style={{ marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
+          {wide ? (
+            <FitLine as="p" max={16} style={dedicationStyle}>{t.song_dedication_lines.join(" ")}</FitLine>
+          ) : (
+            t.song_dedication_lines.map((line: string) => (
+              <FitLine key={line} as="p" max={16} style={dedicationStyle}>{line}</FitLine>
+            ))
+          )}
+        </div>
 
-        <motion.button
-          ref={onAnchor}
-          id="song-play-button"
-          type="button"
-          onClick={onPlay}
-          whileHover={{ scale: 1.04, y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            marginTop: 28,
-            background: `linear-gradient(135deg, ${COLORS.gold}, #6B5520)`,
-            border: "none",
-            borderRadius: 100,
-            padding: "14px 32px",
-            fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
-            fontSize: "1rem",
-            letterSpacing: 0,
-            textTransform: "uppercase",
-            color: "#FFF8EE",
-            cursor: "pointer",
-            boxShadow: "0 8px 24px rgba(138,112,48,0.3)",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
-            <path d="M1.5 1.6C1.5 1.1 2 0.8 2.4 1.05L11.4 6.45C11.8 6.7 11.8 7.3 11.4 7.55L2.4 12.95C2 13.2 1.5 12.9 1.5 12.4V1.6Z" fill="#FFF8EE" />
-          </svg>
-          {t.song_play}
-        </motion.button>
+        {/* The dock slot. It starts empty: the floating player flies in here
+            and becomes this section's player, so the section never holds a
+            second control of its own. min-height keeps the layout steady while
+            the orb is still in the corner, and the slot grows when the card
+            opens inside it. */}
+        <div
+          ref={onDockSlot}
+          data-music-dock-slot
+          /* Column, not row: the orb and the card are never both here at once
+             any more, but stacking them keeps the orb's horizontal centre fixed
+             regardless — a row would re-centre it around whatever else is in
+             the slot, and that lateral snap is what the flight used to inherit. */
+          style={{ minHeight: 72, marginTop: 30, display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "center" }}
+        />
+
       </motion.div>
     </section>
   );

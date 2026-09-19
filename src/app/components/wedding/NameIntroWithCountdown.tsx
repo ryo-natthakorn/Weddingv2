@@ -4,9 +4,9 @@ import { useLang } from "./wedding-context";
 import {
   useReveal,
   Divider,
+  FitLine,
   COLORS,
 } from "./shared";
-import ringImg from "../../../imports/Ring.svg";
 
 /* ── Countdown ── */
 function CountdownTimer() {
@@ -138,7 +138,11 @@ function ClipReveal({
    bride and groom always match and nothing depends on load order or timing. */
 const NAME_FONT_SIZE = "min(43px, calc((100vw - 16px) / 17.5))";
 
-export function NameIntroWithCountdown() {
+/* Ceiling for the closing date block: never larger than `px`, and never more
+   than 80% of the names it sits under (--name-size, published on the section). */
+const DATE_BLOCK_MAX = (px: number) => `min(${px}px, calc(var(--name-size) * 0.8))`;
+
+export function NameIntroWithCountdown({ onRingSlot }: { onRingSlot: (node: HTMLDivElement | null) => void }) {
   const { t, lang } = useLang();
   // Three independent triggers — the section is ~2 phone screens tall, so a
   // single trigger would fire the name/date animations while still off-screen.
@@ -146,10 +150,6 @@ export function NameIntroWithCountdown() {
   const { ref: namesRef, inView: namesInView } = useReveal("-40px");
   const { ref: dateRef, inView: dateInView } = useReveal("-40px");
 
-  // Single-line guard for the parent names only — nowrap keeps each on one
-  // line; overflow+ellipsis is a safety net rather than an overlap/clip if a
-  // string ever runs wider than its box.
-  const singleLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
   // Title + name are one unbreakable line, sized by NAME_FONT_SIZE so it fits
   // without wrapping or truncating at any viewport. No letter-spacing on the
   // name: the em ratios NAME_FONT_SIZE is derived from were measured at the
@@ -174,7 +174,7 @@ export function NameIntroWithCountdown() {
   // Quieted a step further than before — these recede as setup so the
   // names/ring hero and the closing date read as the section's two peaks,
   // not three elements of similar weight.
-  const parentStyle = { fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "22px", color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.6, textAlign: "center" as const, whiteSpace: "normal" as const };
+  const parentStyle = { fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.lightBrown, letterSpacing: 0, lineHeight: 1.6, textAlign: "center" as const };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -186,6 +186,9 @@ export function NameIntroWithCountdown() {
         padding: "56px 24px 40px",
         textAlign: "center",
         overflow: "hidden",
+        // Published so the closing date block can size itself as a fraction of
+        // the names instead of guessing at a second formula.
+        ["--name-size" as any]: NAME_FONT_SIZE,
       }}
     >
       <div style={{ position: "relative", zIndex: 3, maxWidth: 720, margin: "0 auto" }}>
@@ -196,9 +199,9 @@ export function NameIntroWithCountdown() {
           transition={{ delay: 0.1, duration: 0.9 }}
         >
           <CountdownTimer />
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "20px", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: 0, marginTop: 18 }}>
+          <FitLine as="p" max={20} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontStyle: "italic", color: COLORS.lightBrown, letterSpacing: 0, marginTop: 18 }}>
             {t.countdown_caption}
-          </p>
+          </FitLine>
         </motion.div>
 
         {/* 2. Parents — stacked, each on its own full-width line */}
@@ -208,20 +211,21 @@ export function NameIntroWithCountdown() {
           transition={{ delay: 0.25, duration: 0.8 }}
           style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 56 }}
         >
-          <span className="invitation-parent" style={parentStyle}>{t.parents_groom}</span>
-          <span className="invitation-parent" style={parentStyle}>{t.parents_bride}</span>
+          <FitLine className="invitation-parent" max="var(--fit-max)" style={parentStyle}>{t.parents_groom}</FitLine>
+          <FitLine className="invitation-parent" max="var(--fit-max)" style={parentStyle}>{t.parents_bride}</FitLine>
         </motion.div>
 
         {/* 3. Invite line — centered */}
-        <motion.p
-          className="invitation-invite"
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.32, duration: 0.8 }}
-          style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "20px", color: COLORS.lightBrown, letterSpacing: 0, marginTop: 32 }}
+          style={{ marginTop: 32 }}
         >
-          {t.invite_line}
-        </motion.p>
+          <FitLine as="p" className="invitation-invite" max="var(--fit-max)" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.lightBrown, letterSpacing: 0 }}>
+            {t.invite_line}
+          </FitLine>
+        </motion.div>
 
         {/* 4-6. Bride · Ring · Groom — title + name reveal together as one
             single line (left-to-right clip-wipe). Bride wipes first
@@ -230,30 +234,32 @@ export function NameIntroWithCountdown() {
         <div ref={namesRef} style={{ marginTop: 56, marginInline: -16 }}>
           {/* Bride */}
           <ClipReveal active={namesInView} duration={1.8}>
-            <span style={nameLineStyle}>
+            <span data-name-line style={nameLineStyle}>
               <span style={titleStyle}>{t.bride_title}</span>{" "}
               <span style={nameStyle}>{t.bride_name}</span>
             </span>
           </ClipReveal>
 
-          {/* Ring — large focal point */}
-          <motion.img
-            src={ringImg}
-            alt=""
-            aria-hidden
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={namesInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          {/* Ring — large focal point, and the ring's second home.
+              The artwork is not drawn here: it is the single travelling ring,
+              which flies in from the slider when the invitation opens and flies
+              on to the corner once this block has been read. This slot only
+              reserves its room. The room is reserved whether the ring is here
+              or away, so the two names never move — the gap between them is
+              part of the layout, not a consequence of where the ring is. */}
+          <div
+            ref={onRingSlot}
+            data-ring-slot
             style={{
-              width: "min(120px, 28vw)", height: "auto", objectFit: "contain",
-              display: "block", margin: "26px auto",
-              filter: "drop-shadow(0 3px 10px rgba(27,74,92,0.2))",
+              height: "min(120px, 28vw)",
+              margin: "26px auto",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}
           />
 
           {/* Groom */}
           <ClipReveal active={namesInView} duration={2.2} delay={0.3}>
-            <span style={nameLineStyle}>
+            <span data-name-line style={nameLineStyle}>
               <span style={titleStyle}>{t.groom_title}</span>{" "}
               <span style={nameStyle}>{t.groom_name}</span>
             </span>
@@ -273,28 +279,27 @@ export function NameIntroWithCountdown() {
           style={{ marginTop: 64 }}
         >
           <Divider className="mb-6" />
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, textTransform: "uppercase", marginBottom: 10 }}>
+          <FitLine as="p" data-date-line="sunday" max={DATE_BLOCK_MAX(30)} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.lightBrown, letterSpacing: 0, textTransform: "uppercase", marginBottom: 10 }}>
             {t.sunday}
-          </p>
+          </FitLine>
           {/* The date deliberately yields to the names now. On the printed
               card the names are large and teal while the date is smaller and a
-              dark neutral; the site had that inverted — a 37px date over 21px
-              names, which is exactly the complaint. Dividing by 20 instead of
-              the 10 that suited the old oversized date puts this at ~18px on a
-              414px phone against 22.7px names.
+              dark neutral; the site had that inverted — a 30px date (forced by
+              an index.css override, now deleted) over 22.7px names, which is
+              exactly the complaint.
 
-              The 14px floor is load-bearing: without it a 320px phone renders
-              the date at 13.6px, under body size. Still nowrap-safe either way
-              — "22 พฤศจิกายน 2569" and "22 November 2026" both measure at most
-              9.09em across the webfont and both fallbacks, far inside a /20
-              box. Colour moves teal -> midBrown so it recedes in hue as well as
-              in scale. */}
-          <p className="invitation-date" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(14px, calc((100vw - 48px) / 20), 34px)", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15, whiteSpace: "nowrap" }}>
+              All three lines of this block are capped at 80% of --name-size,
+              the very formula the names use, so "smaller than the names" holds
+              at every width by construction: ~18px at 414, ~14px at 320, 34px
+              at 768 and above. FitLine then shrinks any of them further if the
+              copy would not fit, so none of them can wrap. Colour moves teal ->
+              midBrown so the date recedes in hue as well as in scale. */}
+          <FitLine as="p" data-date-line="date" max={DATE_BLOCK_MAX(34)} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 500, color: COLORS.midBrown, letterSpacing: "0.03em", lineHeight: 1.15 }}>
             {lang === "TH" ? "22 พฤศจิกายน 2569" : "22 November 2026"}
-          </p>
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "28px", letterSpacing: 0, color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
+          </FitLine>
+          <FitLine as="p" data-date-line="venue" max={DATE_BLOCK_MAX(28)} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", letterSpacing: 0, color: COLORS.lightBrown, textTransform: "uppercase", marginTop: 16 }}>
             {t.map_title}
-          </p>
+          </FitLine>
         </motion.div>
       </div>
     </section>

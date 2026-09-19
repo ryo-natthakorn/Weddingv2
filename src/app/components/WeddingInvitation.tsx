@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView, useReducedMotion } from "motion/react";
-import { LangProvider, useLang } from "./wedding/wedding-context";
+import { LangProvider, MusicStateProvider, useLang } from "./wedding/wedding-context";
 import { LangToggle } from "./wedding/LangToggle";
 import { MusicPlayer, type MusicPlayerHandle } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
@@ -12,6 +12,7 @@ import { NameIntroWithCountdown } from "./wedding/NameIntroWithCountdown";
 import {
   useReveal,
   Divider,
+  FitLine,
   LeafSvg,
   COLORS,
 } from "./wedding/shared";
@@ -28,6 +29,30 @@ import googleMapsIcon from "../../imports/google-maps.png";
 const DIRECTION_LOGOS: Record<string, string> = { car: carIcon, mrt: mrtIcon, grab: grabIcon };
 
 const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok";
+
+/* Section kickers ("PROGRAM OF EVENTS", "OUR HONEYMOON ENVELOPE", their Thai
+   equivalents): 30px is the ceiling, FitLine shrinks them if a narrow phone
+   cannot hold the line. */
+export const KICKER_MAX = 30;
+const QUOTE_MAX = "clamp(1rem, 2.5vw, 1.2rem)";
+const kickerStyle = {
+  fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
+  fontWeight: 600,
+  letterSpacing: 0,
+  color: COLORS.navy,
+  textTransform: "uppercase" as const,
+  marginBottom: 12,
+};
+
+/* A dress-code line is a list of runs, some of them bold (the colour names).
+   The same runs render whether the sentence is on one line or folded at its
+   authored break point. */
+type DressRun = string | { bold: string };
+export function renderRuns(runs: DressRun[]) {
+  return runs.map((run, i) =>
+    typeof run === "string" ? <span key={i}>{run}</span> : <b key={i} style={{ fontWeight: 600 }}>{run.bold}</b>,
+  );
+}
 
 /* One continuous gradient behind everything after the hero — sections are
    transparent windows into it, so scrolling never hits a hard color break.
@@ -273,8 +298,11 @@ function FacebookIcon() {
 /* ════════════════════════════════════════
    MAIN INVITATION CONTENT
 ════════════════════════════════════════ */
-function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => void; onSongAnchor: (node: HTMLButtonElement | null) => void }) {
-  const { t } = useLang();
+function InvitationContent({ onRingSlot, onSongDockSlot }: {
+  onRingSlot: (node: HTMLDivElement | null) => void;
+  onSongDockSlot: (node: HTMLDivElement | null) => void;
+}) {
+  const { t, lang } = useLang();
   const heroRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroRef);
   const reduceMotion = useReducedMotion();
@@ -352,7 +380,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
       <div style={grainLayer(POST_HERO_GRADIENT)}>
 
       {/* ═══ NAME INTRODUCTION ═══ */}
-      <NameIntroWithCountdown />
+      <NameIntroWithCountdown onRingSlot={onRingSlot} />
 
       {/* ═══ GALLERY ═══ */}
       <GallerySection />
@@ -361,7 +389,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
       <section ref={venueSec.ref} style={{ padding: "32px 24px 36px", maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
         <motion.div initial={{ opacity: 0, y: 40 }} animate={venueSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }}>
 
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.venue_label}</p>
+          <FitLine as="p" max={KICKER_MAX} style={kickerStyle}>{t.venue_label}</FitLine>
           <Divider className="mb-8" />
 
           {/* BLOCK 1+2 — merged: venue photo and address/CTA share one card */}
@@ -378,7 +406,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
 
             {/* Address + CTA — same card, below the photo */}
             <div style={{ padding: "32px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
-              <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(0.95rem, 2.6vw, 1.1rem)", fontWeight: 400, color: COLORS.navy, letterSpacing: 0 }}>{t.map_address}</p>
+              <FitLine as="p" max="clamp(0.95rem, 2.6vw, 1.1rem)" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.navy, letterSpacing: 0, width: "100%" }}>{t.map_address}</FitLine>
               <motion.a
                 href={MAPS_LINK}
                 className="maps-link"
@@ -386,17 +414,17 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#FFFFFF", border: "1px solid #C8BDA1", borderRadius: 100, padding: "14px 32px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, textTransform: "uppercase", color: COLORS.navy, textDecoration: "none", boxShadow: "0 4px 16px rgba(138,112,48,0.12)" }}
+                style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", border: "1px solid #C8BDA1", borderRadius: 100, padding: "14px 24px", fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", letterSpacing: 0, textTransform: "uppercase", color: COLORS.navy, textDecoration: "none", boxShadow: "0 4px 16px rgba(138,112,48,0.12)", boxSizing: "border-box" }}
               >
                 <img src={googleMapsIcon} alt="" width={28} height={28} style={{ objectFit: "contain", flexShrink: 0 }} />
-                {t.map_btn}
+                <FitLine as="span" className="maps-label" max={16}>{t.map_btn}</FitLine>
               </motion.a>
             </div>
 
             {/* Directions — same card, below the address/CTA, separated by a hairline */}
             <div style={{ borderTop: "1px solid rgba(138,107,75,0.18)", padding: "28px 28px 32px", display: "flex", flexDirection: "column", gap: 24, textAlign: "left" }}>
               {t.direction_items.map(({ key, title, text }) => (
-                <div key={key} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                <div key={key} className="direction-row">
                   {/* The marks are the tiles: each is already a coloured disc
                       with a white symbol, so the gold circle that used to hold
                       an emoji would only box them in. */}
@@ -406,9 +434,12 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
                     aria-hidden
                     style={{ width: 48, height: 48, borderRadius: key === "mrt" ? 0 : "50%", objectFit: "contain", flexShrink: 0, boxShadow: key === "mrt" ? "none" : "0 3px 10px rgba(61,34,21,0.18)" }}
                   />
-                  <div>
-                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", letterSpacing: 0, color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</p>
-                    <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</p>
+                  {/* Below 600px this column sits under the mark and gets the
+                      whole card width — "ค้นหา 'SailomSangdad Homey Studio'"
+                      cannot hold one line beside a 48px logo on a phone. */}
+                  <div className="direction-text">
+                    <FitLine as="p" max={16} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", letterSpacing: 0, color: COLORS.gold, textTransform: "uppercase", marginBottom: 4 }}>{title}</FitLine>
+                    <FitLine as="p" max={16} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.7 }}>{text}</FitLine>
                   </div>
                 </div>
               ))}
@@ -420,7 +451,9 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
       {/* ═══ PROGRAM ═══ */}
       <section ref={programSec.ref} style={{ padding: "48px 24px 56px", maxWidth: 920, margin: "0 auto", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ paddingTop: 20, position: "relative", zIndex: 2 }}>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.program_label}</motion.p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={programSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }}>
+            <FitLine as="p" max={KICKER_MAX} style={kickerStyle}>{t.program_label}</FitLine>
+          </motion.div>
           <Divider className="mb-12" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {t.program.map((item, i) => (
@@ -432,7 +465,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
               >
                 <ProgramIcon src={PROGRAM_ICONS[i]?.src} emoji={PROGRAM_ICONS[i]?.emoji ?? "•"} />
                 <span style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1.9rem, 5vw, 2.4rem)", fontWeight: 500, color: COLORS.gold, letterSpacing: 0, lineHeight: 1 }}>{item.time}</span>
-                <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1.05rem", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3 }}>{item.title}</p>
+                <FitLine as="p" max="1.05rem" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 600, color: COLORS.navy, lineHeight: 1.3, width: "100%" }}>{item.title}</FitLine>
               </motion.div>
             ))}
           </div>
@@ -444,10 +477,25 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
         <div style={{ paddingTop: 24, position: "relative", zIndex: 2 }}>
           {/* Dress code — label, title, description */}
           <motion.div initial={{ opacity: 0, y: 28 }} animate={dressSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9 }}>
-            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "30px", fontWeight: 600, letterSpacing: 0, color: COLORS.navy, textTransform: "uppercase", marginBottom: 12 }}>{t.dress_label}</p>
+            <FitLine as="p" max={KICKER_MAX} style={kickerStyle}>{t.dress_label}</FitLine>
             <Divider className="mb-8" />
-            <h2 style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "20px", fontWeight: 400, color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</h2>
-            <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}>{t.dress_desc}</p>
+            <FitLine as="h2" max={20} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.navy, marginBottom: 16 }}>{t.dress_title}</FitLine>
+            {/* One sentence with the colour names in bold — folded at its
+                authored break point (after "…มาร่วมสนุกกับเรา" / "…tones of")
+                on anything narrower than roughly a tablet. */}
+            <FitLine
+              as="p"
+              max={16}
+              lines={t.dress_desc_lines.map((runs, i) => <span key={i}>{renderRuns(runs as DressRun[])}</span>)}
+              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, color: COLORS.midBrown, lineHeight: 1.9, marginBottom: 40 }}
+            >
+              {t.dress_desc_lines.map((runs, i) => (
+                <span key={i}>
+                  {i > 0 && lang === "EN" ? " " : ""}
+                  {renderRuns(runs as DressRun[])}
+                </span>
+              ))}
+            </FitLine>
           </motion.div>
 
           {/* 9 swatch arches — drop in left→right, top row first.
@@ -488,14 +536,15 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
                 <TypewriterText text={t.hashtag} active={hashtagSec.inView} color={COLORS.gold} />
               </span>
             </div>
-            <motion.p
+            <motion.div
               initial={{ opacity: 0 }}
               animate={hashtagSec.inView ? { opacity: 1 } : {}}
               transition={{ delay: 0.4, duration: 0.9 }}
-              style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "1rem", fontWeight: 400, letterSpacing: 0, color: COLORS.midBrown, textTransform: "uppercase" }}
             >
-              {t.hashtag_sub}
-            </motion.p>
+              <FitLine as="p" max={16} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontWeight: 400, letterSpacing: 0, color: COLORS.midBrown, textTransform: "uppercase" }}>
+                {t.hashtag_sub}
+              </FitLine>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -506,7 +555,7 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
       <GiftSection />
 
       {/* ═══ OUR SONG ═══ */}
-      <SongSection onPlay={onPlaySong} onAnchor={onSongAnchor} />
+      <SongSection onDockSlot={onSongDockSlot} />
 
       {/* ═══ FOOTER ═══ */}
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
@@ -521,8 +570,8 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
               paragraph still wraps normally if it's too long for a narrow
               phone — that's ordinary text wrapping, not the break this is
               guarding against. */}
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</p>
-          <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</p>
+          <FitLine as="p" max={QUOTE_MAX} lines={t.quote_line1_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</FitLine>
+          <FitLine as="p" max={QUOTE_MAX} lines={t.quote_line2_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</FitLine>
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>
@@ -535,7 +584,11 @@ function InvitationContent({ onPlaySong, onSongAnchor }: { onPlaySong: () => voi
 export function WeddingInvitation() {
   const [showIntro, setShowIntro] = useState(true);
   const musicRef = useRef<MusicPlayerHandle>(null);
-  const [songAnchor, setSongAnchor] = useState<HTMLButtonElement | null>(null);
+  const [songDockSlot, setSongDockSlot] = useState<HTMLDivElement | null>(null);
+  const [ringSlot, setRingSlot] = useState<HTMLDivElement | null>(null);
+  /* The slider thumb's last box, handed over when the intro is done. Until it
+     is set, the ring on screen is the intro's own. */
+  const [released, setReleased] = useState<DOMRect | null>(null);
 
   /* The invitation is laid out behind the intro overlay (it is only faded to
      opacity 0), so without this the guest can scroll the hidden card while the
@@ -566,14 +619,16 @@ export function WeddingInvitation() {
 
   return (
     <LangProvider>
+      <MusicStateProvider>
       <AnimatePresence>
         {showIntro && (
           <IntroAnimation
             onUnlock={() => musicRef.current?.play()}
-            onComplete={() => {
+            onComplete={(ringBox) => {
               // Belt-and-braces against a restored/nonzero offset surviving the
               // lock — the card must open on the hero.
               window.scrollTo(0, 0);
+              setReleased(ringBox);
               setShowIntro(false);
             }}
           />
@@ -584,11 +639,15 @@ export function WeddingInvitation() {
         style={{ pointerEvents: showIntro ? "none" : "auto" }}
       >
         <LangToggle />
-        <MusicPlayer ref={musicRef} dockTarget={songAnchor} />
       </motion.div>
+      {/* Outside the fade above on purpose: the ring is handed over from the
+          intro at full strength and sets off at once, so it must not be
+          dissolving in at the same time. It renders nothing until then. */}
+      <MusicPlayer ref={musicRef} namesSlot={ringSlot} songSlot={songDockSlot} released={released} />
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: showIntro ? 0 : 1 }} transition={{ duration: 1.2, delay: 0.3 }}>
-        <InvitationContent onPlaySong={() => musicRef.current?.open()} onSongAnchor={setSongAnchor} />
+        <InvitationContent onRingSlot={setRingSlot} onSongDockSlot={setSongDockSlot} />
       </motion.div>
+      </MusicStateProvider>
     </LangProvider>
   );
 }

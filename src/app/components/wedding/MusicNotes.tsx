@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { MotionValue } from "motion/react";
 
 // One persistent set of notes: orbit -> staff -> orbit, using the player's clock.
-export function MusicNotes({ dockTarget, progress, playing, expanded, reduceMotion }: {
-  dockTarget?: HTMLButtonElement | null;
+export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, reduceMotion }: {
+  dockTarget?: HTMLElement | null;
+  orbRef: RefObject<HTMLDivElement>;
   progress: MotionValue<number>;
   playing: boolean;
   expanded: boolean;
@@ -22,12 +23,13 @@ export function MusicNotes({ dockTarget, progress, playing, expanded, reduceMoti
       if (playing && !reduceMotion) phase.current += dt * 0.38;
       const p = progress.get();
       // Read all geometry before writing SVG transforms to avoid layout thrashing.
+      const orb = orbRef.current?.getBoundingClientRect();
       const rects = targets.map(target => target.getBoundingClientRect());
       notes.current.forEach((node, i) => {
         if (!node) return;
         const angle = phase.current + i * Math.PI * 2 / 5;
-        const x = window.innerWidth - 52 + Math.cos(angle) * 40;
-        const y = window.innerHeight - 52 + Math.sin(angle) * 40;
+        const x = (orb ? orb.left + orb.width / 2 : window.innerWidth - 60) + Math.cos(angle) * 42;
+        const y = (orb ? orb.top + orb.height / 2 : window.innerHeight - 60) + Math.sin(angle) * 42;
         const rect = rects[i];
         const destX = rect ? rect.left + rect.width / 2 : x;
         const destY = rect ? rect.top + rect.height / 2 : y;
@@ -38,13 +40,13 @@ export function MusicNotes({ dockTarget, progress, playing, expanded, reduceMoti
         positions.current[i] = pos;
         const scale = 0.55 + p * 0.45;
         node.setAttribute("transform", `translate(${pos.x} ${pos.y}) scale(${scale})`);
-        node.style.opacity = expanded ? "0" : String(playing ? 0.8 : p * 0.8);
+        node.style.opacity = expanded || !playing ? "0" : "0.8";
       });
       frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
-  }, [dockTarget, progress, playing, expanded, reduceMotion]);
+  }, [dockTarget, orbRef, progress, playing, expanded, reduceMotion]);
 
   return <svg aria-hidden="true" data-music-notes="" style={{ position: "fixed", inset: 0, width: "100%", height: "100%", overflow: "hidden", pointerEvents: "none", zIndex: 999 }}>
     {Array.from({ length: 5 }, (_, i) => <g key={i} ref={node => { notes.current[i] = node; }} data-music-note={i} style={{ opacity: 0 }}>

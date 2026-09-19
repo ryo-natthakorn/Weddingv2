@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 export type Lang = "EN" | "TH";
 
@@ -60,6 +60,12 @@ export const translations = {
     dress_label: "Dress Code",
     dress_title: "Garden Wedding",
     dress_desc: "Please dress in tones of brown, gold, yellow, cream and green.",
+    /* Outer array = the authored break points; inner array = the runs on that
+       line, a bold run being the colour list itself. */
+    dress_desc_lines: [
+      ["Please dress in tones of"],
+      [{ bold: "brown, gold, yellow, cream and green." }],
+    ],
     dress_colors: [
       "Dark brown", "Olive", "Caramel",
       "Gold", "Yellow", "Pale yellow",
@@ -75,30 +81,45 @@ export const translations = {
     rsvp_no: "Regretfully Decline",
     rsvp_guests: "Number of guests (including yourself)",
     rsvp_guests_help: "Including yourself",
-    rsvp_importance:
-      "Your reply helps us plan our day.",
+    rsvp_importance: "Your reply helps us plan our day.",
+    rsvp_importance_lines: ["Your reply helps us plan our day."],
     rsvp_dietary: "Dietary Preferences / Notes",
     rsvp_submit: "Send RSVP",
     rsvp_sending: "Sending...",
     rsvp_error: "Something went wrong — please try again.",
     rsvp_thanks: "Thank you! We look forward to celebrating with you.",
+    rsvp_thanks_lines: ["Thank you!", "We look forward to celebrating with you."],
     rsvp_sorry: "We will miss you dearly. Thank you for letting us know.",
+    rsvp_sorry_lines: ["We will miss you dearly.", "Thank you for letting us know."],
     quote_line1: "“Being deeply loved by someone gives you strength,",
+    quote_line1_lines: ["“Being deeply loved by someone", "gives you strength,"],
     quote_line2: "while loving someone deeply gives you courage.”",
+    quote_line2_lines: ["while loving someone deeply", "gives you courage.”"],
     quote_author: "— Lao Tzu",
     gift_heading: "Our honeymoon envelope",
-    gift_description: "Thank you for celebrating with us. If you would like to contribute to our honeymoon, you can leave a gift in this envelope.",
+    /* Two fixed lines, not one reflowing paragraph. Line 2 carries the break
+       point it folds at on a narrow phone. */
+    gift_description_lines: [
+      { text: "Thank you for celebrating with us." },
+      {
+        text: "If you would like to contribute to our honeymoon, you can leave a gift in this envelope.",
+        lines: ["If you would like to contribute to our honeymoon,", "you can leave a gift in this envelope."],
+      },
+    ],
     gift_tap: "Tap to give a gift",
     gift_closing: "Thank you for celebrating with us",
     gift_save: "Save QR code",
     gift_save_hint: "Then scan it from your photos in your banking app",
     song_title: "Pantika",
-    song_dedication: "Ryo secretly wrote this song for Yee ahead of his proposal, as a surprise.",
+    song_dedication_lines: ["Ryo wrote this song for Panyee", "to surprise her at the proposal"],
     song_play: "Play song",
     music_label: "Our Song",
     music_title: "Pantika (Proposal Song)",
     music_note: "♪ A song written with love",
     music_youtube: "Also on YouTube",
+    /* The whole invitation to press play. Two words, lowercase, in both
+       languages by choice — it is a label on an object, not a sentence. */
+    music_play_me: "play me",
   },
   TH: {
     invitation_pre: "ขอเชิญร่วมแบ่งปันความสุขในพิธีมงคลสมรส",
@@ -150,20 +171,24 @@ export const translations = {
       { year: "2026", title: "จุดเริ่มต้นของนิรันดร์", caption: "และตอนนี้เราจะเขียนบทที่ยิ่งใหญ่ที่สุดด้วยกัน" },
     ],
     hashtag: "#PNEST221126",
-    hashtag_sub: "ถ่ายรูปแล้วติดแฮชแท็กนี้ให้เราด้วยนะ 😁",
+    hashtag_sub: "ถ่ายรูปแล้วติดแฮชแท็กนี้ให้เราด้วยน้า 😁",
     map_title: "บ้านสายลมแสงแดด",
     map_address: "รามอินทรา 40 กรุงเทพมหานคร",
     map_btn: "เปิดใน Google Maps",
     dress_label: "ธีมสีเครื่องแต่งกาย",
     dress_title: "งานแต่งในสวน",
-    dress_desc: "ชวนทุกคนแต่งตัวในโทนสีน้ำตาล ทอง เหลือง ครีม หรือเขียว",
+    dress_desc: "เราเชิญชวนทุกท่านมาร่วมสนุกกับเราด้วยการแต่งตัวในโทนสีน้ำตาล ทอง เหลือง ครีม หรือเขียว",
+    dress_desc_lines: [
+      ["เราเชิญชวนทุกท่านมาร่วมสนุกกับเรา"],
+      ["ด้วยการแต่งตัวในโทนสี", { bold: "น้ำตาล ทอง เหลือง ครีม" }, " หรือ", { bold: "เขียว" }],
+    ],
     dress_colors: [
       "น้ำตาลเข้ม", "เขียวมะกอก", "น้ำตาลคาราเมล",
       "ทอง", "เหลือง", "เหลืองอ่อน",
       "เขียวเข้ม", "เขียวเสจ", "เขียวใบไม้",
     ],
     rsvp_label: "ฟอร์มตอบรับคำเชิญ",
-    rsvp_title: "คุณจะมาร่วมงานกับเราไหม?",
+    rsvp_title: "ท่านจะมาร่วมงานกับเราไหม?",
     rsvp_subtitle: "กรุณาตอบรับภายใน 31 ตุลาคม 2569",
     rsvp_name: "ชื่อ-นามสกุล",
     rsvp_email: "อีเมลของคุณ",
@@ -172,30 +197,41 @@ export const translations = {
     rsvp_no: "ไม่สะดวกร่วมงาน",
     rsvp_guests: "จำนวนผู้มาร่วมงาน (รวมผู้กรอกแบบฟอร์ม)",
     rsvp_guests_help: "รวมผู้กรอกแบบฟอร์ม",
-    rsvp_importance:
-      "การตอบรับของท่านจะช่วยให้เราต้อนรับแขกทุกท่านได้อย่างทั่วถึง",
+    rsvp_importance: "การตอบรับของท่านจะช่วยให้เราต้อนรับแขกทุกท่านได้อย่างทั่วถึง",
+    rsvp_importance_lines: ["การตอบรับของท่านจะช่วยให้เรา", "ต้อนรับแขกทุกท่านได้อย่างทั่วถึง"],
     rsvp_dietary: "อาหารที่แพ้หรือหมายเหตุเพิ่มเติม",
     rsvp_submit: "ส่งการตอบรับ",
     rsvp_sending: "กำลังส่ง...",
     rsvp_error: "ยังส่งคำตอบไม่ได้ กรุณาลองอีกครั้ง",
     rsvp_thanks: "ขอบคุณที่ตอบรับ แล้วพบกันในวันงานนะครับ",
+    rsvp_thanks_lines: ["ขอบคุณที่ตอบรับ", "แล้วพบกันในวันงานนะครับ"],
     rsvp_sorry: "ขอบคุณที่แจ้งให้เราทราบนะครับ",
-    quote_line1: "“การเป็นคนที่ถูกรักอย่างลึกซึ้ง ให้ความเข้มแข็ง",
-    quote_line2: "ส่วนการรักใครสักคนอย่างลึกซึ้ง ให้ความกล้าหาญ”",
+    rsvp_sorry_lines: ["ขอบคุณที่แจ้งให้เราทราบนะครับ"],
+    quote_line1: "“การเป็นคนที่ถูกรักอย่างลึกซึ้ง มอบความเข้มแข็งให้แก่ท่าน",
+    quote_line1_lines: ["“การเป็นคนที่ถูกรักอย่างลึกซึ้ง", "มอบความเข้มแข็งให้แก่ท่าน"],
+    quote_line2: "ส่วนการรักผู้อื่นอย่างลึกซึ้งนั้น นำพาความกล้ามาสู่ท่าน”",
+    quote_line2_lines: ["ส่วนการรักผู้อื่นอย่างลึกซึ้งนั้น", "นำพาความกล้ามาสู่ท่าน”"],
     quote_author: "— เล่าจื๊อ",
     gift_heading: "ซองนี้ไว้ไปฮันนีมูน",
-    gift_description: "ขอบคุณที่มาร่วมยินดีกับเราสองคนนะครับ ใครอยากร่วมสมทบทุนฮันนีมูน สามารถใส่ซองตรงนี้ได้เลยครับ",
+    gift_description_lines: [
+      { text: "ขอบคุณที่มาร่วมยินดีกับเราสองคนนะครับ" },
+      {
+        text: "หากท่านใดอยากร่วมสมทบทุนฮันนีมูน สามารถใส่ซองตรงนี้ได้เลยครับ",
+        lines: ["หากท่านใดอยากร่วมสมทบทุนฮันนีมูน", "สามารถใส่ซองตรงนี้ได้เลยครับ"],
+      },
+    ],
     gift_tap: "แตะเพื่อร่วมใส่ซอง",
     gift_closing: "ขอบคุณที่ร่วมยินดีกับเราสองคน",
     gift_save: "บันทึก QR",
     gift_save_hint: "แล้วสแกนจากอัลบั้มรูปในแอปธนาคาร",
     song_title: "Pantika",
-    song_dedication: "เรียวแอบแต่งเพลงนี้ให้หยี เพื่อเซอร์ไพรส์หยีตอนขอแต่งงาน",
+    song_dedication_lines: ["เรียวแต่งเพลงนี้ให้ปันหยี", "เพื่อเซอร์ไพรส์ตอนขอแต่งงาน"],
     song_play: "ฟังเพลง",
     music_label: "เพลงของเรา",
     music_title: "Pantika (เพลงขอแต่งงาน)",
     music_note: "♪ เพลงที่เขียนด้วยความรัก",
     music_youtube: "ฟังบน YouTube",
+    music_play_me: "play me",
   },
 };
 
@@ -220,4 +256,48 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 
 export function useLang() {
   return useContext(LangContext);
+}
+
+
+/* ── Music state — what the player is doing, for the rest of the page ──
+
+   The floating player and the song section are siblings (see
+   WeddingInvitation.tsx), so the section cannot be handed this through props
+   without threading them through the whole invitation. It is deliberately tiny:
+   only the facts another section might want to react to.
+
+   docked   — the orb has been pulled into the song section's slot
+   landedAt — timestamp of the last landing, so a one-shot reaction can be keyed
+   cueAt    — start time of the lyric line currently showing (-1 between lines) */
+export type MusicState = {
+  playing: boolean;
+  docked: boolean;
+  landedAt: number;
+  cueAt: number;
+};
+
+const INITIAL_MUSIC_STATE: MusicState = { playing: false, docked: false, landedAt: 0, cueAt: -1 };
+
+const MusicStateContext = createContext<{
+  music: MusicState;
+  setMusic: (patch: Partial<MusicState>) => void;
+}>({ music: INITIAL_MUSIC_STATE, setMusic: () => {} });
+
+export function MusicStateProvider({ children }: { children: React.ReactNode }) {
+  const [music, setState] = useState<MusicState>(INITIAL_MUSIC_STATE);
+  const setMusic = useCallback((patch: Partial<MusicState>) => {
+    setState((current) => {
+      const next = { ...current, ...patch };
+      // Publishing an unchanged object would re-render every consumer on every
+      // scroll frame the player measures.
+      if ((Object.keys(patch) as (keyof MusicState)[]).every((key) => current[key] === next[key])) return current;
+      return next;
+    });
+  }, []);
+  const value = useMemo(() => ({ music, setMusic }), [music, setMusic]);
+  return <MusicStateContext.Provider value={value}>{children}</MusicStateContext.Provider>;
+}
+
+export function useMusicState() {
+  return useContext(MusicStateContext);
 }
