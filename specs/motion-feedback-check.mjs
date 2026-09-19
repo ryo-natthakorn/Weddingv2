@@ -26,13 +26,75 @@ try {
     // The song section holds nothing but an empty slot until the orb flies in.
     const slot = page.locator('[data-music-dock-slot]');
     assert.equal(await page.getByRole('button', { name: 'ฟังเพลง', exact: true }).count(), 0, 'no second play control in the song section');
+    // The staff holds nothing until the orb brings its notes up onto it.
+    assert.equal(await page.locator('#song-staff [data-music-note]').evaluateAll(
+      notes => notes.filter(note => Number(getComputedStyle(note.parentElement).opacity) > 0.05).length,
+    ), 0, 'the staff is empty before the orb docks');
+    // Every note turning around the orb keeps clear of the gold disc itself,
+    // at every point of its drift and not merely where it comes to rest.
+    const clearances = [];
+    for (let frame = 0; frame < 60; frame += 1) {
+      clearances.push(...await page.evaluate(() => {
+        const button = document.querySelector('[aria-label="Open music player"]');
+        const box = button.getBoundingClientRect();
+        const centre = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+        return [...document.querySelectorAll('[data-music-note]')]
+          // the trail only — the staff's notes are a page away and not the
+          // ones that could ever sit on the button
+          .filter(note => !note.closest('#song-staff'))
+          .filter(note => Number(getComputedStyle(note.closest('div[style]') || note).opacity) > 0.05)
+          .map(note => {
+            const r = note.getBoundingClientRect();
+            // nearest point of the note's own box to the orb's centre
+            const dx = Math.max(r.left - centre.x, 0, centre.x - r.right);
+            const dy = Math.max(r.top - centre.y, 0, centre.y - r.bottom);
+            return Math.hypot(dx, dy);
+          });
+      }));
+      await page.waitForTimeout(40);
+    }
     const start = Date.now();
+    const depart = await page.locator('[aria-label="Open music player"]').boundingBox();
     await slot.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.querySelector('[data-music-docking="true"]'));
     assert.equal(await page.locator('[data-music-docked="true"]').count(), 0, 'the flight is visible, not a cut');
+    // Mid-flight: no swelling shadow, no squash, and the path bows off the
+    // straight line between the two boxes.
+    const air = [];
+    for (let frame = 0; frame < 24; frame += 1) {
+      air.push(await page.evaluate(() => {
+        const button = document.querySelector('[aria-label="Open music player"]');
+        if (!button) return null;
+        const style = getComputedStyle(button);
+        const box = button.getBoundingClientRect();
+        return { shadow: style.boxShadow, transform: style.transform, x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      }));
+      await page.waitForTimeout(25);
+    }
     await page.screenshot({ path: join(output, `music-flying-${width}.png`) });
     await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
-    assert.ok(Date.now() - start >= 150, 'the orb travels rather than teleporting');
+    assert.ok(Date.now() - start >= 700, 'the flight is slow enough to watch');
+    const sampled = air.filter(Boolean);
+    const rest = await page.evaluate(() => getComputedStyle(document.querySelector('[aria-label="Open music player"]')).boxShadow);
+    assert.ok(sampled.length > 0, 'the orb was sampled in flight');
+    assert.equal(new Set([...sampled.map(s => s.shadow), rest]).size, 1, 'the orb shadow never swells: no lift');
+    for (const sample of sampled) {
+      // matrix(a, b, c, d, …) — d is the vertical scale. A squash shows here.
+      const parts = sample.transform.startsWith('matrix(') ? sample.transform.slice(7, -1).split(',').map(Number) : null;
+      if (parts) assert.ok(Math.abs(parts[3] - 1) < 0.01, 'the orb is never squashed');
+    }
+    const arrive = await page.locator('[aria-label="Open music player"]').boundingBox();
+    const from = { x: depart.x + depart.width / 2, y: depart.y + depart.height / 2 };
+    const to = { x: arrive.x + arrive.width / 2, y: arrive.y + arrive.height / 2 };
+    const span = Math.hypot(to.x - from.x, to.y - from.y);
+    const bow = Math.max(...sampled.map(s =>
+      Math.abs((to.x - from.x) * (from.y - s.y) - (from.x - s.x) * (to.y - from.y)) / (span || 1)));
+    assert.ok(bow >= 8, `the flight arcs rather than sliding (bowed ${bow.toFixed(1)}px)`);
+    assert.ok(clearances.length > 0, 'the note trail was running');
+    assert.ok(Math.min(...clearances) >= 40, `the notes keep clear of the orb (nearest ${Math.min(...clearances).toFixed(1)}px)`);
+    // …and the staff now carries the notes the orb brought with it.
+    await page.waitForFunction(() => [...document.querySelectorAll('#song-staff [data-music-note]')]
+      .filter(note => Number(getComputedStyle(note.parentElement).opacity) > 0.9).length === 5);
     assert.equal(
       await page.evaluate(() => document.querySelector('[data-music-dock-slot]').contains(document.querySelector('[data-music-docked="true"]'))),
       true,
@@ -64,7 +126,10 @@ try {
     await section.evaluate(el => el.scrollIntoView());
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
     await page.waitForFunction(() => !document.querySelector('[data-music-docking="true"]'));
-    console.log(`PASS ${width}px: circular gallery, visible flight, in-page card, floating return`);
+    // The notes go back with the orb — the staff is empty again.
+    await page.waitForFunction(() => [...document.querySelectorAll('#song-staff [data-music-note]')]
+      .every(note => Number(getComputedStyle(note.parentElement).opacity) < 0.05));
+    console.log(`PASS ${width}px: circular gallery, arced flight, flat orb, notes on the staff, floating return`);
     await page.close();
   }
 } finally {

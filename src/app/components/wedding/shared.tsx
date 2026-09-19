@@ -357,3 +357,38 @@ export function FitLine({
     </Tag>
   );
 }
+
+/* ── One music note, drawn once ──
+   The corner trail around the player and the notes that come to rest on the
+   staff in "Our Song" are the same object seen in two places, so they have to
+   be the same drawing: a stem laid down first and a head lapped over its foot,
+   the way a note is written by hand rather than set in a font.
+
+   Coordinates are SVG user units, so the caller's viewBox decides the size;
+   `scale` turns about the head. No shadow and no depth tier — the note is ink
+   on paper, not an object floating above it. */
+export function MusicNote({
+  x = 0,
+  y = 0,
+  scale = 1,
+  opacity = 1,
+  color = COLORS.gold,
+}: {
+  x?: number;
+  y?: number;
+  scale?: number;
+  opacity?: number;
+  color?: string;
+}) {
+  return (
+    <g
+      data-music-note=""
+      transform={`translate(${x} ${y}) scale(${scale})`}
+      opacity={opacity}
+      style={{ transformOrigin: "0 0" }}
+    >
+      <path d="M7.2 -1 L7.6 -29" stroke={color} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <ellipse cx="0" cy="0" rx="8" ry="5.6" fill={color} transform="rotate(-22)" />
+    </g>
+  );
+}

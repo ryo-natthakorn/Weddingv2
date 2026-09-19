@@ -1,11 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion, useMotionValue, useMotionTemplate, useTransform, animate } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
 import { LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
 import captions from "../../../imports/pantika.sbv?raw";
 import { parseSbv, lyricAt } from "./captions.mjs";
 import { useLang, useMusicState } from "./wedding-context";
+import { MusicNote } from "./shared";
 
 export type MusicPlayerHandle = { play: () => void; open: () => void };
 
@@ -33,9 +34,21 @@ const TEXT_DIM = "rgba(58,44,24,0.4)";
    A tween, not a spring: the flight happens while the guest is mid-scroll, and
    a spring's overshoot on top of the page's own movement reads as a yank. One
    long ease-out is the "picked up and put down" arc DESIGN.md asks for, and it
-   lands exactly once. */
+   lands exactly once.
+
+   1.1s, not the 0.62s it was: at that speed the trip was over before the eye
+   found it, and the shortfall was being covered by a lift-and-squash that made
+   the orb read as a bouncing 3D ball rather than a gold ring being carried. The
+   physics is gone (see the button's one static shadow below) and the length is
+   back, which is the whole of "simple, gentle, playful". */
 const LAND_EASE = [0.22, 1, 0.36, 1] as const;
-const FLIGHT = { duration: 0.62, ease: LAND_EASE };
+const FLIGHT = { duration: 1.1, ease: LAND_EASE };
+/* How far the orb bows off the straight line, at mid-flight. Sideways travel
+   across the page, not a hop off it — the invitation is flat paper. */
+const ARC = 28;
+/* One warm shadow, identical at rest, in the air and after landing. A shadow
+   that swells during the trip is the "airborne mass" cue this pass removes. */
+const ORB_SHADOW = "0 8px 24px rgba(138,112,48,0.35)";
 
 declare global {
   interface Window {
@@ -44,75 +57,97 @@ declare global {
   }
 }
 
-/* Gold petals drifting INTO the button — a quiet "discovery" cue.
-   Nine petals, 6.5–9s drift, 0.55 peak opacity, nearly a second apart: sparse
-   enough that the eye follows one at a time rather than reading a swarm. Each
-   one is a small gradient leaf that turns slowly as it travels. */
-function PetalTrail() {
-  const petals = useRef(
-    Array.from({ length: 9 }, (_, i) => ({
-      id: i,
-      dx: -(40 + Math.random() * 150),   // start to the left of the button
-      dy: -(110 + Math.random() * 200),  // start above the button
-      size: 9 + Math.random() * 6,       // 9–15px
-      dur: 6.5 + Math.random() * 2.5,    // 6.5–9s
-      delay: i * 0.9 + Math.random() * 0.8,
-      rot: Math.random() * 360,
-      spin: 30 + Math.random() * 40,     // how far it turns over the drift
-    })),
+/* Gold notes turning AROUND the button — a quiet "discovery" cue.
+   Nine notes, 6.5-9s drift, 0.55 peak opacity, nearly a second apart: sparse
+   enough that the eye follows one at a time rather than reading a swarm.
+
+   They used to be petals, and they used to end at x:0, y:0 — the orb's own
+   centre — so every one of them finished by sitting on top of the gold disc.
+   Now each note has its own angle and comes to rest on a circle of radius
+   TRAIL_RADIUS around the orb, fading out as it arrives, so the notes keep the
+   button company without ever touching it. Petals became notes at Ryo's
+   request: they are the same notes that settle onto the staff in "Our Song",
+   and reading as one object across the two sections is the point. */
+/* 76px, from a note's centre. The tallest note is 22px wide and 42 tall, so
+   half its diagonal is about 24: at this radius the nearest corner of the
+   biggest note is still ~52px from the orb's centre, comfortably outside the
+   28px disc and its glow. At 64 that worst case fell to 40px, which is exactly
+   the clearance the spec asserts — near enough to the line that the check
+   failed about one run in six. */
+const TRAIL_RADIUS = 76;
+/* Angles in degrees, screen convention (y down): 180 is due left, 270 straight
+   up. The arc stops short of due right and due down because the orb sits 52px
+   from both edges of the viewport, and a note out there would be clipped. */
+const TRAIL_ARC = [165, 285] as const;
+
+function NoteTrail() {
+  const notes = useRef(
+    Array.from({ length: 9 }, (_, i) => {
+      const spread = TRAIL_ARC[0] + ((TRAIL_ARC[1] - TRAIL_ARC[0]) * i) / 8;
+      // A little jitter so nine notes on an even fan do not read as a dial.
+      const a = ((spread + (Math.random() * 14 - 7)) * Math.PI) / 180;
+      return {
+        id: i,
+        dx: -(40 + Math.random() * 150),   // start to the left of the button
+        dy: -(110 + Math.random() * 200),  // start above the button
+        ex: Math.cos(a) * TRAIL_RADIUS,    // rest on the circle, never inside it
+        ey: Math.sin(a) * TRAIL_RADIUS,
+        size: 16 + Math.random() * 6,      // 16-22px wide
+        dur: 6.5 + Math.random() * 2.5,    // 6.5-9s
+        delay: i * 0.9 + Math.random() * 0.8,
+        rot: Math.random() * 24 - 12,
+        spin: 10 + Math.random() * 16,     // how far it turns over the drift
+      };
+    }),
   ).current;
 
   return (
-    /* This wrapper exists purely so the AnimatePresence around <PetalTrail/>
+    /* This wrapper exists purely so the AnimatePresence around <NoteTrail/>
        has something to fade: without an `exit` the whole trail blinked out in
-       one frame the moment the song section came into view. */
+       one frame the moment the song section came into view.
+       right/bottom 52 puts its origin exactly on the orb's centre (24px inset
+       + 28px radius), which is what makes the circle above a circle around the
+       button rather than around the corner of the screen. */
     <motion.div
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
       style={{ position: "fixed", right: 52, bottom: 52, width: 0, height: 0, pointerEvents: "none", zIndex: 999 }}
       aria-hidden
     >
-      {petals.map((p) => (
+      {notes.map((n) => (
         <motion.div
-          key={p.id}
-          initial={{ x: p.dx, y: p.dy, opacity: 0, scale: 0.5, rotate: p.rot }}
+          key={n.id}
+          initial={{ x: n.dx, y: n.dy, opacity: 0, scale: 0.5, rotate: n.rot }}
           /* `rotate` has to be a motion prop, not a `transform` in the inline
              style: Framer owns the transform property once x/y/scale animate,
              so a hand-written rotate() there was silently dropped and the
-             petals never turned. */
+             notes never turned. */
           animate={{
-            x: [p.dx, 0],
-            y: [p.dy, 0],
-            opacity: [0, 0.55, 0],
-            scale: [0.5, 1, 0.35],
-            rotate: [p.rot, p.rot + p.spin],
+            x: [n.dx, n.ex],
+            y: [n.dy, n.ey],
+            /* Gone by the time it arrives: the last fifth of the drift is the
+               fade, so nothing is ever drawn at full strength beside the orb. */
+            opacity: [0, 0.55, 0.55, 0],
+            scale: [0.5, 1, 1, 0.8],
+            rotate: [n.rot, n.rot + n.spin],
           }}
-          transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
-          style={{ position: "absolute", width: p.size, height: p.size * 1.5 }}
+          transition={{
+            duration: n.dur,
+            delay: n.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+            opacity: { duration: n.dur, delay: n.delay, repeat: Infinity, ease: "easeInOut", times: [0, 0.25, 0.8, 1] },
+            scale: { duration: n.dur, delay: n.delay, repeat: Infinity, ease: "easeInOut", times: [0, 0.25, 0.8, 1] },
+          }}
+          /* Centred on its own position, so `ex`/`ey` is where the note is,
+             not where its top-left corner is — the clearance from the disc is
+             measured from the centre outward. */
+          style={{ position: "absolute", width: n.size, height: n.size * 1.9, marginLeft: -n.size / 2, marginTop: -n.size * 0.95 }}
         >
-          <svg viewBox="0 0 12 18" width="100%" height="100%" style={{ display: "block", overflow: "visible" }}>
-            <defs>
-              <linearGradient id={`petal-${p.id}`} x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#D8BC74" />
-                <stop offset="55%" stopColor="#C6A34E" />
-                <stop offset="100%" stopColor="#8A7030" />
-              </linearGradient>
-            </defs>
-            {/* An asymmetric leaf: full curve on one side, a softer one on the
-                other, so it reads as a petal rather than a lozenge. */}
-            <path
-              d="M6 0.5C9.8 3.6 11.5 7.4 11.5 10.6C11.5 14.6 9 17.5 6 17.5C3 17.5 0.5 15 0.5 11.2C0.5 7.6 2.4 3.6 6 0.5Z"
-              fill={`url(#petal-${p.id})`}
-              opacity="0.85"
-            />
-            <path
-              d="M6 1.6C6.6 6 6.7 11.6 6 17"
-              stroke="#FDF6E6"
-              strokeOpacity="0.35"
-              strokeWidth="0.7"
-              fill="none"
-              strokeLinecap="round"
-            />
+          {/* The glyph is drawn around (0,0) with the stem reaching to -29 and
+              the head 8 wide, so the viewBox is offset to hold all of it. */}
+          <svg viewBox="-10 -32 21 40" width="100%" height="100%" style={{ display: "block", overflow: "visible" }}>
+            <MusicNote color="#C6A34E" />
           </svg>
         </motion.div>
       ))}
@@ -165,31 +200,33 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
      finished closing. See the measure loop and `onExitComplete` below. */
   const pendingDockRef = useRef<boolean | null>(null);
   const measureRef = useRef<(() => void) | null>(null);
+  /* The beat between the card finishing its close and the orb setting off —
+     see onCardExited. Held so an unmount mid-beat cannot call into a dead
+     component. */
+  const resumeTimer = useRef(0);
+  useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
   const expandedRef = useRef(false);
   expandedRef.current = expanded;
   /* The flight is driven by one value: 1 at the departure box, 0 on arrival.
      Keeping it as a fraction rather than two pixel offsets is what lets the
      scroll correction below fade out exactly in step with the travel. */
   const flightT = useMotionValue(0);
-  const flightDelta = useRef({ dx: 0, dy: 0 });
+  const flightDelta = useRef({ dx: 0, dy: 0, arcX: 0, arcY: 0 });
   /* Scroll travelled since the flight began. The FLIP's two boxes are
      viewport-relative but one end of the trip is in normal flow, so without
      this the orb drifts by however far the page moved during the 0.62s — and
      the page is always moving, since scrolling is what triggers the flight. */
   const scrollAdj = useMotionValue(0);
-  const stageX = useTransform(flightT, (t) => t * flightDelta.current.dx);
+  /* The travel, plus a bow off the straight line that peaks at mid-flight and
+     is exactly zero at both ends, so the FLIP still lands on the pixel. This is
+     where the flight's playfulness lives now that the lift is gone — the orb
+     curves across the page instead of hopping above it. */
+  const bow = (t: number) => Math.sin(Math.PI * (1 - t));
+  const stageX = useTransform(flightT, (t) => t * flightDelta.current.dx + bow(t) * flightDelta.current.arcX);
   const stageY = useTransform(
     [flightT, scrollAdj] as const,
-    ([t, adj]: number[]) => t * (flightDelta.current.dy + adj),
+    ([t, adj]: number[]) => t * (flightDelta.current.dy + adj) + bow(t) * flightDelta.current.arcY,
   );
-  /* 0 on the paper, 1 in the air — drives the shadow so the orb visibly lifts
-     off the page for the length of the flight and settles again on landing. */
-  const lift = useMotionValue(0);
-  const squash = useMotionValue(1);
-  const shadowOffset = useTransform(lift, [0, 1], [8, 22]);
-  const shadowBlur = useTransform(lift, [0, 1], [24, 46]);
-  const shadowAlpha = useTransform(lift, [0, 1], [0.4, 0.28]);
-  const orbShadow = useMotionTemplate`0 ${shadowOffset}px ${shadowBlur}px rgba(138,112,48,${shadowAlpha})`;
   const [ripple, setRipple] = useState(0);
 
   /* ── Dock decision — does the orb belong in the page or in the corner? ──
@@ -268,7 +305,15 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
         setMusic({ landedAt: Date.now() });
       }
     };
-    flightDelta.current = { dx, dy };
+    /* Bow across whichever axis the trip does NOT mostly travel along, in the
+       direction it is already drifting: an arc out and back in, rather than a
+       slide. */
+    const vertical = Math.abs(dy) >= Math.abs(dx);
+    flightDelta.current = {
+      dx, dy,
+      arcX: vertical ? (dx <= 0 ? -ARC : ARC) : 0,
+      arcY: vertical ? 0 : (dy <= 0 ? -ARC : ARC),
+    };
     if (reduceMotion) { flightT.set(0); arrive(); return; }
     setLanded(false);
     flightT.set(1);
@@ -289,17 +334,14 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
       window.removeEventListener("scroll", onScroll);
       scrollAdj.set(0);
     };
-    const rise = animate(lift, 1, { duration: 0.16, ease: "easeOut" });
     const fly = animate(flightT, 0, {
       ...FLIGHT,
       onComplete: () => {
         settle();
-        animate(lift, 0, { duration: 0.32, ease: LAND_EASE });
-        animate(squash, [0.96, 1], { duration: 0.3, ease: LAND_EASE });
         arrive();
       },
     });
-    return () => { rise.stop(); fly.stop(); settle(); };
+    return () => { fly.stop(); settle(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dock]);
 
@@ -324,7 +366,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
     /* Used by the "Our Song" section. Unlike autoplay-on-entry, this follows a
        deliberate tap partway down the page, so the card is expanded too —
        otherwise sound simply starts from a corner button with no visible
-       cause. Expanding also retires the petal trail (see the effect below). */
+       cause. Expanding also retires the note trail (see the effect below). */
     open: () => {
       setExpanded(true);
       startPlayback(true);
@@ -451,7 +493,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
 
   /* ── The discovery cue retires after 30s, or once the player is engaged.
      It deliberately does NOT stop on autoplay alone — autoplay fires before
-     the guest has had a chance to notice the drifting petals. ── */
+     the guest has had a chance to notice the drifting notes. ── */
   useEffect(() => {
     const id = setTimeout(() => setShowTrail(false), 30000);
     return () => clearTimeout(id);
@@ -572,11 +614,20 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
 
   /* A dock decision taken while the card was open resumes here, once the card
      has actually left the layout — measuring any earlier reads a frame the
-     guest never sees, which is what used to throw the flight off course. */
+     guest never sees, which is what used to throw the flight off course.
+
+     The beat before the flight is deliberate: closing the card and launching
+     the orb in the same frame reads as one violent event, as if scrolling had
+     broken something. A short pause makes it two — the card folds back into the
+     orb, then the orb sets off. */
   const onCardExited = () => {
     if (pendingDockRef.current === null) return;
     pendingDockRef.current = null;
-    measureRef.current?.();
+    if (reduceMotion) { measureRef.current?.(); return; }
+    resumeTimer.current = window.setTimeout(() => {
+      resumeTimer.current = 0;
+      measureRef.current?.();
+    }, 140);
   };
 
   const player = (
@@ -609,7 +660,9 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
             initial={reduceMotion ? { opacity: 1 } : { scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { scale: 0.7, opacity: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            /* 0.3s, not 0.18s: the orb and the card trade places under
+               `mode="wait"`, so anything quicker reads as a cut. */
+            transition={{ duration: 0.3, ease: "easeOut" }}
             data-music-docked={dock && landed}
             data-music-docking={dock}
             style={{ position: "relative", width: 56, height: 56, zIndex: 2 }}
@@ -650,8 +703,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
               onClick={openPlayer}
               aria-label="Open music player"
               style={{
-                scaleY: squash,
-                boxShadow: orbShadow,
+                boxShadow: ORB_SHADOW,
                 position: "relative",
                 width: 56, height: 56, borderRadius: "50%",
                 background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
@@ -676,10 +728,13 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
                make closing the card feel like it stuck. */
             exit={reduceMotion
               ? { opacity: 0 }
-              : { opacity: 0, scale: 0.9, y: dock ? -10 : 28, transition: { duration: 0.2, ease: LAND_EASE } }}
+              : { opacity: 0, scale: 0.9, y: dock ? -10 : 28, transition: { duration: 0.34, ease: LAND_EASE } }}
+            /* Softened from 260/26: the card used to snap open and shut too
+               fast to follow, and when a dock decision closes it on the guest's
+               behalf (below) they need to see it fold, not find it gone. */
             transition={reduceMotion
               ? { duration: 0 }
-              : { type: "spring", stiffness: 260, damping: 26, restDelta: 0.5 }}
+              : { type: "spring", stiffness: 190, damping: 24, restDelta: 0.5 }}
             style={{
               transformOrigin: dock ? "top center" : "bottom right",
               width: dock ? "min(300px, 100%)" : "min(300px, calc(100vw - 32px))",
@@ -832,8 +887,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, { dockSlot?: HTMLElemen
         <div ref={playerDivRef} />
       </div>
 
-      {/* Discovery cue — gold petals drifting into the button */}
-      <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <PetalTrail />}</AnimatePresence>
+      {/* Discovery cue — gold notes turning around the button, never on it */}
+      <AnimatePresence>{showTrail && !expanded && !dock && !reduceMotion && <NoteTrail />}</AnimatePresence>
 
       {/* The player itself lives in exactly one place at a time: portalled into
           the song section's slot when docked, in the fixed corner otherwise.

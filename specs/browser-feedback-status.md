@@ -137,3 +137,74 @@
   both off and on; the lyric notes were driven with the mocked player, since
   YouTube is unreachable from this environment.
 - Physical iPhone 13 / iPhone 11 testing remains outstanding (CLAUDE.md rule).
+
+# Ring motion and the notes - 19 September 2026
+
+## Implemented
+
+- The floating player's pseudo-3D is gone. The orb no longer lifts off the page
+  during its flight, no longer squashes on landing, and its shadow no longer
+  swells in the air: one warm shadow, `0 8px 24px rgba(138,112,48,0.35)`, at
+  rest, in flight and after landing. The gold ripple on arrival stays — it is
+  ink, not physics.
+- The flight is 1.1 seconds, not 0.62. At the old speed it was over before the
+  eye found it, and the lift-and-squash was covering for that. It is still a
+  tween rather than a spring, because the guest is mid-scroll throughout and a
+  spring's overshoot on top of the page's own movement reads as a yank.
+- What replaces the lift is a flat arc: the orb bows 28px off the straight line
+  between the corner and the slot, peaking at mid-flight and exactly zero at
+  both ends, so the FLIP still lands on the pixel. It curves across the page
+  instead of hopping above it.
+- The card and the orb trade places over 0.3s rather than 0.18s, with the card's
+  spring softened to 190/24 and its exit at 0.34s. Nothing about the player now
+  moves too fast to watch.
+- A dock decision taken while the card is open still closes the card first, but
+  the flight now starts 140ms after the card has finished folding rather than in
+  the same frame. Closing and launching together read as one violent event, as
+  if scrolling had broken something; separated, it reads as two.
+- The nine gold petals drifting into the button are now nine gold music notes,
+  and they no longer land on it. Each one has its own angle and comes to rest on
+  a circle of radius 76px around the orb — fading out as it arrives — so the
+  nearest point of any note stays at least 40px from the orb's centre, i.e.
+  clear of the 56px disc, its 2.6s glow and its pulse ring. They used to animate
+  to x:0, y:0, which is the button's own centre.
+  This departs from the "Petal Trail" named in CLAUDE.md, at Ryo's request: the
+  notes are the same notes that settle on the staff below, and reading as one
+  object across the two sections is the point of the change.
+- "Our Song" starts with an empty staff. The five notes printed on it from the
+  start are gone, and so is the depth they were given last week — three size and
+  opacity tiers, a soft shadow under each note, scroll parallax, and the pluck.
+  That was decoration standing in for a story.
+- Instead the staff is filled by the player: when the orb docks into the slot,
+  five notes rise from where it is standing and settle onto the lines, 110ms
+  apart, with a 3px settle and nothing else. Scrolling back up lifts them off
+  again from the outside in, so they leave with the orb. The shallow 8-degree
+  tilt of the staff itself stays — that is depth of field, not the 3D that was
+  cut. The per-lyric note that leaves the player while the song plays stays too;
+  it is the section's only sign that the song is running.
+- `MusicNote` lives in `shared.tsx` now, so the trail, the staff and the lyric
+  notes are literally the same drawing.
+
+## Verification
+
+- Production build clean.
+- `specs/motion-feedback-check.mjs` at 414 and 1401px, motion on, extended: the
+  orb's computed box-shadow is identical across 24 samples in flight and at
+  rest; its transform carries no vertical scale; the path bows off the straight
+  line between departure and arrival; across 60 sampled frames no note in the
+  trail comes within 40px of the orb's centre; and the staff carries no notes
+  before docking, five after, and none again once the slot leaves the viewport.
+  The floor on the trip's duration is now 700ms, where it was 150ms.
+- New `specs/music-docking-check.mjs` at 414px, with reduced motion both off and
+  on — the moving house, in all four combinations: down and back up, with the
+  card closed and with the card open. It asserts the card folds rather than
+  travelling, the orb lands inside the slot, the return puts it back within 60px
+  of the corner, and six fast flicks through the section leave exactly one orb
+  and no card behind.
+- `specs/music-player-check.mjs`, `invitation-visual-check`, `one-line-copy-check`,
+  `circular-gallery-check`, `captions-check`, `intro-layout-check` and
+  `refine-regression-check` all pass unchanged.
+- Screenshots at 414px reviewed by hand: a trail note close up at dpr 3, the orb
+  mid-flight bowed off its line, and the five notes at rest on the staff.
+- Physical iPhone 13 / iPhone 11 testing remains outstanding (CLAUDE.md rule) —
+  the flight's new length is the thing to judge there.

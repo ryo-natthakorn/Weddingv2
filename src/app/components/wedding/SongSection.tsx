@@ -1,15 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useAnimationControls,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-  type MotionValue,
-} from "motion/react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useLang, useMusicState } from "./wedding-context";
-import { useReveal, Divider, FitLine, COLORS } from "./shared";
+import { useReveal, Divider, FitLine, MusicNote, COLORS } from "./shared";
 
 /* The dedication is two authored lines on a phone and one on a tablet upward.
    That is a layout choice, not a size one, so it is read in JS rather than
@@ -40,12 +32,21 @@ function useMinWidth(px: number) {
    HandDrawnDivider (wavy strokes revealed by pathLength) rather
    than a stock waveform or album-art card, so it reads as part of
    this invitation and not a music widget dropped into it.
+
+   The staff starts EMPTY. Its notes are the ones that have been
+   turning around the floating player all the way down the page:
+   when the orb docks into the slot below, they come up off it and
+   settle on the lines; when it leaves, they go with it. The five
+   notes that used to be printed here from the start are gone, along
+   with the depth they were given (three size tiers, per-note
+   shadows, scroll parallax) — that was decoration standing in for
+   the story this now tells.
 ─────────────────────────────────────────────────────────────── */
 
 const STAFF_LINES = [20, 33, 46, 59, 72];
 
 /* A rising-then-settling contour — a shape someone chose, not five
-   random heights. */
+   random heights. These are where the notes come to rest. */
 const NOTES = [
   { x: 58, y: 59 },
   { x: 104, y: 46 },
@@ -54,138 +55,58 @@ const NOTES = [
   { x: 242, y: 40 },
 ];
 
-/* Three depth tiers across the five notes, deepest in the middle. Scale,
-   fill opacity, shadow and parallax all read off the same tier, so a note
-   that looks nearer also moves more — which is what makes the staff read as
-   a shallow space rather than five flat stickers. */
-const TIERS = [
-  { scale: 0.85, fill: 0.55, shadow: 0.1, drift: 6 },
-  { scale: 1, fill: 0.7, shadow: 0.14, drift: 11 },
-  { scale: 1.15, fill: 0.9, shadow: 0.18, drift: 17 },
-];
-const NOTE_TIER = [0, 1, 2, 1, 0];
+/* The notes arrive from below the middle of the staff, which is where the dock
+   slot — and so the orb — is standing. They are drawn fresh here rather than
+   flown across from the corner: that trail lives in a `position: fixed` layer
+   and the staff is an SVG viewBox, and the page is scrolling throughout the
+   handover, so a true shared-element flight between the two is the one thing
+   here that could come apart on a phone. It reads the same and cannot drift. */
+const ENTRY_X = 150;
+const ENTRY_Y = 132;
+const LAND_EASE = [0.22, 1, 0.36, 1] as const;
 
-function Note({
-  note,
-  index,
-  inView,
-  progress,
-  landedAt,
-  reduceMotion,
-}: {
+function Note({ note, index, landed, reduceMotion }: {
   note: { x: number; y: number };
   index: number;
-  inView: boolean;
-  progress: MotionValue<number>;
-  landedAt: number;
+  landed: boolean;
   reduceMotion: boolean | null;
 }) {
-  const tier = TIERS[NOTE_TIER[index]];
-  // Parallax: the nearer the note, the further it drifts as the section
-  // travels through the viewport. Scroll-driven, so it works on a phone
-  // without asking for motion permissions.
-  const drift = useTransform(progress, [0, 1], [tier.drift, -tier.drift]);
-  const reaction = useAnimationControls();
-  const [ripples, setRipples] = useState<number[]>([]);
-  const origin = { transformOrigin: `${note.x}px ${note.y}px` } as const;
+  const dx = ENTRY_X - note.x;
+  const dy = ENTRY_Y - note.y;
 
-  // The orb landing in the slot below sends a wave out through the staff,
-  // from the middle (where the slot is) outward.
-  useEffect(() => {
-    if (!landedAt || reduceMotion) return;
-    reaction.start({
-      y: [0, -10, 0],
-      transition: { duration: 0.6, delay: Math.abs(index - 2) * 0.09, ease: [0.22, 1, 0.36, 1] },
-    });
-  }, [landedAt, index, reaction, reduceMotion]);
-
-  const pluck = () => {
-    if (reduceMotion) return;
-    const id = Date.now();
-    setRipples((list) => [...list, id]);
-    setTimeout(() => setRipples((list) => list.filter((value) => value !== id)), 700);
-    reaction.start({
-      scale: [1, 1.3, 1],
-      rotate: [0, index % 2 === 0 ? -9 : 9, 0],
-      transition: { type: "spring", stiffness: 260, damping: 12 },
-    });
-  };
+  if (reduceMotion) {
+    return (
+      <g opacity={landed ? 1 : 0} style={{ transition: "opacity 0.3s ease" }}>
+        <MusicNote x={note.x} y={note.y} />
+      </g>
+    );
+  }
 
   return (
-    <motion.g style={{ y: drift }}>
-      {/* the note's own shadow on the paper below it */}
-      <ellipse
-        cx={note.x}
-        cy={note.y + 13}
-        rx={9 * tier.scale}
-        ry={2.4}
-        fill={COLORS.gold}
-        opacity={inView ? tier.shadow : 0}
-        style={{ transition: "opacity 0.6s ease" }}
-      />
-      <motion.g
-        initial={{ opacity: 0, scale: 0.6 }}
-        animate={
-          inView
-            ? reduceMotion
-              ? { opacity: 1, scale: tier.scale }
-              : { opacity: 1, scale: tier.scale, y: [0, -3.5, 0] }
-            : { opacity: 0, scale: 0.6 }
-        }
-        transition={{
-          opacity: { duration: 0.4, delay: 0.6 + index * 0.11 },
-          scale: { duration: 0.5, delay: 0.6 + index * 0.11, ease: [0.22, 1, 0.36, 1] },
-          y: reduceMotion
-            ? undefined
-            : { repeat: Infinity, duration: 3.6 + index * 0.25, delay: 1.1 + index * 0.15, ease: "easeInOut" },
-        }}
-        style={origin}
-      >
-        <motion.g
-          animate={reaction}
-          style={{ ...origin, pointerEvents: "auto", cursor: "pointer" }}
-          onPointerDown={pluck}
-          onHoverStart={pluck}
-        >
-          {ripples.map((id) => (
-            <motion.circle
-              key={id}
-              cx={note.x}
-              cy={note.y}
-              r={10}
-              fill="none"
-              stroke={COLORS.gold}
-              strokeWidth="1"
-              initial={{ opacity: 0.55, scale: 0.7 }}
-              animate={{ opacity: 0, scale: 2.1 }}
-              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              style={origin}
-            />
-          ))}
-          {/* stem first so the head laps over its foot, like a drawn note */}
-          <path
-            d={`M${note.x + 7.2} ${note.y - 1} L${note.x + 7.6} ${note.y - 29}`}
-            stroke={COLORS.gold}
-            strokeWidth="1.5"
-            strokeOpacity={tier.fill}
-            strokeLinecap="round"
-          />
-          <ellipse
-            cx={note.x}
-            cy={note.y}
-            rx="8"
-            ry="5.6"
-            fill={COLORS.gold}
-            fillOpacity={tier.fill}
-            transform={`rotate(-22 ${note.x} ${note.y})`}
-          />
-        </motion.g>
-      </motion.g>
+    <motion.g
+      initial={{ x: dx, y: dy, opacity: 0 }}
+      animate={landed
+        /* The 3px overshoot at 82% is the note settling onto the line, not a
+           bounce off it: one small movement, no scale and no shadow. */
+        ? { x: 0, y: [dy, -3, 0], opacity: 1 }
+        : { x: dx, y: dy, opacity: 0 }}
+      transition={landed
+        ? {
+            duration: 0.7,
+            delay: index * 0.11,
+            ease: LAND_EASE,
+            y: { duration: 0.7, delay: index * 0.11, ease: LAND_EASE, times: [0, 0.82, 1] },
+          }
+        /* Leaving, the outermost notes lift first, so the staff empties from
+           its edges inward — the mirror of the way it filled. */
+        : { duration: 0.55, delay: (4 - index) * 0.07, ease: "easeIn" }}
+    >
+      <MusicNote x={note.x} y={note.y} />
     </motion.g>
   );
 }
 
-function StaffOfNotes({ inView, progress }: { inView: boolean; progress: MotionValue<number> }) {
+function StaffOfNotes({ inView }: { inView: boolean }) {
   const reduceMotion = useReducedMotion();
   const { music } = useMusicState();
   /* One small note leaves the docked player on every lyric line and floats up
@@ -201,10 +122,11 @@ function StaffOfNotes({ inView, progress }: { inView: boolean; progress: MotionV
   }, [music.cueAt, music.playing, music.docked, reduceMotion]);
 
   return (
-    /* A shallow tilt, so the notes hover over the staff instead of being
-       printed on it. Static — it is depth, not motion. */
+    /* A shallow tilt, so the notes sit on the staff the way a card lies on a
+       table. Static — it is depth of field, not motion. */
     <div style={{ perspective: 620, maxWidth: 300, margin: "0 auto" }}>
       <svg
+        id="song-staff"
         viewBox="0 0 300 108"
         width="100%"
         style={{ display: "block", overflow: "visible", transform: "rotateX(8deg)", pointerEvents: "none" }}
@@ -230,9 +152,7 @@ function StaffOfNotes({ inView, progress }: { inView: boolean; progress: MotionV
             key={note.x}
             note={note}
             index={i}
-            inView={inView}
-            progress={progress}
-            landedAt={music.landedAt}
+            landed={music.docked}
             reduceMotion={reduceMotion}
           />
         ))}
@@ -247,8 +167,7 @@ function StaffOfNotes({ inView, progress }: { inView: boolean; progress: MotionV
               transition={{ duration: 1.7, ease: "easeOut" }}
               style={{ transformOrigin: `${spark.x}px 100px` }}
             >
-              <ellipse cx={spark.x} cy={100} rx="4.6" ry="3.2" fill={COLORS.gold} transform={`rotate(-22 ${spark.x} 100)`} />
-              <path d={`M${spark.x + 4.2} 99 L${spark.x + 4.4} 85`} stroke={COLORS.gold} strokeWidth="1.2" strokeLinecap="round" />
+              <MusicNote x={spark.x} y={100} scale={0.6} />
             </motion.g>
           ))}
         </AnimatePresence>
@@ -268,12 +187,8 @@ export function SongSection({ onDockSlot }: { onDockSlot: (node: HTMLDivElement 
   const { t } = useLang();
   const { ref, inView } = useReveal("-80px");
   const wide = useMinWidth(768);
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
-
   return (
     <section
-      ref={sectionRef}
       style={{
         padding: "20px 24px 56px",
         background: "transparent",
@@ -294,7 +209,7 @@ export function SongSection({ onDockSlot }: { onDockSlot: (node: HTMLDivElement 
         </FitLine>
         <Divider className="mb-10" />
 
-        <StaffOfNotes inView={inView} progress={scrollYProgress} />
+        <StaffOfNotes inView={inView} />
 
         <div data-song-dedication style={{ marginTop: 10, maxWidth: 760, marginLeft: "auto", marginRight: "auto" }}>
           {wide ? (
