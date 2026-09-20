@@ -154,7 +154,7 @@ export const translations = {
     ],
     direction_items: [
       { key: "car", title: "เดินทางโดยรถยนต์", text: "มีที่จอดรถสำหรับผู้ร่วมงาน" },
-      { key: "mrt", title: "โดย MRT", text: "สายสีชมพู ลงสถานีรามอินทรา กม.6" },
+      { key: "mrt", title: "โดย MRT", text: "สายสีชมพู ลงสถานีรามอินทรา กม.6 (PK22)" },
       { key: "grab", title: "โดย Grab", text: "ค้นหา 'SailomSangdad Homey Studio'" },
     ],
     countdown_label: "นับถอยหลังสู่วันพิเศษของเรา",
