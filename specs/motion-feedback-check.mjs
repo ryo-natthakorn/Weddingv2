@@ -233,6 +233,20 @@ try {
     }
     assert.equal(await page.evaluate(() => window.__noteWrites), 0,
       'scrolling does no work on the notes resting on the staff: the compositor carries them');
+    /* Measuring right is not painting. A root <svg> clips to its own viewport,
+       so a zero-sized host renders nothing while every rect and CTM below still
+       reads perfectly - which is exactly how this shipped broken once. Assert
+       the notes are inside the box that paints them. */
+    const contained = await page.evaluate(() => {
+      const host = document.querySelector('[data-music-notes]').getBoundingClientRect();
+      return [...document.querySelectorAll('[data-music-note]')].every(note => {
+        const box = note.getBoundingClientRect();
+        return box.left >= host.left - 0.5 && box.right <= host.right + 0.5
+          && box.top >= host.top - 0.5 && box.bottom <= host.bottom + 0.5;
+      });
+    });
+    assert.equal(contained, true, 'the parked notes are inside their host, so they actually paint');
+
     /* And they are still exactly on their lines afterwards. */
     const noteGaps = await page.evaluate(() => [...document.querySelectorAll('[data-music-note]')].map((note, i) => {
       const m = note.getScreenCTM();

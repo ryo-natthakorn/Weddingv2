@@ -13,9 +13,13 @@ const FADE_MS = 250;
    reason — see the long comment above `place()` in MusicPlayer.tsx:
 
    - **At rest on the staff** (`docked`) the host is `position: absolute` at the
-     document origin, so SVG user space IS document space. Each note's transform
-     is written once, on arrival, and the loop is cancelled. The compositor
-     scrolls them with the page and JS does nothing at all.
+     document origin, sized to the document, so SVG user space IS document
+     space. Each note's transform is written once, on arrival, and the loop is
+     cancelled. The compositor scrolls them with the page and JS does nothing.
+     The size is not decoration: a root <svg> clips to its own viewport, and
+     `overflow: visible` does not save a zero-sized one - the notes measure
+     perfectly and paint nowhere. Neither getBoundingClientRect nor getScreenCTM
+     can see that, which is why the guard checks containment as well.
    - **Travelling** — orbiting the ring, flying to the staff or flying back — it
      stays `position: fixed` with the loop running. The notes are moving anyway,
      and the corner their orbit follows genuinely is viewport-fixed.
@@ -35,6 +39,7 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
   reduceMotion: boolean;
   docked: boolean;
 }) {
+  const host = useRef<SVGSVGElement>(null);
   const notes = useRef<(SVGGElement | null)[]>([]);
   const phase = useRef(0);
   const positions = useRef<{ x: number; y: number }[]>([]);
@@ -65,6 +70,16 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
     if (!docked) return;
 
     const place = () => {
+      const svg = host.current;
+      /* Cover the document, so nothing is clipped away. Written only when it
+         actually changes: this runs from a ResizeObserver that watches the body,
+         and an unconditional write would feed itself. */
+      if (svg) {
+        const page = document.documentElement;
+        const width = `${page.scrollWidth}px`, height = `${page.scrollHeight}px`;
+        if (svg.style.width !== width) svg.style.width = width;
+        if (svg.style.height !== height) svg.style.height = height;
+      }
       const targets = findTargets();
       notes.current.forEach((node, i) => {
         const rect = targets[i]?.getBoundingClientRect();
@@ -91,6 +106,9 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
     return () => {
       relayout.disconnect();
       window.removeEventListener("resize", place);
+      /* Hand the size back to the stylesheet, or the viewport-fixed branch
+         would inherit a document-sized host. */
+      if (host.current) { host.current.style.width = ""; host.current.style.height = ""; }
       /* Hand the orbit back its starting point in the coordinates it thinks in.
          getScreenCTM reads the note's real position on the glass whichever
          space it was last written in, so this survives the anchor swap. */
@@ -158,10 +176,13 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
      the effects above run — no imperative style juggling, and no frame where the
      host is positioned one way and its children written the other. */
   const anchor = docked
-    ? { position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "visible" } as const
+    /* Width and height are placeholders until `place()` measures the document;
+       they are deliberately not 0, so a frame before that cannot blank the
+       notes. */
+    ? { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", overflow: "visible" } as const
     : { position: "fixed", inset: 0, width: "100%", height: "100%", overflow: "hidden" } as const;
 
-  return <svg aria-hidden="true" data-music-notes="" data-music-notes-parked={docked}
+  return <svg ref={host} aria-hidden="true" data-music-notes="" data-music-notes-parked={docked}
     style={{ ...anchor, pointerEvents: "none", zIndex: 999 }}>
     {Array.from({ length: COUNT }, (_, i) => <g key={i} ref={node => { notes.current[i] = node; }} data-music-note={i}
       style={{ opacity: 0, transition: docked ? `opacity ${reduceMotion ? 0 : FADE_MS}ms linear` : "none" }}>
