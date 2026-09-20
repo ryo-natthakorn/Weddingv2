@@ -624,6 +624,7 @@ export function WeddingInvitation() {
         {showIntro && (
           <IntroAnimation
             onUnlock={() => musicRef.current?.play()}
+            onHandoff={setReleased}
             onComplete={(ringBox) => {
               // Belt-and-braces against a restored/nonzero offset surviving the
               // lock — the card must open on the hero.

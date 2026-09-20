@@ -135,6 +135,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
      as the travel, so a leg changes position and size as one movement. */
   const ringScale = useMotionValue(1);
   const measureRef = useRef<(() => void) | null>(null);
+  const placeRef = useRef<(() => void) | null>(null);
   /* The beat between the card finishing its close and the orb setting off —
      see onCardExited. Held so an unmount mid-beat cannot call into a dead
      component. */
@@ -219,6 +220,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
         setExpanded(false);
         return;
       }
+      placeRef.current?.();
       flightBox.current = stageRef.current?.getBoundingClientRect() ?? null;
       homeRef.current = next;
       setHome(next);
@@ -245,7 +247,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
      The intro keeps its own ring, because that one has to be draggable. When
      the overlay is finished it reports where the thumb was standing, and the
      ring picks the journey up from exactly that box. */
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!released || homeRef.current !== "intro") return;
     flightBox.current = released;
     ringScale.set(INTRO_RING / ORB);
@@ -264,14 +266,18 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       const slot = home === "names" ? namesSlot : home === "song" ? songSlot : null;
       const box = slot?.getBoundingClientRect();
       const w = host.offsetWidth, h = host.offsetHeight;
-      host.style.left = `${box ? box.left + (box.width - w) / 2 : window.innerWidth - 24 - w}px`;
-      host.style.top = `${box ? home === "names" ? box.top + (box.height - h) / 2 : box.top : window.innerHeight - 24 - h}px`;
+      const x = box ? box.left + (box.width - w) / 2 : window.innerWidth - 24 - w;
+      const y = box ? home === "names" ? box.top + (box.height - h) / 2 : box.top : window.innerHeight - 24 - h;
+      host.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       if (songSlot) songSlot.style.height = home === "song" ? `${Math.max(72, h)}px` : "";
     };
+    placeRef.current = place;
+    window.addEventListener("scroll", place, { passive: true });
+    window.addEventListener("resize", place);
     place();
     const tick = () => { place(); frame = requestAnimationFrame(tick); };
     frame = requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(frame); if (songSlot) songSlot.style.height = ""; };
+    return () => { window.removeEventListener("scroll", place); window.removeEventListener("resize", place); placeRef.current = null; cancelAnimationFrame(frame); if (songSlot) songSlot.style.height = ""; };
   }, [home, namesSlot, songSlot]);
 
   /* Measure the same stage before and after changing its fixed-layer anchor.
@@ -353,7 +359,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
      now. It only runs where the ring is a control, and it retires on a timer
      or the moment the guest engages. */
   const [showCue, setShowCue] = useState(true);
-  const cueShake = showCue && home === "corner" && !expanded && !reduceMotion;
+  const cueShake = showCue && landed && home === "corner" && !expanded && !reduceMotion;
   /* Notes leaving the ring on the press that starts the song — the tap's own
      acknowledgement. They are the only notes outside the song section, and
      they exist only while the song is playing. */
@@ -670,7 +676,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
           ring rather than beside it so it cannot be pushed off the right edge,
           and it is aria-hidden: the button already has a label. */}
       <AnimatePresence>
-        {showCue && home === "corner" && !expanded && (
+        {showCue && landed && home === "corner" && !expanded && (
           <motion.span
             key="play-me"
             aria-hidden
@@ -950,7 +956,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
         playing={playing && player} expanded={expanded} reduceMotion={!!reduceMotion} />, document.body)}
 
       {home !== "intro" && createPortal(
-        <div ref={hostRef} data-music-layer="" style={{ position: "fixed", left: 0, top: 0, width: "max-content", zIndex: 1000 }}>
+        <div ref={hostRef} data-music-layer="" style={{ position: "fixed", left: 0, top: 0, width: "max-content", zIndex: home === "names" && !landed ? 10000 : 1000 }}>
           {ring}
         </div>, document.body)}
     </>

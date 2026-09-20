@@ -8,6 +8,7 @@ interface Props {
      travelling ring can pick the journey up from exactly where it was left. */
   onComplete: (ringBox: DOMRect | null) => void;
   onUnlock?: () => void;
+  onHandoff?: (ringBox: DOMRect | null) => void;
 }
 
 const Petal = memo(function Petal({ x, delay, size, duration }: { x: number; delay: number; size: number; duration: number }) {
@@ -42,13 +43,15 @@ const THUMB_W = 72;
 const UNLOCK_AT = 88;
 const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-export function IntroAnimation({ onComplete, onUnlock }: Props) {
+export function IntroAnimation({ onComplete, onUnlock, onHandoff }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [pos, setPos] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [handedOff, setHandedOff] = useState(false);
+  useEffect(() => { if (handedOff) setLeaving(true); }, [handedOff]);
   const [showHint, setShowHint] = useState(false);
   const unlockedRef = useRef(false);
   const musicStartedRef = useRef(false);
@@ -77,7 +80,8 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
     setPos(100);
     setTimeout(() => {
       ringBox.current = ringRef.current?.getBoundingClientRect() ?? null;
-      setLeaving(true);
+      if (onHandoff) { onHandoff(ringBox.current); setHandedOff(true); }
+      else setLeaving(true);
       setTimeout(() => onComplete(ringBox.current), 900);
     }, 700);
   };
@@ -343,7 +347,7 @@ export function IntroAnimation({ onComplete, onUnlock }: Props) {
                     alt=""
                     draggable={false}
                     style={{
-                      width: 80, height: 80, objectFit: "contain",
+                      width: 80, height: 80, objectFit: "contain", visibility: handedOff ? "hidden" : "visible",
                       filter: "drop-shadow(0 4px 12px rgba(27,74,92,0.25))",
                       pointerEvents: "none",
                     }}

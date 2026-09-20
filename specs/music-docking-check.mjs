@@ -34,6 +34,9 @@ try {
     // ── leg one: the slider hands the ring to the page ──
     assert.equal(await rings(page), 0, 'the intro owns the ring until it is done');
     await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
+    await page.waitForTimeout(900);
+    assert.equal(await rings(page), 1, 'ring is handed over before the intro fade finishes');
+    await page.waitForTimeout(1000); // let intro release the scroll lock before scrolling
     await page.waitForFunction(() => document.querySelector('[data-ring-home="names"]'), null, { timeout: 15000 });
     assert.equal(await rings(page), 1, 'exactly one ring after the hand-over');
     await page.waitForFunction(() => {
