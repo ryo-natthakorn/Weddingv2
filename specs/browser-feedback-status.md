@@ -330,13 +330,9 @@ same latent error.
 
 - The scroll correction is derived from both ends of the trip; a `fromRef`
   records the departure and the zero case is handled.
-- A `hero` waypoint. The slider hands the ring to the spot where it was last
-  seen and it **waits** there while the guest reads the hero, hopping into the
-  names only once that slot is around the middle of the screen. The trip is
-  short, level, and visible for the first time — it used to happen inside the
-  intro's own crossfade where nobody could see it.
-- With no names slot on the page at all, the waypoint hands straight to the
-  corner (the handoff spec's harness mounts the player without one).
+- A `hero` waypoint was added here and **removed again the same day** — see the
+  next entry. It held the ring in viewport-fixed coordinates, which made it ride
+  along with the guest instead of travelling with the page.
 - Measured after the fix, 414px and 1280px: worst downward step 0px, the ring
   lands on its slot exactly, and it then holds 0px of offset across twelve
   further scroll steps.
@@ -366,3 +362,50 @@ rather than arriving briskly.
   not to this fix. They need their own pass.
 - Physical iPhone testing still outstanding — this was reported on a real
   device, so that is where it has to be confirmed.
+
+# The ring floats down, it does not ride along - 20 September 2026
+
+## The finding
+
+Ryo, on the waypoint added earlier today: the ring should not stop dead after
+unlock and sit in the hero. It should float down and wait at the names. Holding
+it in the hero pinned it to the glass, so it followed the guest down the page —
+"เลื่อนตามไปแปะตามคนใช้".
+
+He is right, and the waypoint was the wrong mechanism for the right bug. The
+actual fault was only ever the scroll correction, which took its direction from
+the destination alone when it depends on both ends: the corner is the only
+viewport-fixed anchor, so corner->slot is +1, slot->corner is -1, and slot->slot
+is 0, because two things that ride with the page never change their separation.
+The hand-over is slot->slot — the box the slider reports is a position on the
+page, the overlay having unmounted with the page back at the top — and giving it
+a corner departure's +1 dragged its start point down the screen. That is what
+made the ring descend, reverse and come back.
+
+## Implemented
+
+- The `hero` waypoint is gone. The hand-over flies straight to the names again,
+  as originally asked for: the ring leaves the slider, descends through the
+  document while the guest scrolls, and settles between the names to wait.
+- The both-ends correction stays; `intro` is deliberately not counted as
+  viewport-fixed, which is what makes the hand-over the zero case.
+- Measured scrolling steadily from the moment the invitation opens, 414px and
+  1280px: the gap between ring and slot closes from -761px to 0 with **zero sign
+  flips and zero steps where the gap grew**. It never backs off and never
+  overshoots.
+
+## Verification
+
+- `specs/motion-feedback-check.mjs` now asserts the shape of the fix rather than
+  a waypoint: across 60 scroll steps the gap may only shrink, the ring may never
+  cross past its slot, and a scroll must change its screen position — that last
+  one is the guard against pinning it to the viewport again. The stillness check
+  once landed stays.
+- `specs/music-docking-check.mjs` back to a single hand-over beat.
+- Green: motion-feedback (414/1401), music-docking (motion on and off),
+  music-handoff, music-player (10), one-line-copy (24), intro-layout, captions,
+  refine-regression.
+- **Still red on `main` from before any of this**, verified at `8931e12` with
+  these changes stashed: `invitation-visual-check` ("the floating player docks
+  into the song section") and `circular-gallery-check` ("autorotation"). They
+  belong to the ring-layer rework and need their own pass.

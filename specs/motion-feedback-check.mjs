@@ -39,26 +39,45 @@ try {
     await page.route(/^https:\/\//, route => route.abort());
     await page.goto(server.resolvedUrls.local[0]);
     await page.getByRole('slider', { name: 'Slide to open the invitation' }).press('Enter');
-    /* Leg one is two beats. The slider hands the ring to the hero, where it
-       waits — it does NOT set off for a slot still a screenful below, which is
-       what used to make it dive down the page while the guest scrolled. */
-    await page.waitForFunction(() => document.querySelector('[data-ring-home="hero"]'));
-    await page.getByRole('slider', { name: 'Slide to open the invitation' }).waitFor({ state: 'detached' });
-    const held = await page.locator('[data-ring-home]').boundingBox();
-    await page.mouse.wheel(0, 120);
-    await page.waitForTimeout(500);
-    const stillHeld = await page.locator('[data-ring-home]').boundingBox();
-    assert.ok(Math.abs(held.y - stillHeld.y) < 3, 'the ring holds its place in the hero while the page scrolls under it');
-    /* …and hops into the slot only once the names come up to meet it. */
-    await page.evaluate(() => document.querySelector('[data-ring-slot]').scrollIntoView({ block: 'center' }));
+    /* Leg one: the ring leaves the slider and floats down through the page to
+       wait between the names. The thing that must not happen — and the bug Ryo
+       reported — is the ring REVERSING: descending the viewport and then coming
+       back up, which is what a wrong scroll correction produced. So the gap
+       between the ring and its slot must only ever shrink. */
     await page.waitForFunction(() => document.querySelector('[data-ring-home="names"]'));
-    /* Wait for the landing itself rather than a fixed pause: the travel is 3s
-       and the last pixels of it are the ease-out's tail. */
+    await page.getByRole('slider', { name: 'Slide to open the invitation' }).waitFor({ state: 'detached' });
+    const gaps = [];
+    for (let i = 0; i < 60; i += 1) {
+      await page.mouse.wheel(0, 18);
+      await page.waitForTimeout(25);
+      gaps.push(await page.evaluate(() => {
+        const a = document.querySelector('[data-ring-home]').getBoundingClientRect();
+        const b = document.querySelector('[data-ring-slot]').getBoundingClientRect();
+        return (a.top + a.bottom) / 2 - (b.top + b.bottom) / 2;
+      }));
+    }
+    for (let i = 1; i < gaps.length; i += 1) {
+      assert.ok(Math.abs(gaps[i]) <= Math.abs(gaps[i - 1]) + 0.5,
+        `the ring closes on its slot without ever backing off (${gaps[i - 1].toFixed(1)} -> ${gaps[i].toFixed(1)})`);
+      assert.ok(!(gaps[i] > 0.5 && gaps[i - 1] < -0.5) && !(gaps[i] < -0.5 && gaps[i - 1] > 0.5),
+        'the ring never overshoots past its slot');
+    }
+    /* It rides with the page rather than being pinned to the glass: scrolling
+       must change where it is on screen. */
+    const before = await page.evaluate(() => document.querySelector('[data-ring-home]').getBoundingClientRect().top);
+    await page.mouse.wheel(0, 140);
+    await page.waitForTimeout(300);
+    const after = await page.evaluate(() => document.querySelector('[data-ring-home]').getBoundingClientRect().top);
+    assert.ok(Math.abs(before - after) > 60, 'the ring travels with the page, it does not follow the viewport');
+    await page.evaluate(() => document.querySelector('[data-ring-slot]').scrollIntoView({ block: 'center' }));
     await page.waitForFunction(() => {
       const a = document.querySelector('[data-ring-home]').getBoundingClientRect();
       const b = document.querySelector('[data-ring-slot]').getBoundingClientRect();
       return Math.abs((a.top + a.bottom) / 2 - (b.top + b.bottom) / 2) < 0.5;
     }, null, { timeout: 15000 });
+    assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 0,
+      'the ring between the names is not a button');
+
     /* Once home it is completely still: scrolling must not shift it one pixel
        relative to the slot. This is the guard for the stutter Ryo reported. */
     const ringOffset = () => page.evaluate(() => {
