@@ -202,6 +202,12 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
 
       if (next === current) return;
       if (expandedRef.current) {
+        // Reading the names must not dismiss the floating player. Remember
+        // the return, but wait for the guest to close the card themselves.
+        if (current === "corner" && next === "names") {
+          pendingHomeRef.current = next;
+          return;
+        }
         /* Never move house while the card is open, in either direction. The
            card closes first and the decision waits in `pendingHomeRef` until
            AnimatePresence reports the exit finished — a single rAF is not

@@ -71,6 +71,20 @@ try {
       'the names keep their gap whether the ring is home or away',
     );
 
+    // Scrolling back to the names must not dismiss the floating card.
+    await page.getByRole('button', { name: 'Open music player' }).click();
+    await page.waitForTimeout(700);
+    await page.evaluate(() => window.scrollTo({ top: 0 }));
+    await page.waitForTimeout(700);
+    assert.equal(await cards(page), 1, 'the floating card stays open near the names');
+    assert.equal(await rings(page), 0, 'no ring replaces the open card');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('[data-ring-home="names"]'));
+    await page.waitForTimeout(3200);
+    await page.evaluate(() => window.scrollBy({ top: 1600 }));
+    await page.waitForFunction(() => document.querySelector('[data-ring-home="corner"]'));
+    await page.waitForTimeout(3200);
+
     // ── leg three: card OPEN, scrolling down into the song section ──
     await page.getByRole('button', { name: 'Open music player' }).click();
     await page.waitForTimeout(700);
