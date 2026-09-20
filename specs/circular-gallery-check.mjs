@@ -22,6 +22,14 @@ try {
     await page.waitForFunction(()=>document.querySelector('[data-gallery-ready="true"]'));
     assert.equal(await page.locator('[data-gallery-hint]').evaluate(el=>getComputedStyle(el).opacity),'1','hint visible before use');
     await page.mouse.move(0,0);
+    /* Put the ring back on screen before asking whether it turns. Decoding the
+       page's images grows every section above it, so the scroll that framed the
+       gallery a moment ago has left it a screenful below the fold - and the ring
+       stops whenever it is off screen, on purpose, because recompositing eleven
+       prints while the page moves is its own stutter. Sampling a deliberately
+       paused ring proves nothing. */
+    await gallery.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
+    await page.waitForFunction(()=>document.querySelector('[data-gallery-paused="false"]'));
     const card=gallery.getByRole('button').first();
     const read=()=>card.evaluate(el=>getComputedStyle(el).transform);
     const before=await read();await page.waitForTimeout(600);assert.notEqual(await read(),before,'autorotation');

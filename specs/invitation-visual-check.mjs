@@ -83,8 +83,23 @@ try {
     assert.equal(await page.getByRole('button', { name: 'ไม่สะดวกร่วมงาน', exact: true }).getAttribute('aria-pressed'), 'true');
     await page.locator('[data-music-dock-slot]').scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.querySelector('[data-music-docked="true"]'));
+    /* The orb lives in the [data-music-layer] portal on <body>, not in the
+       slot's subtree - that is what keeps a travelling ring out of every
+       clipped section and stacking context it crosses. So "docks into the song
+       section" is a question about where the guest sees it, not about the DOM:
+       it must be standing inside the slot the section reserves for it. */
     assert.equal(
-      await page.evaluate(() => document.querySelector('[data-music-dock-slot]').contains(document.querySelector('[data-music-docked="true"]'))),
+      await page.evaluate(() => document.querySelector('[data-music-layer]').contains(document.querySelector('[data-music-docked="true"]'))),
+      true,
+      'the docked orb belongs to the ring layer, outside clipped sections',
+    );
+    assert.equal(
+      await page.evaluate(() => {
+        const orb = document.querySelector('[data-music-docked="true"]').getBoundingClientRect();
+        const slot = document.querySelector('[data-music-dock-slot]').getBoundingClientRect();
+        return orb.left >= slot.left - 1 && orb.right <= slot.right + 1
+          && orb.top >= slot.top - 1 && orb.bottom <= slot.bottom + 1;
+      }),
       true,
       'the floating player docks into the song section',
     );
