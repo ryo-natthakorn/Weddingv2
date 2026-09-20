@@ -208,6 +208,39 @@ try {
     await page.evaluate(() => window.musicTest.players[0].emit(1));
     await page.waitForFunction(() => [...document.querySelectorAll('[data-music-notes] > [data-music-note]')]
       .filter(note => Number(getComputedStyle(note).opacity) > 0.7).length === 5);
+    /* The same guard the parked ring gets, for the same bug, on the notes Ryo
+       reported next: at rest on the staff they must cost the page nothing.
+       The loop used to re-pin all five to the staff circles' live VIEWPORT
+       rects every frame, forever, which lags any page scrolling on the
+       compositor thread. Position cannot be asserted here — headless Chromium
+       scrolls on the main thread, in lockstep with JS, so it reads a flat 0px
+       whether the bug is present or not. Counting the writes tests the
+       mechanism itself. */
+    await page.waitForFunction(() => document.querySelector('[data-music-notes-parked="true"]'));
+    assert.equal(
+      await page.evaluate(() => getComputedStyle(document.querySelector('[data-music-notes]')).position),
+      'absolute', 'the parked notes are anchored in the page, not to the glass');
+    await page.evaluate(() => {
+      window.__noteWrites = 0;
+      const observer = new MutationObserver(m => { window.__noteWrites += m.length; });
+      for (const note of document.querySelectorAll('[data-music-note]'))
+        observer.observe(note, { attributes: true, attributeFilter: ['transform', 'style'] });
+      observer.observe(document.querySelector('[data-music-notes]'), { attributes: true, attributeFilter: ['style'] });
+    });
+    for (const dir of [1, -1]) {
+      for (let i = 0; i < 12; i += 1) await page.mouse.wheel(0, 8 * dir);
+      await page.waitForTimeout(300);
+    }
+    assert.equal(await page.evaluate(() => window.__noteWrites), 0,
+      'scrolling does no work on the notes resting on the staff: the compositor carries them');
+    /* And they are still exactly on their lines afterwards. */
+    const noteGaps = await page.evaluate(() => [...document.querySelectorAll('[data-music-note]')].map((note, i) => {
+      const m = note.getScreenCTM();
+      const r = document.querySelector(`[data-music-note-target="${i}"]`).getBoundingClientRect();
+      return Math.hypot(m.e - r.left - r.width / 2, m.f - r.top - r.height / 2);
+    }));
+    assert.ok(noteGaps.every(gap => gap < 1), `the notes stay on the staff while the page scrolls (${noteGaps})`);
+
     await page.evaluate(() => window.musicTest.players[0].emit(2));
     await page.waitForFunction(() => [...document.querySelectorAll('[data-music-notes] > [data-music-note]')]
       .every(note => Number(getComputedStyle(note).opacity) < 0.05));

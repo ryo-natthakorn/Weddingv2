@@ -52,8 +52,12 @@ try {
     await page.waitForFunction(()=>document.querySelector('[data-music-docked="true"]'));
     if(reducedMotion==='no-preference') assert.ok(Date.now()-start>=2800);
     await page.waitForTimeout(500);
+    /* getScreenCTM, not the note's own transform: parked, that transform is in
+       DOCUMENT coordinates (so the compositor can carry it), and in flight it is
+       in viewport coordinates. The CTM maps the note's origin to the glass
+       either way, which is where the guest actually sees it. */
     const alignment=await page.evaluate(()=>[...document.querySelectorAll('[data-music-note]')].map((n,i)=>{
-      const m=n.transform.baseVal.consolidate().matrix;
+      const m=n.getScreenCTM();
       const r=document.querySelector(`[data-music-note-target="${i}"]`).getBoundingClientRect();
       return Math.hypot(m.e-r.left-r.width/2,m.f-r.top-r.height/2);
     }));
