@@ -260,30 +260,93 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
     setHome("names");
   }, [released, ringScale]);
 
-  // Keep one portal and one stage for every home. Only its anchor changes;
-  // section clipping and stacking contexts never contain the travelling ring.
+  /* ── Where the ring's layer sits ──
+     One portal and one stage for every home; only the anchor changes, so
+     section clipping and stacking contexts never contain the travelling ring.
+
+     The anchor comes in two kinds, and the difference is the whole of the
+     stutter Ryo reported:
+
+     - **Parked in a slot** the host is `position: absolute` in DOCUMENT
+       coordinates, written once on arrival. The browser then scrolls it with
+       the page, on the compositor, and JS does nothing at all.
+     - **Flying, or standing in the corner**, it is `position: fixed`, tracked
+       per frame — the corner genuinely is viewport-fixed, and a leg is three
+       seconds of something that is supposed to be moving anyway.
+
+     It used to be `fixed` always, with `translate3d` rewritten from the slot's
+     live viewport rect on EVERY animation frame, forever. That is the textbook
+     way to make an element lag a scrolling page: iOS Safari always scrolls on
+     the compositor thread, as does trackpad and touch momentum on desktop, so
+     the page's real content moves immediately while the ring's position is
+     computed on the main thread and lands at least a frame later. The ring
+     shears against the names around it, in both directions, on both platforms.
+
+     Nothing in this repo's test harness can see it — `mouse.wheel` in headless
+     Chromium scrolls on the main thread, in lockstep with JS, which is why
+     every offset measurement here read a flat 0px. The guard below tests the
+     mechanism instead: while parked, this writes no style at all. */
   const hostRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     let frame = 0;
+    const slot = home === "names" ? namesSlot : home === "song" ? songSlot : null;
+    /* `landed` is the fact of arrival. Until then the leg is in the air and the
+       host has to keep up with a moving target. */
+    const travelling = !landed || !slot;
+
     const place = () => {
       const host = hostRef.current;
       if (!host) return;
-      const slot = home === "names" ? namesSlot : home === "song" ? songSlot : null;
       const box = slot?.getBoundingClientRect();
       const w = host.offsetWidth, h = host.offsetHeight;
       const x = box ? box.left + (box.width - w) / 2 : window.innerWidth - 24 - w;
       const y = box ? home === "names" ? box.top + (box.height - h) / 2 : box.top : window.innerHeight - 24 - h;
-      host.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      if (songSlot) songSlot.style.height = home === "song" ? `${Math.max(72, h)}px` : "";
+      if (travelling) {
+        host.style.position = "fixed";
+        host.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      } else {
+        /* Document coordinates, set once. From here the compositor owns it. */
+        host.style.position = "absolute";
+        host.style.transform = `translate3d(${x + window.scrollX}px, ${y + window.scrollY}px, 0)`;
+      }
+      /* The dock slot reserves the height of whatever is standing in it, so
+         the footer moves when the card opens. Only written when it actually
+         changes: this runs from a ResizeObserver that watches the host, and an
+         unconditional write would feed itself. */
+      if (songSlot) {
+        const next = home === "song" ? `${Math.max(72, h)}px` : "";
+        if (songSlot.style.height !== next) songSlot.style.height = next;
+      }
     };
     placeRef.current = place;
-    window.addEventListener("scroll", place, { passive: true });
-    window.addEventListener("resize", place);
     place();
-    const tick = () => { place(); frame = requestAnimationFrame(tick); };
-    frame = requestAnimationFrame(tick);
-    return () => { window.removeEventListener("scroll", place); window.removeEventListener("resize", place); placeRef.current = null; cancelAnimationFrame(frame); if (songSlot) songSlot.style.height = ""; };
-  }, [home, namesSlot, songSlot]);
+
+    if (travelling) {
+      // Only while the leg is actually in the air.
+      window.addEventListener("scroll", place, { passive: true });
+      const tick = () => { place(); frame = requestAnimationFrame(tick); };
+      frame = requestAnimationFrame(tick);
+    }
+    /* Parked, the position is only wrong if the page relayouts under it — the
+       slot moving or changing size, or the viewport resizing. Scroll is
+       deliberately NOT one of those: reacting to scroll is the bug. */
+    const relayout = new ResizeObserver(place);
+    if (slot) relayout.observe(slot);
+    relayout.observe(document.body);
+    /* …and the host itself: opening the card changes its size, which both
+       re-centres it in the slot and is what the slot reserves room for. The
+       per-frame loop used to cover this incidentally. */
+    if (hostRef.current) relayout.observe(hostRef.current);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place);
+      window.removeEventListener("resize", place);
+      relayout.disconnect();
+      placeRef.current = null;
+      cancelAnimationFrame(frame);
+      if (songSlot) songSlot.style.height = "";
+    };
+  }, [home, namesSlot, songSlot, landed]);
 
   /* Measure the same stage before and after changing its fixed-layer anchor.
      Animate that offset to zero; no reparenting or entry fade during travel. */
@@ -981,7 +1044,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
         playing={playing && player} expanded={expanded} reduceMotion={!!reduceMotion} />, document.body)}
 
       {home !== "intro" && createPortal(
-        <div ref={hostRef} data-music-layer="" style={{ position: "fixed", left: 0, top: 0, width: "max-content", zIndex: home === "names" && !landed ? 10000 : 1000 }}>
+        <div ref={hostRef} data-music-layer="" style={{ position: "fixed", left: 0, top: 0, width: "max-content", zIndex: home === "names" && !landed ? 10000 : 1000, willChange: "transform" }}>
           {ring}
         </div>, document.body)}
     </>

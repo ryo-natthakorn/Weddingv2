@@ -409,3 +409,57 @@ made the ring descend, reverse and come back.
   these changes stashed: `invitation-visual-check` ("the floating player docks
   into the song section") and `circular-gallery-check` ("autorotation"). They
   belong to the ring-layer rework and need their own pass.
+
+# The ring lagged the page because JS moved it every frame - 20 September 2026
+
+## The finding
+
+Ryo, with a screen recording: the ring still stutters when scrolling up and
+down. Two limits on what could be said about it here:
+
+- The recording could not be watched on this machine. The available ffmpeg is
+  Playwright's VP8-only build and the bundled Chromium has no H.264 decoder.
+- **No probe in this repo can reproduce the bug.** Sampling inside the page's
+  own requestAnimationFrame during a continuous scroll reported the ring exactly
+  0px from its slot on all 339 frames — because `page.mouse.wheel` in headless
+  Chromium scrolls on the **main thread**, in lockstep with JS.
+
+That second point is the finding. The ring's layer was `position: fixed` with
+its `translate3d` rewritten from the slot's live viewport rect on **every
+animation frame, forever** — not only while flying. iOS Safari always scrolls on
+the compositor thread, as do trackpad and touch momentum on desktop: the page's
+content moves immediately while the ring's position is computed on the main
+thread and applied a frame or more later, so the ring shears against the names
+around it, in both directions, on both platforms. Every flat-0px measurement
+taken here was evidence that this harness scrolls the one way that hides it.
+
+## Implemented
+
+- Parked in a slot, the host is now `position: absolute` in **document**
+  coordinates, written once on arrival. The compositor scrolls it with the page
+  and JS does nothing.
+- `position: fixed` and the per-frame loop remain for exactly two cases: a leg
+  in the air, and the corner, which genuinely is viewport-fixed.
+- The scroll listener is gone for parked states — reacting to scroll was the
+  bug. Position is recomputed only on real relayout: a ResizeObserver on the
+  slot, on the host (the card opening changes its size) and on the body, plus
+  the existing resize listener.
+- `songSlot.style.height` is written only when the value changes, since it now
+  runs from an observer that watches the host it resizes.
+- Measured: parked host reports `absolute`, **0 style writes across 100 scroll
+  events** where the old loop made roughly 60 a second, and the ring still sits
+  exactly 0px from its slot afterwards.
+
+## Verification
+
+- `specs/motion-feedback-check.mjs` gains the guard that this harness can
+  honestly make — not a position assertion, which reads a flat 0px either way,
+  but a **work** assertion: while parked, scrolling must produce zero style
+  writes on the ring layer, and the layer must report `absolute`.
+- Green: motion-feedback (414/1401), music-docking, music-handoff, music-player
+  (10), one-line-copy (24), intro-layout, captions, refine-regression.
+- **Still red from before any of this, verified at `8931e12`:**
+  `invitation-visual-check` and `circular-gallery-check`.
+- **This is not confirmed fixed.** Compositor-thread scrolling cannot be
+  reproduced here, so the suite being green is necessary and not sufficient.
+  It has to be judged on Ryo's phone and desktop.

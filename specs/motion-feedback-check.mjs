@@ -78,6 +78,32 @@ try {
     assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 0,
       'the ring between the names is not a button');
 
+    /* The guard that matters, and the one this harness can actually make:
+       while the ring is parked, scrolling must cause NO work. It used to be
+       `position: fixed` with its transform rewritten from the slot's viewport
+       rect on every animation frame, which lags any page that scrolls on the
+       compositor thread — iOS Safari always, and trackpad/touch momentum on
+       desktop. Headless Chromium scrolls on the main thread, in lockstep with
+       JS, so a position assertion here reads a flat 0px either way and proves
+       nothing. Counting the style writes tests the mechanism directly. */
+    /* Parked is a state, not a moment: the leg's tween can be within half a
+       pixel of the slot while still running. The layer switching to `absolute`
+       is the arrival itself, so wait for that rather than for a duration. */
+    await page.waitForFunction(
+      () => getComputedStyle(document.querySelector('[data-music-layer]')).position === 'absolute',
+      null, { timeout: 15000 });
+    await page.evaluate(() => {
+      window.__ringWrites = 0;
+      new MutationObserver(m => { window.__ringWrites += m.length; })
+        .observe(document.querySelector('[data-music-layer]'), { attributes: true, attributeFilter: ['style'] });
+    });
+    for (const dir of [1, -1]) {
+      for (let i = 0; i < 12; i += 1) await page.mouse.wheel(0, 8 * dir);
+      await page.waitForTimeout(300);
+    }
+    assert.equal(await page.evaluate(() => window.__ringWrites), 0,
+      'scrolling does no work on the parked ring: the compositor carries it');
+
     /* Once home it is completely still: scrolling must not shift it one pixel
        relative to the slot. This is the guard for the stutter Ryo reported. */
     const ringOffset = () => page.evaluate(() => {
