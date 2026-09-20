@@ -290,3 +290,79 @@
   at the corner with "play me", and the envelope closed, mid-nudge and open.
 - Physical iPhone 13 / iPhone 11 testing remains outstanding (CLAUDE.md rule).
   The three legs and the strength of the nudge are judged there, not here.
+
+# The ring's stutter under the names - 20 September 2026
+
+## The finding
+
+Ryo: scrolling down, the ring resting between the names stutters where it
+should sit still, on desktop and phone alike.
+
+Two hypotheses were measured before anything was changed, and **both of the
+obvious ones were wrong**, which is why they were measured rather than assumed:
+
+- *Render cost.* `Ring.svg` is 463 KB and carries a `drop-shadow`, and this repo
+  has been bitten by exactly that before (the gallery prints, 16 September).
+  Measured with the ring parked at the names and the page scrolled back and
+  forth so it never flies: under 6x CPU throttling, 32 frames over 24ms as
+  shipped, 31 with the filter forced off, 27 with the ring hidden altogether.
+  The ring is close to free and the filter makes no measurable difference.
+- *Drift at rest.* At the names anchor the ring's offset from its slot is 0,0
+  and its scale constant, unchanged for a whole scroll. It does not move.
+
+The cause was **leg one**. The hand-over fired the instant the intro finished
+and sent the ring toward a slot still a screenful below, over a 3-second
+travel. Any guest who starts scrolling as the invitation opens — most of them,
+since the flight is still running — was watching a ring travel down the
+viewport while the page travelled up, then turn back. Measured at 414px before
+the fix: 429px of downward drift, worst single step 43px.
+
+Underneath it sat a real bug. The flight's scroll correction chose its
+direction from the DESTINATION alone (`home === "corner" ? -1 : 1`), but the
+correction depends on both ends: only the corner is viewport-fixed, so
+corner→slot is +1, slot→corner is −1, and **slot→slot is 0**, because two
+things that move together never change their separation. That third case had no
+representation, so the hand-over was given a corner departure's +1 and had its
+start point dragged down the page. `names→song` and `song→names` carried the
+same latent error.
+
+## Implemented
+
+- The scroll correction is derived from both ends of the trip; a `fromRef`
+  records the departure and the zero case is handled.
+- A `hero` waypoint. The slider hands the ring to the spot where it was last
+  seen and it **waits** there while the guest reads the hero, hopping into the
+  names only once that slot is around the middle of the screen. The trip is
+  short, level, and visible for the first time — it used to happen inside the
+  intro's own crossfade where nobody could see it.
+- With no names slot on the page at all, the waypoint hands straight to the
+  corner (the handoff spec's harness mounts the player without one).
+- Measured after the fix, 414px and 1280px: worst downward step 0px, the ring
+  lands on its slot exactly, and it then holds 0px of offset across twelve
+  further scroll steps.
+
+Not changed: `FLIGHT.duration` stays at the 3s chosen on 20 September. Making
+it follow the distance was tried and reverted — `music-handoff-check` requires
+a leg to still be in the air 1.6s after it starts, which is how "slow enough to
+watch" is pinned down, and a short hop under that rule undercut it. The cost is
+that the hero→names hop takes the full 3s for ~60px, so the ring eases in
+rather than arriving briskly.
+
+## Verification
+
+- `specs/motion-feedback-check.mjs` gains the regression guard: once landed,
+  twelve scroll steps must not move the ring one pixel relative to its slot. It
+  also asserts the ring holds in the hero rather than diving.
+- `specs/music-docking-check.mjs` covers the hand-over's two beats;
+  `specs/music-player-check.mjs` walks the ring to the corner before expecting a
+  control, since it is not one before that.
+- Green: motion-feedback (414/1401), music-docking (motion on and off),
+  music-handoff, music-player (10), one-line-copy (24), intro-layout, captions,
+  refine-regression.
+- **Already red on `main` before this change, and still red:**
+  `invitation-visual-check` ("the floating player docks into the song section")
+  and `circular-gallery-check` ("autorotation"). Both were verified failing at
+  `8931e12` with this change stashed, so they belong to the ring-layer rework,
+  not to this fix. They need their own pass.
+- Physical iPhone testing still outstanding — this was reported on a real
+  device, so that is where it has to be confirmed.

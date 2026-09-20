@@ -37,6 +37,15 @@ try {
     await page.waitForTimeout(900);
     assert.equal(await rings(page), 1, 'ring is handed over before the intro fade finishes');
     await page.waitForTimeout(1000); // let intro release the scroll lock before scrolling
+    // The ring waits in the hero rather than chasing a slot below the fold…
+    await page.waitForFunction(() => document.querySelector('[data-ring-home="hero"]'), null, { timeout: 15000 });
+    const heldAt = await page.locator('[data-ring-home]').boundingBox();
+    await page.mouse.wheel(0, 150);
+    await page.waitForTimeout(500);
+    const stillAt = await page.locator('[data-ring-home]').boundingBox();
+    assert.ok(Math.abs(heldAt.y - stillAt.y) < 3, 'the ring waits in the hero instead of diving for the names');
+    // …and makes the hop when the names come up to meet it.
+    await page.evaluate(() => document.querySelector('[data-ring-slot]').scrollIntoView({ block: 'center' }));
     await page.waitForFunction(() => document.querySelector('[data-ring-home="names"]'), null, { timeout: 15000 });
     assert.equal(await rings(page), 1, 'exactly one ring after the hand-over');
     await page.waitForFunction(() => {

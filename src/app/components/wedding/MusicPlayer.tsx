@@ -51,7 +51,14 @@ const FLIGHT = { duration: 3, ease: LAND_EASE };
 
    Sizes are resting sizes, expressed as a scale on a 56px box so that changing
    them is a transform rather than a layout: nothing here reflows mid-flight. */
-type Home = "intro" | "names" | "corner" | "song";
+/* `hero` is a waypoint, not a home: the ring waits where the slider left it
+   while the guest reads the hero, instead of setting off for a slot that is
+   still a screenful below. Flying straight from the slider to the names meant a
+   ~1500px dive toward something off-screen, and a guest who starts scrolling as
+   the invitation opens — most of them, since that flight is still running — saw
+   the ring travel down the viewport while the page travelled up, then turn
+   back. That is the stutter under the names Ryo reported. */
+type Home = "intro" | "hero" | "names" | "corner" | "song";
 /* 72, not the 56 the gold disc used. The artwork is a slim knot ring drawn
    inside a landscape frame, so `object-fit: contain` in a square box leaves the
    ring itself about two thirds of the box wide — at 56 it read as a speck in
@@ -128,6 +135,9 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
      box of the FLIP below. */
   const flightBox = useRef<DOMRect | null>(null);
   const homeRef = useRef<Home>("intro");
+  /* Which anchor the ring is leaving. The scroll correction needs both ends of
+     the trip, not just the destination. */
+  const fromRef = useRef<Home>("intro");
   /* A move decided while the card was open, held until the card has finished
      closing. See the measure loop and `onExitComplete` below. */
   const pendingHomeRef = useRef<Home | null>(null);
@@ -196,7 +206,19 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       const namesLeft = !names || names.bottom < 80;
 
       let next: Home;
-      if (current === "song") next = songGone ? (namesHome ? "names" : "corner") : "song";
+      if (current === "hero") {
+        /* Not merely "the slot exists below" — that is what launched the ring
+           downward after something still arriving. Waiting until the slot is
+           around the middle of the screen makes the trip a short hop roughly
+           level with where the ring is already standing, and it is the first
+           time that leg has been visible at all: it used to happen inside the
+           intro's own crossfade. */
+        /* With no names slot on the page at all the waypoint has nowhere to
+           hand off to, so the ring goes straight to being the player. */
+        next = !namesSlot ? "corner"
+          : names && names.top < window.innerHeight * 0.6 ? "names" : "hero";
+      }
+      else if (current === "song") next = songGone ? (namesHome ? "names" : "corner") : "song";
       else if (songRisen) next = "song";
       else if (current === "names") next = namesLeft ? "corner" : "names";
       else next = namesHome ? "names" : "corner";
@@ -222,6 +244,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       }
       placeRef.current?.();
       flightBox.current = stageRef.current?.getBoundingClientRect() ?? null;
+      fromRef.current = current;
       homeRef.current = next;
       setHome(next);
     };
@@ -249,10 +272,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
      ring picks the journey up from exactly that box. */
   useLayoutEffect(() => {
     if (!released || homeRef.current !== "intro") return;
-    flightBox.current = released;
     ringScale.set(INTRO_RING / ORB);
-    homeRef.current = "names";
-    setHome("names");
+    fromRef.current = "intro";
+    homeRef.current = "hero";
+    setHome("hero");
   }, [released, ringScale]);
 
   // Keep one portal and one stage for every home. Only its anchor changes;
@@ -266,8 +289,14 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       const slot = home === "names" ? namesSlot : home === "song" ? songSlot : null;
       const box = slot?.getBoundingClientRect();
       const w = host.offsetWidth, h = host.offsetHeight;
-      const x = box ? box.left + (box.width - w) / 2 : window.innerWidth - 24 - w;
-      const y = box ? home === "names" ? box.top + (box.height - h) / 2 : box.top : window.innerHeight - 24 - h;
+      /* The hero waypoint is the one anchor that is neither a slot nor the
+         corner: it is the box the slider reported, held in viewport
+         coordinates so the ring stays put while the page moves under it. */
+      const held = home === "hero" && released
+        ? { x: released.left + (released.width - w) / 2, y: released.top + (released.height - h) / 2 }
+        : null;
+      const x = held ? held.x : box ? box.left + (box.width - w) / 2 : window.innerWidth - 24 - w;
+      const y = held ? held.y : box ? home === "names" ? box.top + (box.height - h) / 2 : box.top : window.innerHeight - 24 - h;
       host.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       if (songSlot) songSlot.style.height = home === "song" ? `${Math.max(72, h)}px` : "";
     };
@@ -278,7 +307,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
     const tick = () => { place(); frame = requestAnimationFrame(tick); };
     frame = requestAnimationFrame(tick);
     return () => { window.removeEventListener("scroll", place); window.removeEventListener("resize", place); placeRef.current = null; cancelAnimationFrame(frame); if (songSlot) songSlot.style.height = ""; };
-  }, [home, namesSlot, songSlot]);
+  }, [home, namesSlot, songSlot, released]);
 
   /* Measure the same stage before and after changing its fixed-layer anchor.
      Animate that offset to zero; no reparenting or entry fade during travel. */
@@ -335,9 +364,18 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
        the same remaining fraction as the travel itself (see `stageY`), so it
        reaches zero on arrival instead of leaving the ring offset. */
     const startScroll = window.scrollY;
-    const direction = home === "corner" ? -1 : 1;
+    /* The correction depends on BOTH ends, not just the destination. Only the
+       corner and the hero waypoint are viewport-fixed; the two slots ride with
+       the page. So corner->slot is +1, slot->corner is -1, and slot->slot is 0
+       — the gap between two things that move together never changes. That last
+       case had no representation, so the hand-over was given a corner
+       departure's +1 and had its start point dragged down the page as the guest
+       scrolled. names->song and song->names had the same latent error. */
+    const fromFixed = fromRef.current === "corner" || fromRef.current === "hero";
+    const toFixed = home === "corner";
+    const direction = fromFixed === toFixed ? 0 : fromFixed ? 1 : -1;
     const onScroll = () => scrollAdj.set((window.scrollY - startScroll) * direction);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    if (direction !== 0) window.addEventListener("scroll", onScroll, { passive: true });
     const settle = () => {
       window.removeEventListener("scroll", onScroll);
       scrollAdj.set(0);
