@@ -45,7 +45,7 @@ try {
     assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 0,
       'the ring between the names is not a button');
     assert.equal(
-      await page.evaluate(() => document.querySelector('[data-ring-slot]').contains(document.querySelector('[data-ring-home]'))),
+      await page.evaluate(() => document.querySelector('[data-music-layer]').contains(document.querySelector('[data-ring-home]'))),
       true, 'the ring lands in the names slot');
     const gallery = page.locator('.pw-orbit');
     const section = page.locator('#gallery-section');
@@ -132,7 +132,7 @@ try {
     await page.waitForFunction(() => [...document.querySelectorAll('[data-music-notes] > [data-music-note]')]
       .every(note => Number(getComputedStyle(note).opacity) < 0.05));
     assert.equal(
-      await page.evaluate(() => document.querySelector('[data-music-dock-slot]').contains(document.querySelector('[data-music-docked="true"]'))),
+      await page.evaluate(() => document.querySelector('[data-music-layer]').contains(document.querySelector('[data-music-docked="true"]'))),
       true,
       'the orb lands inside the song section, in the page',
     );
@@ -143,13 +143,13 @@ try {
     assert.equal(
       await page.evaluate(() => {
         const dock = document.querySelector('[data-music-dock-slot]');
-        return dock.getBoundingClientRect().height > 200 && dock.childElementCount > 0;
+        return dock.getBoundingClientRect().height > 200 && !!document.querySelector('[data-music-layer] [aria-label="Close"]');
       }),
       true,
       'the card opens inside the slot and pushes the page down',
     );
     assert.equal(
-      await page.evaluate(() => [...document.querySelector('[data-music-dock-slot]').querySelectorAll('*')]
+      await page.evaluate(() => [...document.querySelector('[data-music-layer]').querySelectorAll('*')]
         .filter((node) => (getComputedStyle(node).backdropFilter || '').includes('blur')).length),
       0,
       'the player card carries no backdrop blur',

@@ -45,6 +45,8 @@ try {
 
     // Between the names it is a wedding ring, not a control: nothing opens.
     assert.equal(await buttons(page), 0, 'no button between the names');
+    await page.locator('[data-ring-slot]').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
     await page.locator('[data-ring-home]').click({ force: true });
     await page.keyboard.press('Enter');
     await page.waitForTimeout(400);
@@ -95,7 +97,7 @@ try {
     await page.waitForTimeout(400);
     assert.equal(await cards(page), 0, 'the card folded rather than travelling');
     assert.equal(await rings(page), 1, 'exactly one ring after docking');
-    assert.equal(await page.evaluate(() => document.querySelector('[data-music-dock-slot]')
+    assert.equal(await page.evaluate(() => document.querySelector('[data-music-layer]')
       .contains(document.querySelector('[data-music-docked="true"]'))), true, 'the ring landed in the slot');
 
     // ── leg four: card OPEN in the slot, scrolling back up out of it ──

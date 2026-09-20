@@ -13,6 +13,8 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
   const notes = useRef<(SVGGElement | null)[]>([]);
   const phase = useRef(0);
   const positions = useRef<{ x: number; y: number }[]>([]);
+  const opacity = useRef(0);
+  const lastOrb = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
     let frame = 0;
     let last = performance.now();
@@ -24,23 +26,27 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
       const p = progress.get();
       // Read all geometry before writing SVG transforms to avoid layout thrashing.
       const orb = orbRef.current?.getBoundingClientRect();
+      if (orb && orb.width > 0) lastOrb.current = { x: orb.left + orb.width / 2, y: orb.top + orb.height / 2 };
+      const ringVisible = orbRef.current ? Number(getComputedStyle(orbRef.current).opacity) > 0.9 : false;
+      const targetOpacity = !expanded && playing && ringVisible ? 0.8 : 0;
+      opacity.current = reduceMotion ? targetOpacity : opacity.current + Math.max(-dt * 4, Math.min(dt * 4, targetOpacity - opacity.current));
       const rects = targets.map(target => target.getBoundingClientRect());
       notes.current.forEach((node, i) => {
         if (!node) return;
         const angle = phase.current + i * Math.PI * 2 / 5;
-        const x = (orb ? orb.left + orb.width / 2 : window.innerWidth - 60) + Math.cos(angle) * 42;
-        const y = (orb ? orb.top + orb.height / 2 : window.innerHeight - 60) + Math.sin(angle) * 42;
+        const x = (lastOrb.current?.x ?? 0) + Math.cos(angle) * 42;
+        const y = (lastOrb.current?.y ?? 0) + Math.sin(angle) * 42;
         const rect = rects[i];
         const destX = rect ? rect.left + rect.width / 2 : x;
         const destY = rect ? rect.top + rect.height / 2 : y;
         const desired = { x: x + (destX - x) * p, y: y + (destY - y) * p - Math.sin(p * Math.PI) * 24 };
         const old = positions.current[i] ?? desired;
-        const blend = reduceMotion ? 1 : 1 - Math.exp(-dt * 14);
+        const blend = reduceMotion || p >= 0.999 || opacity.current === 0 ? 1 : 1 - Math.exp(-dt * 14);
         const pos = { x: old.x + (desired.x - old.x) * blend, y: old.y + (desired.y - old.y) * blend };
         positions.current[i] = pos;
         const scale = 0.55 + p * 0.45;
         node.setAttribute("transform", `translate(${pos.x} ${pos.y}) scale(${scale})`);
-        node.style.opacity = expanded || !playing ? "0" : "0.8";
+        node.style.opacity = String(opacity.current);
       });
       frame = requestAnimationFrame(draw);
     };

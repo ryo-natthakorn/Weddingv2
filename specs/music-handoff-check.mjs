@@ -36,6 +36,11 @@ try {
     await page.evaluate(()=>{window.originalNotes=[...document.querySelectorAll('[data-music-note]')];});
     assert.equal(await page.evaluate(()=>document.getAnimations().some(a=>a.animationName==='pulse-ring')),false);
     await page.screenshot({path:join(tmpdir(),`music-orbit-${width}-${reducedMotion}.png`)});
+    await page.evaluate(()=>{
+      window.originalRing=document.querySelector('[data-ring-art]');
+      window.noteSteps=[];let prev=0;
+      const sample=()=>{const n=document.querySelector('[data-music-note]');if(n){const o=+getComputedStyle(n).opacity;window.noteSteps.push(Math.abs(o-prev));prev=o;}window.sampleFrame=requestAnimationFrame(sample);};sample();
+    });
     const start=Date.now();
     await page.locator('[data-music-dock-slot]').evaluate(el=>window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-620,behavior:'instant'}));
     await page.waitForFunction(()=>document.querySelector('[data-music-docking="true"]'));
@@ -65,6 +70,16 @@ try {
       await page.waitForFunction(()=>document.querySelector('[data-music-docked="true"]'));
       assert.equal(await page.evaluate(()=>window.originalNotes.every(n=>n.isConnected)),true);
     }
+    assert.equal(await page.evaluate(()=>window.originalRing===document.querySelector('[data-ring-art]')),true,'ring survives anchor changes');
+    assert.equal(await page.locator('[data-music-layer]').evaluate(el=>el.parentElement===document.body),true,'ring stays outside clipped sections');
+    if(reducedMotion==='no-preference') {
+      await page.getByRole('button',{name:'Open music player'}).click();
+      await page.waitForTimeout(800);
+      await page.getByRole('button',{name:'Close',exact:true}).click();
+      await page.waitForTimeout(900);
+      assert.ok(await page.evaluate(()=>Math.max(...window.noteSteps.slice(1))<=0.201),'notes fade without single-frame jumps');
+    }
+    await page.evaluate(()=>cancelAnimationFrame(window.sampleFrame));
     assert.deepEqual(errors,[]);
     console.log(`PASS ${width}px ${reducedMotion}: no ripple, persistent notes, 3s handoff, staff alignment, reversal`);
     await page.close();

@@ -253,13 +253,29 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
     setHome("names");
   }, [released, ringScale]);
 
-  /* ── The flight itself, as a FLIP ──
-     The orb is one element rendered into two different parents (the fixed
-     corner container, or a portal into the slot). React moves the node; this
-     measures where it used to be, puts it back there with a transform, and
-     springs that transform to nothing. Shared-layout (layoutId) would do the
-     same job, but it crossfades two elements across the fixed/in-flow boundary,
-     and a crossfade is exactly what the client asked to be rid of. */
+  // Keep one portal and one stage for every home. Only its anchor changes;
+  // section clipping and stacking contexts never contain the travelling ring.
+  const hostRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    let frame = 0;
+    const place = () => {
+      const host = hostRef.current;
+      if (!host) return;
+      const slot = home === "names" ? namesSlot : home === "song" ? songSlot : null;
+      const box = slot?.getBoundingClientRect();
+      const w = host.offsetWidth, h = host.offsetHeight;
+      host.style.left = `${box ? box.left + (box.width - w) / 2 : window.innerWidth - 24 - w}px`;
+      host.style.top = `${box ? home === "names" ? box.top + (box.height - h) / 2 : box.top : window.innerHeight - 24 - h}px`;
+      if (songSlot) songSlot.style.height = home === "song" ? `${Math.max(72, h)}px` : "";
+    };
+    place();
+    const tick = () => { place(); frame = requestAnimationFrame(tick); };
+    frame = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(frame); if (songSlot) songSlot.style.height = ""; };
+  }, [home, namesSlot, songSlot]);
+
+  /* Measure the same stage before and after changing its fixed-layer anchor.
+     Animate that offset to zero; no reparenting or entry fade during travel. */
   useLayoutEffect(() => {
     const el = stageRef.current;
     const first = flightBox.current;
@@ -636,8 +652,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
 
   const ring = (
     /* The stage is the element the FLIP moves, and the only one rendered in
-       every state: React re-parents this exact node between the corner and the
-       slot, so it is always measurable. Column layout in both homes means the
+       every state: the same node stays in the fixed layer
+       for every anchor, so it is always measurable. Column layout in both homes means the
        orb's centre never shifts sideways when the card comes and goes. */
     <motion.div
       ref={stageRef}
@@ -689,7 +705,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
           <motion.div
             key="collapsed"
             ref={orbRef}
-            initial={reduceMotion ? { opacity: 1 } : { scale: 0.8, opacity: 0 }}
+            initial={reduceMotion ? { opacity: 1 } : { scale: 0.98, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { scale: 0.7, opacity: 0 }}
             /* 0.3s, not 0.18s: the orb and the card trade places under
@@ -780,7 +796,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
               : { type: "spring", stiffness: 190, damping: 24, restDelta: 0.5 }}
             style={{
               transformOrigin: home === "corner" ? "bottom right" : "top center",
-              width: home === "corner" ? "min(300px, calc(100vw - 32px))" : "min(300px, 100%)",
+              width: "min(300px, calc(100vw - 32px))",
               margin: home === "corner" ? undefined : "0 auto",
               background: SURFACE,
               borderRadius: 20,
@@ -933,18 +949,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       {createPortal(<MusicNotes dockTarget={songSlot} orbRef={orbRef} progress={noteProgress}
         playing={playing && player} expanded={expanded} reduceMotion={!!reduceMotion} />, document.body)}
 
-      {/* The ring lives in exactly one place at a time: portalled into the
-          names slot or the song section's slot, or standing in the fixed
-          corner. Moving the node is what the FLIP above animates. While the
-          intro still owns the artwork, nothing is rendered here at all. */}
-      {home === "intro" ? null
-        : home === "names" && namesSlot ? createPortal(ring, namesSlot)
-        : home === "song" && songSlot ? createPortal(ring, songSlot)
-        : (
-          <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            {ring}
-          </div>
-        )}
+      {home !== "intro" && createPortal(
+        <div ref={hostRef} data-music-layer="" style={{ position: "fixed", left: 0, top: 0, width: "max-content", zIndex: 1000 }}>
+          {ring}
+        </div>, document.body)}
     </>
   );
 });
