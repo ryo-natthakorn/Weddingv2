@@ -6,6 +6,7 @@ import { MusicPlayer, type MusicPlayerHandle } from "./wedding/MusicPlayer";
 import { GallerySection } from "./wedding/GallerySection";
 import { RSVPSection } from "./wedding/RSVPSection";
 import { GiftSection } from "./wedding/GiftSection";
+import { FooterQuote } from "./wedding/FooterQuote";
 import { SongSection } from "./wedding/SongSection";
 import { IntroAnimation } from "./wedding/IntroAnimation";
 import { NameIntroWithCountdown } from "./wedding/NameIntroWithCountdown";
@@ -34,7 +35,6 @@ const MAPS_LINK = "https://maps.google.com/?q=SailomSangdad+Homey+Studio+Bangkok
    equivalents): 30px is the ceiling, FitLine shrinks them if a narrow phone
    cannot hold the line. */
 export const KICKER_MAX = 30;
-const QUOTE_MAX = "clamp(1rem, 2.5vw, 1.2rem)";
 const kickerStyle = {
   fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif",
   fontWeight: 600,
@@ -561,15 +561,7 @@ function InvitationContent({ onRingSlot, onSongDockSlot }: {
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
           <Divider className="mb-10" />
-          {/* Both paragraphs share one font size. Keep phrases together when
-              they fit, and allow normal wrapping on narrower screens. */}
-          {[t.quote_line1_lines, t.quote_line2_lines].map((lines, index) => (
-            <p key={index} data-wedding-quote="" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: QUOTE_MAX, color: COLORS.midBrown, lineHeight: 1.8, marginBottom: index === 0 ? 6 : 16 }}>
-              {lines.map((line, i) => (
-                <span key={i}>{i > 0 ? " " : ""}<span style={{ display: "inline-block", maxWidth: "100%", overflowWrap: "anywhere", textWrap: "balance" }}>{line}</span></span>
-              ))}
-            </p>
-          ))}
+          <FooterQuote lines={[t.quote_line1, t.quote_line2]} />
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>

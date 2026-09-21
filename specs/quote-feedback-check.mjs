@@ -19,8 +19,9 @@ try {
   await page.setViewportSize({width,height:896});
   await page.locator('footer').scrollIntoViewIfNeeded();
   await page.waitForTimeout(150);
-  const result=await page.locator('footer [data-wedding-quote]').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,overflow:n.scrollWidth-n.clientWidth,font:getComputedStyle(n).fontSize})));
+  const result=await page.locator('footer [data-wedding-quote]').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,overflow:n.scrollWidth-n.clientWidth,font:getComputedStyle(n).fontSize,height:n.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(n).lineHeight)})));
   assert.equal(result.length, 2);
+  assert.ok(result.every(n=>n.height <= n.lineHeight + 1), "Exactly two unwrapped quote lines: "+JSON.stringify({width,result}));
   assert.equal(new Set(result.map(n=>n.font)).size, 1, 'both paragraphs have the same font size at '+width);
   assert.ok(result.every(n=>n.overflow<=1),JSON.stringify({width,result}));
   assert.ok(result.some(n=>n.text.includes(language === 'TH' ? 'ความรักที่ท่านได้รับ' : 'Being deeply loved')));
