@@ -326,7 +326,7 @@ try {
     assert.equal(
       await page.evaluate(() => {
         const dock = document.querySelector('[data-music-dock-slot]');
-        return dock.getBoundingClientRect().height > 200 && !!document.querySelector('[data-music-layer] [aria-label="Close"]');
+        return dock.getBoundingClientRect().height > 200 && !!document.querySelector('[data-music-layer] [aria-label="Collapse music player"]');
       }),
       true,
       'the card opens inside the slot and pushes the page down',
@@ -341,7 +341,7 @@ try {
     await youtube.locator('img').evaluate(img => img.decode());
     assert.ok((await youtube.locator('img').getAttribute('src')).includes('youtube-icon'));
     await youtube.screenshot({ path: join(output, `youtube-official-${width}.png`) });
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Collapse music player', exact: true }).click();
     await section.evaluate(el => el.scrollIntoView());
     await page.getByRole('button', { name: 'Open music player' }).click({ trial: true });
     await page.waitForFunction(() => !document.querySelector('[data-music-docking="true"]'));

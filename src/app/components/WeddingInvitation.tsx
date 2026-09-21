@@ -561,17 +561,15 @@ function InvitationContent({ onRingSlot, onSongDockSlot }: {
       <footer ref={footerSec.ref} style={{ background: "transparent", padding: "0 24px 60px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={footerSec.inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1 }} style={{ maxWidth: 520, margin: "0 auto", position: "relative", zIndex: 3 }}>
           <Divider className="mb-10" />
-          {/* Two real paragraph blocks — not one reflowing string — so the
-              break always lands exactly between the two clauses ("...gives
-              you strength," / "while loving...") at any viewport, rather than
-              wherever the browser happens to wrap a single long paragraph.
-              The attribution is part of line 2's text rather than a separate
-              styled line, per the requested quote/attribution pairing. Each
-              paragraph still wraps normally if it's too long for a narrow
-              phone — that's ordinary text wrapping, not the break this is
-              guarding against. */}
-          <FitLine as="p" max={QUOTE_MAX} min={15} lines={t.quote_line1_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</FitLine>
-          <FitLine as="p" max={QUOTE_MAX} min={15} lines={t.quote_line2_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</FitLine>
+          {/* Both paragraphs share one font size. Keep phrases together when
+              they fit, and allow normal wrapping on narrower screens. */}
+          {[t.quote_line1_lines, t.quote_line2_lines].map((lines, index) => (
+            <p key={index} data-wedding-quote="" style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: QUOTE_MAX, color: COLORS.midBrown, lineHeight: 1.8, marginBottom: index === 0 ? 6 : 16 }}>
+              {lines.map((line, i) => (
+                <span key={i}>{i > 0 ? " " : ""}<span style={{ display: "inline-block", maxWidth: "100%", overflowWrap: "anywhere", textWrap: "balance" }}>{line}</span></span>
+              ))}
+            </p>
+          ))}
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>

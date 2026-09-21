@@ -21,7 +21,7 @@ const browser = await chromium.launch({ headless: true });
 
 const rings = page => page.locator('[data-ring-home]').count();
 const buttons = page => page.getByRole('button', { name: 'Open music player' }).count();
-const cards = page => page.getByRole('button', { name: 'Close', exact: true }).count();
+const cards = page => page.getByRole('button', { name: 'Collapse music player', exact: true }).count();
 const docked = page => page.locator('[data-music-docked="true"]').count();
 const home = page => page.locator('[data-ring-home]').getAttribute('data-ring-home');
 
@@ -85,7 +85,7 @@ try {
     await page.waitForTimeout(700);
     assert.equal(await cards(page), 1, 'the floating card stays open near the names');
     assert.equal(await rings(page), 0, 'no ring replaces the open card');
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Collapse music player', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('[data-ring-home="names"]'));
     await page.waitForTimeout(3200);
     await page.evaluate(() => window.scrollBy({ top: 1600 }));

@@ -79,7 +79,7 @@ try {
     if(reducedMotion==='no-preference') {
       await page.getByRole('button',{name:'Open music player'}).click();
       await page.waitForTimeout(800);
-      await page.getByRole('button',{name:'Close',exact:true}).click();
+      await page.getByRole('button',{name:'Collapse music player',exact:true}).click();
       await page.waitForTimeout(900);
       assert.ok(await page.evaluate(()=>Math.max(...window.noteSteps.slice(1))<=0.201),'notes fade without single-frame jumps');
     }

@@ -225,7 +225,7 @@ try {
       await page.getByRole('button', { name: 'Pause', exact: true }).click();
       await page.evaluate(() => window.musicTest.players[0].emit(2));
       const afterPause = await page.evaluate(() => window.musicTest.calls.filter(([type]) => type === 'play').length);
-      await page.getByRole('button', { name: 'Close' }).click();
+      await page.getByRole('button', { name: 'Collapse music player' }).click();
       await page.getByRole('button', { name: 'Open music player' }).click();
       await page.getByRole('button', { name: 'Play', exact: true }).waitFor();
       assert.equal(

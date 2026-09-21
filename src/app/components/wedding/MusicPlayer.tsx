@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform, animate } from "motion/react";
-import { LoaderCircle, Pause, Play } from "lucide-react";
+import { ChevronDown, LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
 import ringImg from "../../../imports/Ring.svg";
 import captions from "../../../imports/pantika.sbv?raw";
@@ -916,10 +916,11 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
               </div>
               <button
                 onClick={() => setExpanded(false)}
-                aria-label="Close"
+                aria-label="Collapse music player"
+                title={lang === "TH" ? "ย่อตัวเล่นเพลง" : "Collapse music player"}
                 style={{ background: "none", border: "none", cursor: "pointer", color: TEXT_DIM, fontSize: "1.2rem", lineHeight: 1, width: 32, height: 32, margin: "-6px -8px 0 0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               >
-                ×
+                <ChevronDown size={20} strokeWidth={1.75} aria-hidden="true" />
               </button>
             </div>
 
