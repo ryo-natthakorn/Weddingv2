@@ -151,6 +151,34 @@ try {
     assert.equal(await page.getByRole('button', { name: 'Open music player' }).count(), 1,
       'the ring is the player once it reaches the corner');
 
+    /* The orbit, which nothing asserted until the notes went missing in every
+       state at once. Playing, in the corner, the notes must be on screen and
+       visible — and must SURVIVE a re-render, because an opacity cached in JS
+       and never re-validated goes stale the moment React hands back a fresh
+       node with the style prop's opacity: 0 on it. */
+    await page.evaluate(() => window.musicTest.players[0].emit(1));
+    const orbiting = async () => page.evaluate(() => {
+      const view = { w: innerWidth, h: innerHeight };
+      return [...document.querySelectorAll('[data-music-note]')].filter(note => {
+        const box = note.getBoundingClientRect();
+        return Number(getComputedStyle(note).opacity) > 0.7
+          && box.right > 0 && box.left < view.w && box.bottom > 0 && box.top < view.h;
+      }).length;
+    });
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-music-note]')]
+      .every(note => Number(getComputedStyle(note).opacity) > 0.7), null, { timeout: 10000 });
+    assert.equal(await orbiting(), 5, 'the notes orbit the ring in the corner, on screen and visible');
+    // Force React to re-render the player and re-attach every note ref.
+    await page.setViewportSize({ width: width - 1, height: 1032 });
+    await page.waitForTimeout(600);
+    await page.setViewportSize({ width, height: 1032 });
+    await page.waitForTimeout(600);
+    assert.equal(await orbiting(), 5, 'the orbiting notes survive a re-render');
+    // Put playback back where the rest of this walk expects to find it.
+    await page.evaluate(() => window.musicTest.players[0].emit(2));
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-music-note]')]
+      .every(note => Number(getComputedStyle(note).opacity) < 0.05));
+
     /* Leg three: into the song section. Sampled throughout for the three things
        this pass is about — it must not spin, it must not be squashed, its
        shadow must not swell, and it must arc rather than slide. */
@@ -246,6 +274,19 @@ try {
       });
     });
     assert.equal(contained, true, 'the parked notes are inside their host, so they actually paint');
+
+    /* ...and the host that paints them stays small. Covering the whole document
+       also makes the notes scroll-invariant, and it is what made them vanish on
+       a real phone: 414x6942 here is ~100 megapixels at 3x, which a mobile
+       compositor refuses to rasterize. Headless desktop renders it happily, so
+       only a size assertion can see this. */
+    const hostArea = await page.evaluate(() => {
+      const r = document.querySelector('[data-music-notes]').getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height),
+        ratio: +(r.width * r.height / (innerWidth * innerHeight)).toFixed(2) };
+    });
+    assert.ok(hostArea.ratio <= 2,
+      `the parked note layer stays small (${hostArea.w}x${hostArea.h} = ${hostArea.ratio} viewports)`);
 
     /* And they are still exactly on their lines afterwards. */
     const noteGaps = await page.evaluate(() => [...document.querySelectorAll('[data-music-note]')].map((note, i) => {
