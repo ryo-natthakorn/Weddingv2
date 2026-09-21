@@ -33,11 +33,11 @@ const MARGIN = 48;
    compositor thread, as do trackpad and touch momentum on desktop, so the staff
    moves at once while the notes are placed from a main-thread read that lands a
    frame or more later. They shear against the lines they are sitting on. */
-export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, reduceMotion, docked }: {
+export function MusicNotes({ dockTarget, orbRef, progress, active, expanded, reduceMotion, docked }: {
   dockTarget?: HTMLElement | null;
   orbRef: RefObject<HTMLDivElement>;
   progress: MotionValue<number>;
-  playing: boolean;
+  active: boolean;
   expanded: boolean;
   reduceMotion: boolean;
   docked: boolean;
@@ -54,6 +54,7 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
      work on a scroll. It is a cache of the DOM, so the ref callback below
      re-applies it whenever React hands back a node: a cache that is never
      re-validated is how the notes went invisible everywhere once already. */
+  // Visual discovery stays visible even when YouTube playback is paused or blocked.
   const shown = useRef(0);
   const paint = (value: number) => {
     shown.current = value;
@@ -136,10 +137,10 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
      ring that is itself fading — has nothing to say here. */
   useLayoutEffect(() => {
     if (!docked) return;
-    const target = !expanded && playing ? 0.8 : 0;
+    const target = !expanded && active ? 0.8 : 0;
     opacity.current = target;
     paint(target);
-  }, [docked, expanded, playing]);
+  }, [docked, expanded, active]);
 
   /* ── Orbiting the ring, and in flight ──
      Unchanged, deliberately: this path was working, and every frame writing its
@@ -153,13 +154,13 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
     const draw = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      if (playing && !reduceMotion) phase.current += dt * 0.38;
+      if (active && !reduceMotion) phase.current += dt * 0.38;
       const p = progress.get();
       // Read all geometry before writing SVG transforms to avoid layout thrashing.
       const orb = orbRef.current?.getBoundingClientRect();
       if (orb && orb.width > 0) lastOrb.current = { x: orb.left + orb.width / 2, y: orb.top + orb.height / 2 };
       const ringVisible = orbRef.current ? Number(getComputedStyle(orbRef.current).opacity) > 0.9 : false;
-      const targetOpacity = !expanded && playing && ringVisible ? 0.8 : 0;
+      const targetOpacity = !expanded && active && ringVisible ? 0.8 : 0;
       opacity.current = reduceMotion ? targetOpacity : opacity.current + Math.max(-dt * 4, Math.min(dt * 4, targetOpacity - opacity.current));
       const rects = targets.map(target => target.getBoundingClientRect());
       notes.current.forEach((node, i) => {
@@ -184,7 +185,7 @@ export function MusicNotes({ dockTarget, orbRef, progress, playing, expanded, re
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
-  }, [docked, dockTarget, orbRef, progress, playing, expanded, reduceMotion]);
+  }, [docked, dockTarget, orbRef, progress, active, expanded, reduceMotion]);
 
   /* The anchor is a render decision, so React has already applied it by the time
      the effects above run — no imperative style juggling, and no frame where the

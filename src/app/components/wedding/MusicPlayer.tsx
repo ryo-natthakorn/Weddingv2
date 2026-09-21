@@ -1041,7 +1041,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       </div>
 
       {createPortal(<MusicNotes dockTarget={songSlot} orbRef={orbRef} progress={noteProgress}
-        playing={playing && player} expanded={expanded} reduceMotion={!!reduceMotion}
+        active={player} expanded={expanded} reduceMotion={!!reduceMotion}
         /* The same fact the rest of the player reads off: the flight is over and
            the notes are standing on the staff. A boolean and not a read of
            `noteProgress`, because arriving has to RE-RUN the effect that swaps
