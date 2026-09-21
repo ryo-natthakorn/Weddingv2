@@ -570,8 +570,8 @@ function InvitationContent({ onRingSlot, onSongDockSlot }: {
               paragraph still wraps normally if it's too long for a narrow
               phone — that's ordinary text wrapping, not the break this is
               guarding against. */}
-          <FitLine as="p" max={QUOTE_MAX} lines={t.quote_line1_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</FitLine>
-          <FitLine as="p" max={QUOTE_MAX} lines={t.quote_line2_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</FitLine>
+          <FitLine as="p" max={QUOTE_MAX} min={15} lines={t.quote_line1_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 6 }}>{t.quote_line1}</FitLine>
+          <FitLine as="p" max={QUOTE_MAX} min={15} lines={t.quote_line2_lines} style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", color: COLORS.midBrown, lineHeight: 1.8, marginBottom: 16 }}>{t.quote_line2}</FitLine>
           <p style={{ fontFamily: "'TT Interphases', 'Noto Sans Thai', sans-serif", fontSize: "0.65rem", letterSpacing: "0.18em", color: COLORS.lightBrown, textTransform: "uppercase" }}>{t.quote_author}</p>
         </motion.div>
       </footer>

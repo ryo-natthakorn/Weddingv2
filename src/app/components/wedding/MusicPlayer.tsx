@@ -16,7 +16,7 @@ const YT_WATCH_URL = `https://www.youtube.com/watch?v=${YT_VIDEO_ID}`;
 const YT_THUMB = `https://img.youtube.com/vi/${YT_VIDEO_ID}/0.jpg`;
 
 const TITLE = "Pantika";
-const SUBTITLE = "เพลงที่เรียวแต่งให้หยีตอนขอแต่งงาน";
+const SUBTITLE = "เพลงที่เรียวแต่งให้ปันหยี";
 
 // The couple's supplied SBV is local, so captions need no third-party request.
 const LYRICS = parseSbv(captions);
@@ -167,12 +167,6 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
     ([t, adj]: number[]) => t * (flightDelta.current.dy + adj) + bow(t) * flightDelta.current.arcY,
   );
   const noteProgress = useMotionValue(0);
-  useLayoutEffect(() => {
-    const travel = animate(noteProgress, home === "song" ? 1 : 0, {
-      ...FLIGHT, duration: reduceMotion ? 0 : FLIGHT.duration,
-    });
-    return () => travel.stop();
-  }, [home, noteProgress, reduceMotion]);
 
   /* ── Where does the ring belong now? ──
      One decision, read off both slots, with hysteresis on each boundary so a
@@ -363,7 +357,9 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       if (reduceMotion) { ringScale.set(targetScale); return null; }
       return animate(ringScale, targetScale, FLIGHT);
     };
-    if (!first) { setLanded(true); settleSize(); return; }
+    const noteStart = noteProgress.get();
+    const noteEnd = home === "song" ? 1 : 0;
+    if (!first) { noteProgress.set(noteEnd); setLanded(true); settleSize(); return; }
     scrollAdj.set(0);
     el.style.transform = "none";
     const last = el.getBoundingClientRect();
@@ -375,6 +371,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
     const dy = (first.top + first.height / 2) - (last.top + last.height / 2);
     el.style.transform = "";
     const arrive = () => {
+      noteProgress.set(noteEnd);
       setLanded(true);
       if (home === "song") {
         setMusic({ landedAt: Date.now() });
@@ -433,6 +430,8 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
     const size = settleSize();
     const fly = animate(flightT, 0, {
       ...FLIGHT,
+      // One clock: notes reach the staff on the same frame as the ring lands.
+      onUpdate: remaining => noteProgress.set(noteStart + (noteEnd - noteStart) * (1 - remaining)),
       onComplete: () => {
         settle();
         arrive();
@@ -805,7 +804,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
             /* 0.3s, not 0.18s: the orb and the card trade places under
                `mode="wait"`, so anything quicker reads as a cut. */
             transition={{ duration: 0.3, ease: "easeOut" }}
-            data-music-docked={home === "song" && landed}
+            data-music-docked={home === "song" && landed && noteProgress.get() === 1}
             data-music-docking={home === "song"}
             data-ring-home={home}
             style={{ position: "relative", width: ORB, height: ORB, zIndex: 2 }}
@@ -1041,13 +1040,10 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
       </div>
 
       {createPortal(<MusicNotes dockTarget={songSlot} orbRef={orbRef} progress={noteProgress}
-        active={player} expanded={expanded} reduceMotion={!!reduceMotion}
-        /* The same fact the rest of the player reads off: the flight is over and
-           the notes are standing on the staff. A boolean and not a read of
-           `noteProgress`, because arriving has to RE-RUN the effect that swaps
-           the host's anchor and cancels the loop — something a value sampled
-           inside that loop can never do. */
-        docked={home === "song" && landed} />, document.body)}
+        playing={playing && player} expanded={expanded} reduceMotion={!!reduceMotion}
+        /* Arrival re-renders via landed. Also require completed note travel:
+           a new home can briefly inherit the previous home's landed=true. */
+        docked={home === "song" && landed && noteProgress.get() === 1} />, document.body)}
 
       {home !== "intro" && createPortal(
         <div ref={hostRef} data-music-layer="" style={{ position: "fixed", left: 0, top: 0, width: "max-content", zIndex: home === "names" && !landed ? 10000 : 1000, willChange: "transform" }}>

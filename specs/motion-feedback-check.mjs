@@ -183,19 +183,26 @@ try {
        this pass is about — it must not spin, it must not be squashed, its
        shadow must not swell, and it must arc rather than slide. */
     await page.waitForTimeout(3200);
+    await page.evaluate(() => window.musicTest.players[0].emit(1));
+    await page.waitForTimeout(300);
     const start = Date.now();
     const depart = await page.locator('[aria-label="Open music player"]').boundingBox();
     await slot.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => document.querySelector('[data-music-docking="true"]'));
     assert.equal(await page.locator('[data-music-docked="true"]').count(), 0, 'the flight is visible, not a cut');
     const air = [];
-    for (let frame = 0; frame < 30; frame += 1) {
+    for (let frame = 0; frame < 125; frame += 1) {
       air.push(await page.evaluate(() => {
         const art = document.querySelector('[data-ring-art]');
         const button = document.querySelector('[aria-label="Open music player"]');
         if (!art || !button) return null;
         const box = button.getBoundingClientRect();
         return {
+          note: (() => {
+            const n = document.querySelector("[data-music-notes] > [data-music-note]");
+            const m = n.getScreenCTM();
+            return { x: m.e, y: m.f, opacity: Number(getComputedStyle(n).opacity), parked: n.parentElement.dataset.musicNotesParked === "true" };
+          })(),
           transform: getComputedStyle(art).transform,
           shadow: getComputedStyle(art.querySelector('img')).filter,
           x: box.left + box.width / 2,
@@ -209,6 +216,11 @@ try {
     assert.ok(Date.now() - start >= 2800, 'the flight is slow enough to watch');
     const sampled = air.filter(Boolean);
     assert.ok(sampled.length > 0, 'the ring was sampled in flight');
+    assert.ok(sampled.every(s => s.note.opacity > 0.7), 'playing notes stay visible throughout the flight');
+    const landing = sampled.findIndex(s => s.note.parked);
+    assert.ok(landing > 0, 'sample both sides of the note landing');
+    const beforeNote = sampled[landing - 1].note, afterNote = sampled[landing].note;
+    assert.ok(Math.hypot(afterNote.x - beforeNote.x, afterNote.y - beforeNote.y) < 3, 'notes settle on the staff without a last-frame jump: ' + JSON.stringify({beforeNote, afterNote}));
     const atRest = await page.evaluate(() => getComputedStyle(document.querySelector('[data-ring-art] img')).filter);
     assert.equal(new Set([...sampled.map(s => s.shadow), atRest]).size, 1, 'the ring shadow never swells: no lift');
     for (const sample of sampled) {
@@ -232,6 +244,9 @@ try {
        here, filled once the song is playing, empty again when it stops. */
     const staffNotes = () => page.evaluate(() => [...document.querySelectorAll('[data-music-notes] > [data-music-note]')]
       .filter(note => Number(getComputedStyle(note).opacity) > 0.7).length);
+    await page.evaluate(() => window.musicTest.players[0].emit(2));
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-music-notes] > [data-music-note]')]
+      .every(note => Number(getComputedStyle(note).opacity) < 0.05));
     assert.equal(await staffNotes(), 0, 'the staff stays empty until the song plays');
     await page.evaluate(() => window.musicTest.players[0].emit(1));
     await page.waitForFunction(() => [...document.querySelectorAll('[data-music-notes] > [data-music-note]')]
