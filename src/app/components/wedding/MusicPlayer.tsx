@@ -4,7 +4,8 @@ import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform
 import { ChevronDown, LoaderCircle, Pause, Play } from "lucide-react";
 import youtubeIcon from "../../../imports/youtube-icon.png";
 import ringImg from "../../../imports/Ring.svg";
-import captions from "../../../imports/pantika.sbv?raw";
+import captionsTh from "../../../imports/pantika.sbv?raw";
+import captionsEn from "../../../imports/pantika-en.sbv?raw";
 import { parseSbv, lyricAt } from "./captions.mjs";
 import { useLang, useMusicState } from "./wedding-context";
 import { MusicNotes } from "./MusicNotes";
@@ -19,7 +20,9 @@ const TITLE = "Pantika";
 const SUBTITLE = "เพลงที่เรียวแต่งให้ปันหยี";
 
 // The couple's supplied SBV is local, so captions need no third-party request.
-const LYRICS = parseSbv(captions);
+// The English file is a translation on the same cue timings, so switching
+// language mid-song swaps the line in place and the song notes keep their beat.
+const LYRICS = { TH: parseSbv(captionsTh), EN: parseSbv(captionsEn) };
 
 const ACCENT = "#8A7030";       // olive gold
 const ACCENT_DARK = "#6B5520";  // deeper gold
@@ -698,7 +701,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
   /* Current lyric line from playback time */
   let currentLyric = "";
   let lyricKey = -1;
-  const cue = lyricAt(LYRICS, currentTime);
+  const cue = lyricAt(LYRICS[lang], currentTime);
   if (cue) { currentLyric = cue.line; lyricKey = cue.t; }
 
   /* What the rest of the page is allowed to know about the player. */
@@ -930,7 +933,7 @@ export const MusicPlayer = forwardRef<MusicPlayerHandle, {
             {failed && <button type="button" onClick={retry} style={{ color: ACCENT, background: "transparent", border: `1px solid ${ACCENT}`, padding: "8px 16px", minHeight: 44, borderRadius: 6, cursor: "pointer" }}>{lang === "TH" ? "ลองใหม่" : "Retry"}</button>}
 
             {/* Lyric line — one at a time, gold, fading */}
-            {LYRICS.length > 0 && (
+            {LYRICS[lang].length > 0 && (
               <div data-song-lyrics style={{ height: 72, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", margin: "14px 0 4px" }}>
                 <AnimatePresence mode="wait">
                   <motion.p

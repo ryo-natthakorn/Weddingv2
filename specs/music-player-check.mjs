@@ -129,6 +129,18 @@ try {
       await page.screenshot({ path: join(output, 'pantika-lyrics.png') });
     } finally { await page.close(); }
   });
+  await check('switching to EN swaps the current lyric for its translation in place', async () => {
+    const page = await setup();
+    try {
+      await openInvitation(page);
+      await page.evaluate(() => { const p = window.musicTest.players[0]; p.time = 12; p.emit(1); });
+      await page.getByText('เชื่อไหม โลกของฉันมันเคยเป็นสีเทา', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'EN', exact: true }).click();
+      await page.getByText('Would you believe my world was once all grey', { exact: true }).waitFor();
+      await page.evaluate(() => { window.musicTest.players[0].time = 16; });
+      await page.getByText('I had almost given up hope', { exact: true }).waitFor();
+    } finally { await page.close(); }
+  });
   await check('StrictMode leaves one connected player and destroys it on unmount', async () => {
     const page = await setup();
     try {
