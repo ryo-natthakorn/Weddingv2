@@ -254,6 +254,18 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
                       : "ถูกพักไว้ — แตะปุ่มทดลองเสียง"}
               </b>
             </li>
+            {audio.ios && (
+              <li data-ok={audio.session !== "none" || undefined}>
+                <span>โหมดเสียงของ iPhone/iPad (ไม่ให้โหมดเงียบตัดเสียง)</span>
+                <b>
+                  {audio.session === "media"
+                    ? "เปิดแล้ว"
+                    : audio.session === "api"
+                      ? "เปิดแล้ว (บางแอปอาจไม่รองรับ — แตะหน้าจอ 1 ครั้ง)"
+                      : "ยังไม่เปิด — แตะปุ่มทดลองเสียง"}
+                </b>
+              </li>
+            )}
             <li data-ok={audio.clip === "ok" || undefined}>
               <span>ไฟล์เสียงออด</span>
               <b>

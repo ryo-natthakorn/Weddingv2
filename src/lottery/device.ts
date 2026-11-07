@@ -15,54 +15,67 @@ let enabled = true;
    Safari 16.4+ has an API for it; older iOS switches session when a media
    element plays, so there a silent looping <audio> is started in the tap. */
 let silentEl: HTMLAudioElement | null = null;
-let sessionType = "default";
+let apiSession = false; // navigator.audioSession accepted "playback"
+let mediaSession = false; // the silent media loop is playing
 
+export const isIOS = () =>
+  /iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && "ontouchend" in document);
+
+/* Both routes, on every Apple touch device: the API where it exists, and a
+   silent looping <audio> started inside a tap. WebKit switches the whole
+   page to the playback session while any media element plays, which is the
+   long-proven fix — and the API alone may be ignored inside in-app browsers
+   such as LINE's. If iOS pauses the loop (a call, Siri), the next tap
+   restarts it. */
 function preferPlayback(inGesture: boolean) {
   try {
     const as = (navigator as any).audioSession;
     if (as && "type" in as) {
       if (as.type !== "playback") as.type = "playback";
-      sessionType = as.type;
-      return;
+      apiSession = as.type === "playback";
     }
   } catch {
-    /* fall through to the media-element trick */
+    apiSession = false;
   }
-  if (!inGesture || silentEl || !/iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) || !("ontouchend" in document)) return;
+  if (!inGesture || !isIOS()) return;
   try {
-    silentEl = document.createElement("audio");
-    silentEl.setAttribute("x-webkit-airplay", "deny");
-    silentEl.loop = true;
-    silentEl.src = silentWav();
-    void silentEl.play().then(
-      () => (sessionType = "playback (media)"),
-      () => (silentEl = null),
-    );
+    if (!silentEl) {
+      silentEl = document.createElement("audio");
+      silentEl.setAttribute("x-webkit-airplay", "deny");
+      silentEl.setAttribute("playsinline", "");
+      silentEl.loop = true;
+      silentEl.preload = "auto";
+      silentEl.src = silentWav();
+      silentEl.addEventListener("playing", () => (mediaSession = true));
+      silentEl.addEventListener("pause", () => (mediaSession = false));
+    }
+    if (silentEl.paused) void silentEl.play().catch(() => (mediaSession = false));
   } catch {
-    silentEl = null;
+    mediaSession = false;
   }
 }
 preferPlayback(false);
 
+/* 0.25 s of 16-bit 22 kHz mono silence as a WAV blob. */
 function silentWav() {
-  const n = 4000; // 0.5 s of 8-bit 8 kHz silence
-  const buf = new ArrayBuffer(44 + n);
+  const rate = 22050;
+  const bytes = (rate / 4) * 2;
+  const buf = new ArrayBuffer(44 + bytes); // sample data stays zero = silence
   const v = new DataView(buf);
   const str = (o: number, s: string) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
   str(0, "RIFF");
-  v.setUint32(4, 36 + n, true);
+  v.setUint32(4, 36 + bytes, true);
   str(8, "WAVE");
   str(12, "fmt ");
   v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true);
-  v.setUint32(24, 8000, true);
-  v.setUint32(28, 8000, true);
-  v.setUint16(32, 1, true);
-  v.setUint16(34, 8, true);
+  v.setUint16(20, 1, true); // PCM
+  v.setUint16(22, 1, true); // mono
+  v.setUint32(24, rate, true);
+  v.setUint32(28, rate * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
   str(36, "data");
-  v.setUint32(40, n, true);
-  for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+  v.setUint32(40, bytes, true);
   return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
 }
 
@@ -116,7 +129,9 @@ export function audioStatus() {
   return {
     context: ctx ? (ctx.state as string) : "none",
     clip: clipState,
-    session: sessionType,
+    ios: isIOS(),
+    // iOS: is the page out of the "ambient" session that Silent Mode mutes?
+    session: mediaSession ? "media" : apiSession ? "api" : "none",
     enabled,
   };
 }

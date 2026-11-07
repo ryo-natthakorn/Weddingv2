@@ -53,6 +53,11 @@ const swap = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 };
 
+/* LINE's in-app browser can keep the draw quiet and can't work offline.
+   LINE opens a link in the phone's real browser when the URL carries
+   ?openExternalBrowser=1, so the notice links to exactly that. */
+const IN_LINE = typeof navigator !== "undefined" && /\bLine\//i.test(navigator.userAgent);
+
 const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 
 const CONFETTI_COLORS = ["#8A7030", "#C4A840", "#1B4A5C", "#2A6A80", "#FFF8F0", "#E8C09A"];
@@ -446,6 +451,13 @@ export default function LotteryApp() {
           {phase === "reveal" && s.pending ? `ผู้โชคดี ${pendingPrize?.name ?? ""} หมายเลข ${s.pending.n.split("").join(" ")}` : ""}
         </p>
       </main>
+
+      {IN_LINE && !busy && (
+        <p className="ld-inapp">
+          กำลังเปิดในแอป LINE — เสียงอาจไม่ดัง
+          <a href={`${location.pathname}?openExternalBrowser=1`}>เปิดใน Safari / Chrome</a>
+        </p>
+      )}
 
       <footer className="ld-foot">
         <span>

@@ -179,9 +179,15 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: clamp(14px, 2.6vh, 30px);
+  /* Centred with auto margins rather than justify-content, so content taller
+     than a small phone screen scrolls instead of sliding under the header. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
+.ld-stage > .ld-prizes,
+.ld-stage > .ld-onair-prize { margin-top: auto; }
+.ld-stage > .ld-action { margin-bottom: auto; }
 
 .ld-foot {
   display: flex;
@@ -195,6 +201,33 @@ input:focus-visible {
 .ld-foot b {
   color: var(--teal);
   font-weight: 600;
+}
+
+.ld-inapp {
+  position: fixed;
+  left: 50%;
+  bottom: max(40px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 100px;
+  background: rgba(42, 26, 10, 0.86);
+  color: var(--warm-white);
+  font-size: 0.88rem;
+  white-space: nowrap;
+  box-shadow: 0 10px 26px rgba(42, 26, 10, 0.3);
+}
+.ld-inapp a {
+  padding: 7px 14px;
+  border-radius: 100px;
+  background: var(--warm-white);
+  color: var(--teal);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 /* ── Prize selector ───────────────────────────────── */
@@ -302,8 +335,8 @@ input:focus-visible {
   color: #e8d9a8;
 }
 
-/* Portrait iPad: two rows of drums so each can be bigger. */
-@media (orientation: portrait) and (min-height: 900px) {
+/* Portrait (iPad or phone): two rows of drums so each can be bigger. */
+@media (orientation: portrait) {
   .stage {
     --drum-w: clamp(56px, min((100vw - 160px) / (var(--half) * 1.1), (var(--vh) - 500px) / 3.96), 220px);
   }
@@ -397,7 +430,7 @@ input:focus-visible {
   font-weight: 600;
 }
 
-@media (orientation: portrait) and (min-height: 900px) {
+@media (orientation: portrait) {
   .board {
     --tile-w: clamp(52px, min((100vw - 140px) / (var(--half) * 1.1), (var(--vh) - 520px) / 2.9), 240px);
   }
@@ -949,8 +982,26 @@ input:focus-visible {
 }
 @media (max-width: 640px) {
   .ld-live time { display: none; }
-  .ld-top { grid-template-columns: 0 auto 1fr; }
+  /* Phone: LIVE badge and buttons on one row, the title centred below. */
+  .ld-top {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "brand tools" "heading heading";
+    row-gap: 6px;
+  }
+  .ld-brand { grid-area: brand; }
+  .ld-tools { grid-area: tools; gap: 6px; }
+  .ld-heading { grid-area: heading; }
+  .ld-title { font-size: clamp(1.2rem, 5.6vw, 1.5rem); }
+  .ld-icon { width: 40px; height: 40px; }
   .ld-prize { min-width: 0; padding: 9px 18px; }
+  .ld-prize-name { font-size: 0.98rem; }
+  .ld-action { min-height: 140px; }
+  .ld-inapp {
+    white-space: normal;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    font-size: 0.8rem;
+  }
   .ld-draw { min-width: 240px; height: 76px; padding: 0 40px; }
   .ld-log li { grid-template-columns: 70px 72px minmax(0, 1fr); }
   .ld-log-res { grid-column: 2 / -1; justify-self: start; }
