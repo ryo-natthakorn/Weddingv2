@@ -185,7 +185,8 @@ export default function LotteryApp() {
         if (!alive()) return;
         rumbleLevel((digits.length - i - 1) / digits.length);
         setCaption(`${place} ได้แก่ เลข ${d} · ${THAI_DIGITS[d]}`);
-        await Promise.all([talk(`${place}, เลข${THAI_DIGITS[d]}`), wait(reduced ? 150 : 300)]);
+        // Just the digit, as the bride asked — the place is on screen already.
+        await Promise.all([talk(THAI_DIGITS[d], 0.9), wait(reduced ? 150 : 300)]);
       }
       if (!alive()) return;
 

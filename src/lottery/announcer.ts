@@ -1,5 +1,5 @@
 /* The announcer — reads the draw aloud the way the lottery broadcast does
-   ("หลักแสน, เลขเก้า" … "รางวัลบ้านเจ้าสาว ได้แก่ เก้า, เก้า, …"), using the
+   (each digit as its ball lands, then "รางวัลบ้านเจ้าสาว ได้แก่ เก้า, เก้า, …"), using the
    device's own Thai text-to-speech. No audio files, works offline. On iPad
    the voice is Kanya; the downloadable "Enhanced" Kanya sounds far more
    natural (Settings › Accessibility › Spoken Content › Voices › Thai).

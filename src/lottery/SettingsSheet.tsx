@@ -298,7 +298,7 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
               onClick={() => {
                 unlockAudio();
                 signal("release");
-                window.setTimeout(() => void say("ทดสอบเสียง, หลักแสน, เลขเก้า"), 450);
+                window.setTimeout(() => void say("ทดสอบเสียง, เก้า"), 450);
               }}
             >
               ทดลองเสียง (ออด + ผู้ประกาศ)
