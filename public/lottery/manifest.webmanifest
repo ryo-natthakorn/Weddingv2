@@ -1,0 +1,14 @@
+{
+  "name": "Lucky Draw · Pantika & Natthakorn",
+  "short_name": "Lucky Draw",
+  "start_url": "/lottery/",
+  "scope": "/lottery/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F2E8D2",
+  "theme_color": "#F2E8D2",
+  "icons": [
+    { "src": "/lottery/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/lottery/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

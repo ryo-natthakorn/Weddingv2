@@ -31,6 +31,17 @@ export default defineConfig({
     },
   },
 
+  // Two pages: the invitation at / and the iPad lucky-draw tool at /lottery/.
+  // Each gets its own bundle, so the draw tool adds nothing to the card.
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        lottery: path.resolve(__dirname, 'lottery/index.html'),
+      },
+    },
+  },
+
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })
