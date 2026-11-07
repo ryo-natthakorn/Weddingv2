@@ -564,10 +564,11 @@ export const Drums = forwardRef<DrumsHandle, { digits: number; glow: boolean }>(
         s.startSpin(reduced ? 0.6 : 1);
       });
       kick();
-      // Timings: a beat of churn, then one drum every ~1.1s; the last
-      // drum churns an extra second so the room can shout.
-      const first = reduced ? 500 : 1900;
-      const gap = reduced ? 400 : 1100;
+      // Timings: the drums churn through the opening buzzer (~2.7s), then
+      // drop one ball a second; the last drum churns an extra second so the
+      // room can shout.
+      const first = reduced ? 900 : 3000;
+      const gap = reduced ? 400 : 1000;
       const extra = reduced ? 0 : 1000;
       return Promise.all(
         sims.current.map(

@@ -1,6 +1,9 @@
-/* iPad-at-a-party plumbing: synthesized sound (no audio files to load over
-   venue Wi-Fi), keep-the-screen-awake, and fullscreen. Every call is wrapped
-   so a browser that lacks the API simply skips it. */
+/* iPad-at-a-party plumbing: sound, keep-the-screen-awake, and fullscreen.
+   Every call is wrapped so a browser that lacks the API simply skips it.
+   The draw-hall buzzer is a real recording (47 KB, cached for offline use
+   with the rest of the page); everything else is synthesized. */
+
+import buzzerUrl from "../imports/lottery-buzzer.mp3";
 
 let ctx: AudioContext | null = null;
 let out: GainNode | null = null;
@@ -28,6 +31,7 @@ export function unlockAudio() {
       src.buffer = b;
       src.connect(out);
       src.start(0);
+      void clip();
     }
     if (ctx.state === "suspended") void ctx.resume();
   } catch {
@@ -68,47 +72,107 @@ function noise() {
   return noiseBuf;
 }
 
-/* "แอ๊ด" — the draw-hall buzzer. Two slightly detuned square waves plus a
-   saw an octave up, darkened by a low-pass and rattled at 50 Hz (mains hum)
-   so it sounds like an old electric buzzer, not a clean beep. */
-export function buzzer(dur = 0.6, when = 0) {
+/* ── The buzzer ("แอ๊ด") ──
+   Thai lottery draw-hall buzzer, from myinstants.com ("เสียงออกสลากกินแบ่ง
+   ประเทศไทย", uploaded by tosapon). The 2.9 s file is one long buzz, then
+   two short ones; the draw uses three cuts of it (seconds into the file). */
+const CUTS = {
+  start: [0.2, 2.9], // แอ๊ดดดดด… แอ๊ด แอ๊ด — the draw begins
+  release: [2.44, 2.63], // แอ๊ด — a drum lets its ball go
+  result: [2.44, 2.9], // แอ๊ด แอ๊ด — the full number is in
+} as const;
+export type Signal = keyof typeof CUTS;
+const CLIP_GAIN = 2.4; // the recording peaks at about −12 dBFS
+
+let clipFile: Promise<ArrayBuffer | null> | null = null;
+let clipBuf: Promise<AudioBuffer | null> | null = null;
+
+/* Start downloading on page load so the first tap has nothing to wait for. */
+export function preloadSounds() {
+  clipFile ??= fetch(buzzerUrl)
+    .then((r) => (r.ok ? r.arrayBuffer() : null))
+    .catch(() => null);
+}
+
+function clip(): Promise<AudioBuffer | null> {
+  if (!ctx) return Promise.resolve(null);
+  preloadSounds();
+  const ac = ctx;
+  clipBuf ??= clipFile!.then((data) =>
+    data
+      ? new Promise<AudioBuffer | null>((res) => {
+          try {
+            // callback form: older Safari has no promise-returning decode
+            ac.decodeAudioData(data.slice(0), res, () => res(null));
+          } catch {
+            res(null);
+          }
+        })
+      : null,
+  );
+  return clipBuf;
+}
+
+export function signal(kind: Signal, when = 0) {
   if (!enabled || !ctx || !out) return;
+  const at = ctx.currentTime + when;
+  void clip().then((buf) => {
+    if (!enabled || !ctx || !out) return;
+    if (!buf) return synthSignal(kind, Math.max(0, at - ctx.currentTime));
+    const [from, to] = CUTS[kind];
+    const start = Math.max(at, ctx.currentTime);
+    const len = to - from;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(CLIP_GAIN, start);
+    g.gain.setValueAtTime(CLIP_GAIN, start + len - 0.02);
+    g.gain.linearRampToValueAtTime(0, start + len); // no click at the cut
+    src.connect(g).connect(out);
+    src.start(start, from, len);
+  });
+}
+
+/* Fallback if the recording can't load: the same shape, synthesized as a
+   100 Hz mains-hum buzzer (what the recording measures as). */
+function synthSignal(kind: Signal, when: number) {
+  if (kind === "start") {
+    buzz(1.9, when);
+    buzz(0.13, when + 2.25);
+    buzz(0.13, when + 2.45);
+  } else if (kind === "release") buzz(0.15, when);
+  else {
+    buzz(0.13, when);
+    buzz(0.13, when + 0.2);
+  }
+}
+
+function buzz(dur: number, when: number) {
+  if (!ctx || !out) return;
   const t = ctx.currentTime + 0.01 + when;
   const end = t + dur;
   const env = ctx.createGain();
   env.gain.setValueAtTime(0.0001, t);
-  env.gain.exponentialRampToValueAtTime(0.2, t + 0.015);
-  env.gain.setValueAtTime(0.2, end - 0.05);
+  env.gain.exponentialRampToValueAtTime(0.22, t + 0.015);
+  env.gain.setValueAtTime(0.22, end - 0.04);
   env.gain.exponentialRampToValueAtTime(0.0001, end);
-  const lp = ctx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 2400;
-  lp.Q.value = 1.2;
-  const rasp = ctx.createGain();
-  rasp.gain.value = 0.65;
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 50;
-  const lfoDepth = ctx.createGain();
-  lfoDepth.gain.value = 0.35;
-  lfo.connect(lfoDepth).connect(rasp.gain);
-  const parts: [number, OscillatorType, number][] = [
-    [415, "square", 0.45],
-    [418.5, "square", 0.45],
-    [830, "sawtooth", 0.18],
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 750;
+  bp.Q.value = 0.7;
+  const parts: [number, OscillatorType][] = [
+    [100, "square"],
+    [100.6, "sawtooth"],
   ];
-  for (const [f, type, lvl] of parts) {
+  for (const [f, type] of parts) {
     const o = ctx.createOscillator();
     o.type = type;
     o.frequency.value = f;
-    const g = ctx.createGain();
-    g.gain.value = lvl;
-    o.connect(g).connect(lp);
+    o.connect(bp);
     o.start(t);
     o.stop(end + 0.05);
   }
-  lp.connect(rasp).connect(env).connect(out);
-  lfo.start(t);
-  lfo.stop(end + 0.05);
+  bp.connect(env).connect(out);
 }
 
 /* Motor hum + air roar while the drums churn. Level follows how many drums

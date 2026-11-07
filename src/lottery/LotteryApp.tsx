@@ -26,17 +26,18 @@ import {
   type DrawState,
 } from "./store";
 import {
-  buzzer,
   canFullscreen,
   clack,
   fanfare,
   isFullscreen,
   keepAwake,
   pok,
+  preloadSounds,
   rumbleLevel,
   rumbleStart,
   rumbleStop,
   setSoundEnabled,
+  signal,
   toggleFullscreen,
   unlockAudio,
 } from "./device";
@@ -105,9 +106,14 @@ export default function LotteryApp() {
     return () => clearInterval(id);
   }, []);
 
-  // First touch anywhere: keep the iPad from dimming mid-reception.
+  // First touch anywhere: keep the iPad from dimming mid-reception, and open
+  // the audio session so the buzzer is decoded before the first draw.
   useEffect(() => {
-    const wake = () => void keepAwake();
+    preloadSounds();
+    const wake = () => {
+      unlockAudio();
+      void keepAwake();
+    };
     window.addEventListener("pointerdown", wake, { once: true });
     return () => window.removeEventListener("pointerdown", wake);
   }, []);
@@ -135,14 +141,14 @@ export default function LotteryApp() {
       setS({ ...base, pending: { n, prizeId: base.activeId } });
       setPhase("spinning");
       setCaption(`เริ่มการออก${prize?.name ?? "รางวัล"}`);
-      buzzer(1.0);
+      signal("start");
       rumbleStart();
       let landed = 0;
       await drums.current?.run(
         n,
         {
           onRelease: (i) => {
-            buzzer(0.3);
+            signal("release");
             setCaption(`ลุ้น${positionName(i, n.length)}…`);
           },
           onLand: (i, d) => {
@@ -157,9 +163,8 @@ export default function LotteryApp() {
       );
       rumbleStop();
       setPhase("reveal");
-      buzzer(0.28, 0.25);
-      buzzer(0.28, 0.65);
-      fanfare(1.05);
+      signal("result", 0.2);
+      fanfare(0.85);
       celebrate();
     },
     [reduced],
