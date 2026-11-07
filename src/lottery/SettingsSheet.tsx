@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Plus, Trash2, X } from "lucide-react";
 import { parseSpec, type DrawState, type LogEntry, type ParsedSpec } from "./store";
 import { say } from "./announcer";
-import { audioStatus, signal, unlockAudio } from "./device";
+import { audioStatus, pok, signal, unlockAudio } from "./device";
 
 type Props = {
   s: DrawState;
@@ -310,10 +310,12 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
               onClick={() => {
                 unlockAudio();
                 signal("release");
-                window.setTimeout(() => void say("ทดสอบเสียง, เก้า"), 450);
+                // a ball bouncing in its cup, then the announcer
+                [0, 210, 330, 395].forEach((ms, k) => window.setTimeout(() => pok(1 - k * 0.22), 450 + ms));
+                window.setTimeout(() => void say("ทดสอบเสียง, เก้า"), 1100);
               }}
             >
-              ทดลองเสียง (ออด + ผู้ประกาศ)
+              ทดลองเสียง (ออด + ลูกบอล + ผู้ประกาศ)
             </button>
           </div>
           <p className="ld-help">

@@ -7,7 +7,7 @@
    If the device has no Thai voice, every call resolves at once and the draw
    simply runs without speech. */
 
-import { duck, ensureAudio } from "./device";
+import { ensureAudio } from "./device";
 
 let voice: SpeechSynthesisVoice | null = null;
 /* Safari silently drops onend for utterances that get garbage-collected
@@ -46,8 +46,9 @@ export function initAnnouncer(onChange: (name: string | null) => void) {
 }
 
 /* Speak one line and resolve when it has been said. A timer stands in for
-   onend in case the browser never sends it. The draw's own sounds duck
-   while the announcer talks. */
+   onend in case the browser never sends it. The draw's own sounds stay at
+   full level while the announcer talks (no ducking), so the clatter of the
+   balls carries under the voice. */
 export function say(text: string, rate = 0.95): Promise<void> {
   const ss = synth();
   if (!ss || !voice) return Promise.resolve();
@@ -59,7 +60,6 @@ export function say(text: string, rate = 0.95): Promise<void> {
       done = true;
       live.delete(u);
       window.clearTimeout(timer);
-      duck(false);
       ensureAudio(); // iOS may have interrupted web audio while it spoke
       resolve();
     };
@@ -68,11 +68,10 @@ export function say(text: string, rate = 0.95): Promise<void> {
     u.lang = voice!.lang;
     u.rate = rate;
     u.pitch = 1;
-    u.volume = 1;
+    u.volume = 0.8; // a touch under the draw sounds, so the ball clatter carries
     u.onend = finish;
     u.onerror = finish;
     live.add(u);
-    duck(true);
     try {
       ss.speak(u);
     } catch {
@@ -89,5 +88,4 @@ export function hush() {
   } catch {
     /* ignore */
   }
-  duck(false);
 }

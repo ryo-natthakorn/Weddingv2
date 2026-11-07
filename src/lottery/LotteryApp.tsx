@@ -183,8 +183,6 @@ export default function LotteryApp() {
         const place = positionName(i, digits.length);
         const d = digits[i];
         setCaption(`ลุ้น${place}…`);
-        if (i === digits.length - 1 && !reduced) await wait(1000); // last drum: let the room shout
-        if (!alive()) return;
         signal("release");
         await drums.current?.drop(i, d);
         if (!alive()) return;

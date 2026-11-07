@@ -288,12 +288,6 @@ function buzz(dur: number, when: number) {
   bp.connect(env).connect(out);
 }
 
-/* Pull the draw's own sounds down while the announcer is speaking. */
-export function duck(on: boolean) {
-  if (!ctx || !out) return;
-  out.gain.setTargetAtTime(on ? 0.35 : 0.9, ctx.currentTime, 0.08);
-}
-
 /* Motor hum + air roar while the drums churn. Level follows how many drums
    are still turning. */
 let rumble: { src: AudioBufferSourceNode; osc: OscillatorNode; gain: GainNode } | null = null;
@@ -350,35 +344,55 @@ export function rumbleStop(fade = 0.8) {
   osc.stop(t + fade + 0.05);
 }
 
-/* Balls knocking into each other and the drum wall. */
+/* Balls knocking into each other and the drum wall — the clatter that
+   carries the broadcast. A bright noise click plus a short plastic "tik",
+   loud enough to stay clear under the announcer and through a mic. */
 let lastClack = 0;
 export function clack(v: number) {
   if (!enabled || !ctx || !out) return;
   const now = performance.now();
-  if (now - lastClack < 30) return;
+  if (now - lastClack < 24) return;
   lastClack = now;
   const buf = noise();
   if (!buf) return;
   const t = ctx.currentTime;
+  const peak = Math.min(0.14 + v * 0.05, 0.42);
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const bp = ctx.createBiquadFilter();
   bp.type = "bandpass";
-  bp.frequency.value = 2600 + Math.random() * 2400;
-  bp.Q.value = 5;
+  bp.frequency.value = 2400 + Math.random() * 2200;
+  bp.Q.value = 2.5;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(Math.min(0.06 + v * 0.025, 0.2), t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+  g.gain.setValueAtTime(peak, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
   src.connect(bp).connect(g).connect(out);
-  src.start(t, Math.random() * 0.9, 0.04);
+  src.start(t, Math.random() * 0.9, 0.045);
+  const f = 3200 + Math.random() * 1400;
+  voice("triangle", f, f * 0.75, t, 0.025, peak * 0.45);
 }
 
-/* One ping-pong "pok" — the result ball bouncing in its cup. */
+/* One ping-pong "pok" — the result ball bouncing in its cup: a hollow body
+   tone, a bright tip and a click of air. */
 export function pok(v = 1) {
-  if (!enabled || !ctx) return;
+  if (!enabled || !ctx || !out) return;
+  ensureAudio();
   const t = ctx.currentTime;
-  voice("sine", 2100, 1500, t, 0.05, 0.22 * v);
-  voice("triangle", 4300, 3000, t, 0.015, 0.05 * v);
+  voice("sine", 1750, 1250, t, 0.075, 0.5 * v);
+  voice("triangle", 3800, 2600, t, 0.02, 0.18 * v);
+  const buf = noise();
+  if (!buf) return;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 3000;
+  bp.Q.value = 2;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.25 * v, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.018);
+  src.connect(bp).connect(g).connect(out);
+  src.start(t, Math.random() * 0.9, 0.03);
 }
 
 /* Winner chime — a rising major arpeggio with a soft bell on top. */
