@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Plus, Trash2, X } from "lucide-react";
 import { parseSpec, type DrawState, type LogEntry, type ParsedSpec } from "./store";
 import { say } from "./announcer";
-import { signal, unlockAudio } from "./device";
+import { audioStatus, signal, unlockAudio } from "./device";
 
 type Props = {
   s: DrawState;
@@ -37,6 +37,13 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
   const [draft, setDraft] = useState(s.spec);
   const draftParsed = useMemo(() => parseSpec(draft), [draft]);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [audio, setAudio] = useState(audioStatus);
+
+  // Live sound status, so a silent iPad can be diagnosed on the spot.
+  useEffect(() => {
+    const id = window.setInterval(() => setAudio(audioStatus()), 700);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!confirmReset) return;
@@ -229,6 +236,45 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
         </section>
 
         <section className="ld-sec">
+          <h3>สถานะเสียง</h3>
+          <ul className="ld-status">
+            <li data-ok={s.sound || undefined}>
+              <span>ปุ่มเสียง (ไอคอนลำโพงด้านบน)</span>
+              <b>{s.sound ? "เปิด" : "ปิดอยู่ — แตะไอคอนลำโพงเพื่อเปิด"}</b>
+            </li>
+            <li data-ok={audio.context === "running" || undefined}>
+              <span>ระบบเสียงของหน้าเว็บ</span>
+              <b>
+                {audio.context === "running"
+                  ? "พร้อม"
+                  : audio.context === "none"
+                    ? "ยังไม่เริ่ม — แตะปุ่มทดลองเสียงด้านล่าง"
+                    : audio.context === "interrupted"
+                      ? "ถูกขัดจังหวะ — แตะปุ่มทดลองเสียง"
+                      : "ถูกพักไว้ — แตะปุ่มทดลองเสียง"}
+              </b>
+            </li>
+            <li data-ok={audio.clip === "ok" || undefined}>
+              <span>ไฟล์เสียงออด</span>
+              <b>
+                {audio.clip === "ok"
+                  ? "โหลดแล้ว"
+                  : audio.clip === "failed"
+                    ? "โหลดไม่ได้ — ใช้เสียงออดสังเคราะห์แทน"
+                    : "ยังไม่โหลด / กำลังโหลด"}
+              </b>
+            </li>
+            <li data-ok={voiceName ? true : undefined}>
+              <span>เสียงผู้ประกาศภาษาไทย</span>
+              <b>{voiceName ?? "ไม่มีในเครื่อง/แอปนี้"}</b>
+            </li>
+          </ul>
+          <p className="ld-help">
+            ถ้าทุกข้อขึ้นสีเขียวแต่ยังไม่มีเสียง: เช็กระดับเสียง iPad และเปิดหน้านี้ใน Safari (ไม่ใช่ในแอป LINE)
+          </p>
+        </section>
+
+        <section className="ld-sec">
           <h3>ผู้ประกาศอ่านเลข</h3>
           {voiceName ? (
             <p className="ld-help">
@@ -249,7 +295,6 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
             </button>
             <button
               className="ld-btn ld-btn-ghost ld-btn-sm"
-              disabled={!voiceName}
               onClick={() => {
                 unlockAudio();
                 signal("release");

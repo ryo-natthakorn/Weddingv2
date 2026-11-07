@@ -9,14 +9,79 @@ let ctx: AudioContext | null = null;
 let out: GainNode | null = null;
 let enabled = true;
 
+/* iOS gives web audio the "ambient" session by default: the silent switch /
+   Silent Mode mutes it completely, and so do some in-app browsers. Ask for
+   the "playback" session, like a music app, so the draw is always heard.
+   Safari 16.4+ has an API for it; older iOS switches session when a media
+   element plays, so there a silent looping <audio> is started in the tap. */
+let silentEl: HTMLAudioElement | null = null;
+let sessionType = "default";
+
+function preferPlayback(inGesture: boolean) {
+  try {
+    const as = (navigator as any).audioSession;
+    if (as && "type" in as) {
+      if (as.type !== "playback") as.type = "playback";
+      sessionType = as.type;
+      return;
+    }
+  } catch {
+    /* fall through to the media-element trick */
+  }
+  if (!inGesture || silentEl || !/iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) || !("ontouchend" in document)) return;
+  try {
+    silentEl = document.createElement("audio");
+    silentEl.setAttribute("x-webkit-airplay", "deny");
+    silentEl.loop = true;
+    silentEl.src = silentWav();
+    void silentEl.play().then(
+      () => (sessionType = "playback (media)"),
+      () => (silentEl = null),
+    );
+  } catch {
+    silentEl = null;
+  }
+}
+preferPlayback(false);
+
+function silentWav() {
+  const n = 4000; // 0.5 s of 8-bit 8 kHz silence
+  const buf = new ArrayBuffer(44 + n);
+  const v = new DataView(buf);
+  const str = (o: number, s: string) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, "RIFF");
+  v.setUint32(4, 36 + n, true);
+  str(8, "WAVE");
+  str(12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true);
+  v.setUint32(28, 8000, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true);
+  str(36, "data");
+  v.setUint32(40, n, true);
+  for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+  return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+}
+
+/* Wake the audio context if iOS has suspended or "interrupted" it (another
+   app's audio, Siri, the announcer's speech). Harmless when already running. */
+export function ensureAudio() {
+  if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
+}
+
 export function setSoundEnabled(on: boolean) {
   enabled = on;
   if (!on) rumbleStop(0.1);
 }
 
-/* iOS only lets audio start inside a tap, so the Draw button calls this
-   before anything else. */
+/* iOS only lets audio start inside a real tap — a finger *lifting*
+   (pointerup / touchend / click) or a key press, not pointerdown. Called on
+   every such gesture and by the Draw button; cheap once audio is running. */
 export function unlockAudio() {
+  preferPlayback(true);
   try {
     if (!ctx) {
       const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -25,18 +90,35 @@ export function unlockAudio() {
       out = ctx.createGain();
       out.gain.value = 0.9;
       out.connect(ctx.destination);
-      // A one-sample silent buffer fully unlocks WebKit's audio session.
+      ctx.onstatechange = () => {
+        // Interrupted by speech / another app: try to come straight back.
+        if (ctx && ctx.state !== "running" && ctx.state !== "closed") ensureAudio();
+      };
+      void clip();
+    }
+    if (ctx.state !== "running") {
+      void ctx.resume().catch(() => {});
+      // A one-sample silent buffer, played inside the gesture, completes
+      // the unlock on older WebKit.
       const b = ctx.createBuffer(1, 1, 22050);
       const src = ctx.createBufferSource();
       src.buffer = b;
-      src.connect(out);
+      src.connect(out!);
       src.start(0);
-      void clip();
     }
-    if (ctx.state === "suspended") void ctx.resume();
   } catch {
     /* no audio — the draw is still fully visual */
   }
+}
+
+/* For the settings screen: what the sound system is doing right now. */
+export function audioStatus() {
+  return {
+    context: ctx ? (ctx.state as string) : "none",
+    clip: clipState,
+    session: sessionType,
+    enabled,
+  };
 }
 
 function voice(
@@ -86,10 +168,13 @@ const CLIP_GAIN = 2.4; // the recording peaks at about −12 dBFS
 
 let clipFile: Promise<ArrayBuffer | null> | null = null;
 let clipBuf: Promise<AudioBuffer | null> | null = null;
+let clipState: "idle" | "loading" | "ok" | "failed" = "idle";
 
 /* Start downloading on page load so the first tap has nothing to wait for. */
 export function preloadSounds() {
-  clipFile ??= fetch(buzzerUrl)
+  if (clipFile) return;
+  clipState = "loading";
+  clipFile = fetch(buzzerUrl)
     .then((r) => (r.ok ? r.arrayBuffer() : null))
     .catch(() => null);
 }
@@ -103,18 +188,31 @@ function clip(): Promise<AudioBuffer | null> {
       ? new Promise<AudioBuffer | null>((res) => {
           try {
             // callback form: older Safari has no promise-returning decode
-            ac.decodeAudioData(data.slice(0), res, () => res(null));
+            const r = ac.decodeAudioData(
+              data.slice(0),
+              (b) => {
+                clipState = "ok";
+                res(b);
+              },
+              () => {
+                clipState = "failed";
+                res(null);
+              },
+            ) as unknown as Promise<AudioBuffer> | undefined;
+            r?.catch?.(() => {}); // newer Safari also rejects the promise
           } catch {
+            clipState = "failed";
             res(null);
           }
         })
-      : null,
+      : ((clipState = "failed"), null),
   );
   return clipBuf;
 }
 
 export function signal(kind: Signal, when = 0) {
   if (!enabled || !ctx || !out) return;
+  ensureAudio();
   const at = ctx.currentTime + when;
   void clip().then((buf) => {
     if (!enabled || !ctx || !out) return;
@@ -187,6 +285,7 @@ let rumble: { src: AudioBufferSourceNode; osc: OscillatorNode; gain: GainNode } 
 
 export function rumbleStart() {
   if (!enabled || !ctx || !out || rumble) return;
+  ensureAudio();
   const buf = noise();
   if (!buf) return;
   const t = ctx.currentTime;
@@ -270,6 +369,7 @@ export function pok(v = 1) {
 /* Winner chime — a rising major arpeggio with a soft bell on top. */
 export function fanfare(when = 0) {
   if (!enabled || !ctx) return;
+  ensureAudio();
   const t = ctx.currentTime + 0.05 + when;
   const notes = [523.25, 659.25, 783.99, 1046.5];
   notes.forEach((f, i) => {

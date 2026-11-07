@@ -116,16 +116,18 @@ export default function LotteryApp() {
     return () => clearInterval(id);
   }, []);
 
-  // First touch anywhere: keep the iPad from dimming mid-reception, and open
-  // the audio session so the buzzer is decoded before the first draw.
+  // Any tap or key: open (or re-open) the audio session and keep the iPad
+  // from dimming. iOS only counts a finger lifting as a tap for audio, so
+  // this listens to pointerup/touchend/click — not pointerdown.
   useEffect(() => {
     preloadSounds();
-    const wake = () => {
+    const onGesture = () => {
       unlockAudio();
       void keepAwake();
     };
-    window.addEventListener("pointerdown", wake, { once: true });
-    return () => window.removeEventListener("pointerdown", wake);
+    const evs = ["pointerup", "touchend", "click", "keydown"] as const;
+    evs.forEach((e) => window.addEventListener(e, onGesture, { capture: true, passive: true }));
+    return () => evs.forEach((e) => window.removeEventListener(e, onGesture, { capture: true }));
   }, []);
 
   useEffect(() => {

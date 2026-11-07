@@ -7,7 +7,7 @@
    If the device has no Thai voice, every call resolves at once and the draw
    simply runs without speech. */
 
-import { duck } from "./device";
+import { duck, ensureAudio } from "./device";
 
 let voice: SpeechSynthesisVoice | null = null;
 /* Safari silently drops onend for utterances that get garbage-collected
@@ -60,6 +60,7 @@ export function say(text: string, rate = 0.95): Promise<void> {
       live.delete(u);
       window.clearTimeout(timer);
       duck(false);
+      ensureAudio(); // iOS may have interrupted web audio while it spoke
       resolve();
     };
     const timer = window.setTimeout(finish, 1500 + (text.length * 150) / rate);
