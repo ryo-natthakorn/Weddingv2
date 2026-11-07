@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import pnLogo from "../imports/Logo.svg";
 import { Drums, type DrumsHandle } from "./Drums";
+import { ResultBoard } from "./ResultBoard";
 import { hush, initAnnouncer, say } from "./announcer";
 import { SettingsSheet } from "./SettingsSheet";
 import {
@@ -253,13 +254,15 @@ export default function LotteryApp() {
     setPhase("ready");
   }
 
-  // Space / Enter draws when a keyboard or presenter clicker is attached.
+  /* Space / Enter — or a Bluetooth presenter clicker (Page Down / arrow
+     keys) — starts the draw, so it can be triggered while the iPad faces
+     the guests. Confirming a winner always takes a deliberate tap. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (settingsOpen || summaryOpen) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "BUTTON" || tag === "INPUT" || tag === "TEXTAREA") return;
-      if (e.key === " " || e.key === "Enter") {
+      if ([" ", "Enter", "PageDown", "ArrowRight", "ArrowDown"].includes(e.key)) {
         e.preventDefault();
         draw();
       }
@@ -269,9 +272,12 @@ export default function LotteryApp() {
   }, [draw, settingsOpen, summaryOpen]);
 
   const busy = phase !== "ready";
+  // The number to show on the big board: awaiting confirmation, or this
+  // prize's confirmed winner. Otherwise the drums are on screen.
+  const boardValue = phase === "reveal" ? s.pending?.n : phase === "ready" ? active.winner : null;
 
   return (
-    <div className="ld-app">
+    <div className="ld-app" data-stage={busy || undefined}>
       <header className="ld-top">
         <div className="ld-brand">
           <img className="ld-logo" src={pnLogo} alt="Pantika & Natthakorn" />
@@ -313,6 +319,10 @@ export default function LotteryApp() {
       </header>
 
       <main className="ld-stage">
+        {busy ? (
+          // On air: the prize name, large, in place of the prize buttons.
+          <p className="ld-onair-prize">{(pendingPrize ?? active).name}</p>
+        ) : (
         <div className="ld-prizes" role="group" aria-label="เลือกรางวัล">
           {s.prizes.map((p) => (
             <button
@@ -337,8 +347,12 @@ export default function LotteryApp() {
             </button>
           ))}
         </div>
+        )}
 
-        <Drums ref={drums} digits={parsed.width} glow={phase === "reveal" || (!busy && !!active.winner)} />
+        <Drums ref={drums} digits={parsed.width} hidden={!!boardValue} />
+        <AnimatePresence initial={false}>
+          {boardValue && <ResultBoard key={boardValue} value={boardValue} digits={parsed.width} reduced={reduced} />}
+        </AnimatePresence>
 
         <div className="ld-action">
           <AnimatePresence mode="wait" initial={false}>
@@ -361,10 +375,10 @@ export default function LotteryApp() {
 
             {phase === "reveal" && s.pending && (
               <motion.div key="reveal" className="ld-reveal" {...swap}>
-                <p className="ld-congrats">
-                  ขอแสดงความยินดีกับผู้ถือสลาก <span className="ld-num">{s.pending.n}</span>
+                <p className="ld-congrats ld-congrats-big">ขอแสดงความยินดี!</p>
+                <p className="ld-reveal-sub">
+                  ผู้ถือสลากหมายเลข <span className="ld-num">{s.pending.n}</span> · {pendingPrize?.name}
                 </p>
-                <p className="ld-reveal-sub">{pendingPrize?.name}</p>
                 <div className="ld-buttons">
                   <button className="ld-btn ld-btn-teal" onClick={confirmWinner}>
                     <Check size={22} strokeWidth={2.2} /> มีผู้มารับรางวัล

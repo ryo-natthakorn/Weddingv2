@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Plus, Trash2, X } from "lucide-react";
 import { parseSpec, type DrawState, type LogEntry, type ParsedSpec } from "./store";
 import { say } from "./announcer";
-import { unlockAudio } from "./device";
+import { signal, unlockAudio } from "./device";
 
 type Props = {
   s: DrawState;
@@ -252,10 +252,11 @@ export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose 
               disabled={!voiceName}
               onClick={() => {
                 unlockAudio();
-                void say("หลักแสน, เลขเก้า");
+                signal("release");
+                window.setTimeout(() => void say("ทดสอบเสียง, หลักแสน, เลขเก้า"), 450);
               }}
             >
-              ทดลองเสียง
+              ทดลองเสียง (ออด + ผู้ประกาศ)
             </button>
           </div>
           <p className="ld-help">

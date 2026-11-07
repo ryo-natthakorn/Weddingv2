@@ -207,7 +207,7 @@ export function rumbleStart() {
   oscG.gain.value = 0.5;
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.08, t + 0.6);
+  gain.gain.exponentialRampToValueAtTime(0.05, t + 0.6);
   src.connect(bp).connect(gain);
   osc.connect(oscLp).connect(oscG).connect(gain);
   gain.connect(out);
@@ -221,7 +221,7 @@ export function rumbleLevel(x: number) {
   const t = ctx.currentTime;
   rumble.gain.gain.cancelScheduledValues(t);
   rumble.gain.gain.setValueAtTime(Math.max(rumble.gain.gain.value, 0.0001), t);
-  rumble.gain.gain.exponentialRampToValueAtTime(Math.max(0.08 * x, 0.0001), t + 0.5);
+  rumble.gain.gain.exponentialRampToValueAtTime(Math.max(0.05 * x, 0.0001), t + 0.5);
 }
 
 export function rumbleStop(fade = 0.8) {

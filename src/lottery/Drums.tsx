@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
+import { forwardRef, useImperativeHandle, useLayoutEffect, useRef } from "react";
 import { positionName } from "./store";
 
 /* The draw machines — a send-up of the government lottery broadcast: one
@@ -54,7 +54,6 @@ class DrumSim {
   quiet = 0;
   restFor = 0;
   awake = true;
-  glow = false;
   onClack?: (v: number) => void;
   onBounce?: (v: number) => void;
   private landed?: () => void;
@@ -418,15 +417,6 @@ class DrumSim {
     if (m && (this.mode === "land" || this.mode === "shown")) {
       const by = trayY - this.hop * R;
       const br = this.scale * R;
-      if (this.glow && this.mode === "shown") {
-        // Fade out before the canvas edge, or the glow shows as a box.
-        const outer = Math.min(br * 1.75, W / 2, H - by);
-        const g = ctx.createRadialGradient(cx, by, br * 0.6, cx, by, outer);
-        g.addColorStop(0, "rgba(255,226,140,0.55)");
-        g.addColorStop(1, "rgba(255,226,140,0)");
-        ctx.fillStyle = g;
-        ctx.fillRect(cx - outer, by - outer, outer * 2, outer * 2);
-      }
       ctx.font = `600 ${br * 1.12}px "TT Interphases", "Noto Sans Thai", sans-serif`;
       drawBall(ctx, cx, by, br, m.d, 0);
     } else {
@@ -502,8 +492,8 @@ export type DrumsHandle = {
   show(value: string | null): void;
 };
 
-export const Drums = forwardRef<DrumsHandle, { digits: number; glow: boolean }>(function Drums(
-  { digits, glow },
+export const Drums = forwardRef<DrumsHandle, { digits: number; hidden: boolean }>(function Drums(
+  { digits, hidden },
   ref,
 ) {
   const canvases = useRef<(HTMLCanvasElement | null)[]>([]);
@@ -599,15 +589,10 @@ export const Drums = forwardRef<DrumsHandle, { digits: number; glow: boolean }>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [digits]);
 
-  useEffect(() => {
-    sims.current.forEach((s) => (s.glow = glow));
-    drawAll();
-  }, [glow]);
-
   return (
     <div
       className="stage"
-      data-glow={glow || undefined}
+      hidden={hidden}
       style={{ ["--n" as string]: digits, ["--half" as string]: Math.ceil(digits / 2) }}
     >
       <div className="stage-panel">

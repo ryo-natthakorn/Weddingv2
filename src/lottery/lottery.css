@@ -310,6 +310,103 @@ input:focus-visible {
   .drums { grid-template-columns: repeat(var(--half), var(--drum-w)); }
 }
 
+.stage[hidden] { display: none; }
+
+/* ── Result board ─────────────────────────────────────
+   The iPad is the guests' screen, so the finished number goes up on plates
+   sized for the back of the room (~190px digits on a landscape iPad). */
+
+.board {
+  --n: 6;
+  --half: 3;
+  --tile-w: clamp(52px, min((100vw - 110px) / (var(--n) * 1.07), (var(--vh) - 450px) / 1.45, 210px), 210px);
+  display: flex;
+  justify-content: center;
+  perspective: 900px;
+}
+.board-panel {
+  display: grid;
+  grid-template-columns: repeat(var(--n), var(--tile-w));
+  column-gap: calc(var(--tile-w) * 0.07);
+  row-gap: 14px;
+  padding: 14px 18px 10px;
+  border: 5px solid transparent;
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse at 50% 0%, #1f5468 0%, var(--teal-deep) 72%) padding-box,
+    linear-gradient(135deg, #e3cf86 0%, var(--gold) 30%, var(--gold-light) 55%, var(--gold) 80%, #e3cf86 100%) border-box;
+  box-shadow:
+    0 22px 60px rgba(61, 34, 21, 0.3),
+    0 0 70px rgba(196, 168, 64, 0.45),
+    inset 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+.board-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.board-plate {
+  width: 100%;
+  height: calc(var(--tile-w) * 1.32);
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--tile-w) * 0.12);
+  background: linear-gradient(180deg, #fffdf7 0%, #f6efe0 55%, #e6dac0 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(138, 112, 48, 0.45),
+    inset 0 -6px 12px rgba(61, 34, 21, 0.12),
+    0 6px 14px rgba(0, 0, 0, 0.25);
+  font-size: calc(var(--tile-w) * 1.18);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--teal-deep);
+  font-variant-numeric: tabular-nums;
+  transform-origin: 50% 0%;
+  backface-visibility: hidden;
+}
+.board-label {
+  font-size: clamp(0.72rem, calc(var(--tile-w) * 0.1), 1rem);
+  line-height: 1.4;
+  color: #e8d9a8;
+}
+
+/* ── On air: what the guests see while a draw runs ─────
+   Prize buttons give way to the prize name, footer and hints hide, the
+   drums and the announcer line grow. */
+
+.ld-onair-prize {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.4vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--teal);
+}
+.ld-app[data-stage] {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.ld-app[data-stage] .ld-foot { display: none; }
+.ld-app[data-stage] .stage {
+  --drum-w: clamp(56px, min((100vw - 110px) / (var(--n) * 1.08), (var(--vh) - 400px) / 1.98, 215px), 215px);
+}
+.ld-app[data-stage] .ld-lower-text { font-size: clamp(1.3rem, 3.2vw, 2.4rem); }
+.ld-app[data-stage] .ld-lower-tag { font-size: clamp(0.95rem, 1.8vw, 1.3rem); }
+.ld-app[data-stage] .ld-lower { width: min(860px, 100%); }
+.ld-congrats-big {
+  font-size: clamp(1.6rem, 3.6vw, 2.6rem);
+  font-weight: 600;
+}
+
+@media (orientation: portrait) and (min-height: 900px) {
+  .board {
+    --tile-w: clamp(52px, min((100vw - 140px) / (var(--half) * 1.1), (var(--vh) - 520px) / 2.9), 240px);
+  }
+  .board-panel { grid-template-columns: repeat(var(--half), var(--tile-w)); }
+  .ld-app[data-stage] .stage {
+    --drum-w: clamp(56px, min((100vw - 140px) / (var(--half) * 1.1), (var(--vh) - 440px) / 3.96), 240px);
+  }
+}
+
 /* ── Actions under the machine ────────────────────── */
 
 .ld-action {
