@@ -175,6 +175,12 @@ function buzz(dur: number, when: number) {
   bp.connect(env).connect(out);
 }
 
+/* Pull the draw's own sounds down while the announcer is speaking. */
+export function duck(on: boolean) {
+  if (!ctx || !out) return;
+  out.gain.setTargetAtTime(on ? 0.35 : 0.9, ctx.currentTime, 0.08);
+}
+
 /* Motor hum + air roar while the drums churn. Level follows how many drums
    are still turning. */
 let rumble: { src: AudioBufferSourceNode; osc: OscillatorNode; gain: GainNode } | null = null;

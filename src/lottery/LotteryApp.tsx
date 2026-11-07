@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import pnLogo from "../imports/Logo.svg";
 import { Drums, type DrumsHandle } from "./Drums";
+import { hush, initAnnouncer, say } from "./announcer";
 import { SettingsSheet } from "./SettingsSheet";
 import {
   drawPool,
@@ -51,6 +52,8 @@ const swap = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 };
 
+const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
+
 const CONFETTI_COLORS = ["#8A7030", "#C4A840", "#1B4A5C", "#2A6A80", "#FFF8F0", "#E8C09A"];
 
 function celebrate() {
@@ -72,7 +75,12 @@ export default function LotteryApp() {
   const [fs, setFs] = useState(false);
   const [caption, setCaption] = useState("");
   const [clock, setClock] = useState("");
+  const [voiceName, setVoiceName] = useState<string | null>(null);
   const drums = useRef<DrumsHandle>(null);
+  const runId = useRef(0);
+  // Latest settings, read between steps of a running draw (mute mid-draw).
+  const latest = useRef(s);
+  latest.current = s;
   const reduced = !!useReducedMotion();
 
   const parsed = useMemo(() => parseSpec(s.spec), [s.spec]);
@@ -84,6 +92,7 @@ export default function LotteryApp() {
 
   useEffect(() => saveState(s), [s]);
   useEffect(() => setSoundEnabled(s.sound), [s.sound]);
+  useEffect(() => initAnnouncer(setVoiceName), []);
 
   // Settings can clear a pending draw (reset, clear prize) — fall back to ready.
   useEffect(() => {
@@ -128,44 +137,64 @@ export default function LotteryApp() {
     };
   }, []);
 
+  /* The show, paced like the broadcast: the announcer opens, the long
+     buzzer sounds while the drums churn, then for each drum a short buzz,
+     the ball drops, and the announcer reads its digit. At the end the full
+     number is read back. Each run has an id so a newer run (or a cancel)
+     stops an older one between steps. */
   const runSpin = useCallback(
-    async (base: DrawState) => {
+    async (base: DrawState, intro: string) => {
       const candidates = drawPool(base, parseSpec(base.spec).numbers);
       if (!candidates.length) {
         setS(base);
         return;
       }
       const n = pickRandom(candidates);
-      const prize = base.prizes.find((p) => p.id === base.activeId);
+      const digits = n.split("").map(Number);
+      const prizeName = base.prizes.find((p) => p.id === base.activeId)?.name ?? "รางวัล";
+      const id = ++runId.current;
+      const alive = () => runId.current === id;
+      const talk = (text: string, rate?: number) =>
+        latest.current.sound && latest.current.voice ? say(text, rate) : Promise.resolve();
+
+      hush();
       // Saved before the drums turn: a reload mid-draw shows this same number.
       setS({ ...base, pending: { n, prizeId: base.activeId } });
       setPhase("spinning");
-      setCaption(`เริ่มการออก${prize?.name ?? "รางวัล"}`);
+      setCaption(intro);
+      await talk(intro); // first line is spoken inside the tap, as iOS requires
+      if (!alive()) return;
+
+      drums.current?.churn(reduced, { onClack: clack, onBounce: pok });
       signal("start");
       rumbleStart();
-      let landed = 0;
-      await drums.current?.run(
-        n,
-        {
-          onRelease: (i) => {
-            signal("release");
-            setCaption(`ลุ้น${positionName(i, n.length)}…`);
-          },
-          onLand: (i, d) => {
-            landed++;
-            rumbleLevel((n.length - landed) / n.length);
-            setCaption(`${positionName(i, n.length)} ได้แก่ เลข ${d} · ${THAI_DIGITS[d]}`);
-          },
-          onClack: clack,
-          onBounce: pok,
-        },
-        reduced,
-      );
+      await wait(reduced ? 900 : 3000);
+
+      for (let i = 0; i < digits.length; i++) {
+        if (!alive()) return;
+        const place = positionName(i, digits.length);
+        const d = digits[i];
+        setCaption(`ลุ้น${place}…`);
+        if (i === digits.length - 1 && !reduced) await wait(1000); // last drum: let the room shout
+        if (!alive()) return;
+        signal("release");
+        await drums.current?.drop(i, d);
+        if (!alive()) return;
+        rumbleLevel((digits.length - i - 1) / digits.length);
+        setCaption(`${place} ได้แก่ เลข ${d} · ${THAI_DIGITS[d]}`);
+        await Promise.all([talk(`${place}, เลข${THAI_DIGITS[d]}`), wait(reduced ? 150 : 300)]);
+      }
+      if (!alive()) return;
+
       rumbleStop();
       setPhase("reveal");
-      signal("result", 0.2);
-      fanfare(0.85);
+      signal("result", 0.1);
       celebrate();
+      await wait(900);
+      if (!alive()) return;
+      await talk(`${prizeName} ได้แก่, ${digits.map((d) => THAI_DIGITS[d]).join(", ")}`, 0.85);
+      if (!alive()) return;
+      fanfare();
     },
     [reduced],
   );
@@ -174,7 +203,7 @@ export default function LotteryApp() {
     if (phase !== "ready" || active.winner || !pool.length) return;
     unlockAudio();
     void keepAwake();
-    void runSpin(s);
+    void runSpin(s, `ต่อไป เป็นการออก${active.name}`);
   }, [phase, active.winner, pool.length, runSpin, s]);
 
   function confirmWinner() {
@@ -201,13 +230,16 @@ export default function LotteryApp() {
     unlockAudio();
     const { n, prizeId } = s.pending;
     const name = s.prizes.find((p) => p.id === prizeId)?.name ?? "";
-    void runSpin({
-      ...s,
-      voided: [...s.voided, n],
-      pending: null,
-      activeId: prizeId,
-      log: [...s.log, { n, prize: name, at: Date.now(), result: "void" }],
-    });
+    void runSpin(
+      {
+        ...s,
+        voided: [...s.voided, n],
+        pending: null,
+        activeId: prizeId,
+        log: [...s.log, { n, prize: name, at: Date.now(), result: "void" }],
+      },
+      `ไม่มีผู้มารับรางวัล, ออก${name}ใหม่`,
+    );
   }
 
   /* Spun by accident — put the ticket back as if nothing happened. */
@@ -215,6 +247,8 @@ export default function LotteryApp() {
     if (!s.pending) return;
     const { n, prizeId } = s.pending;
     const name = s.prizes.find((p) => p.id === prizeId)?.name ?? "";
+    runId.current++;
+    hush();
     setS({ ...s, pending: null, log: [...s.log, { n, prize: name, at: Date.now(), result: "cancel" }] });
     setPhase("ready");
   }
@@ -263,7 +297,10 @@ export default function LotteryApp() {
           )}
           <button
             className="ld-icon"
-            onClick={() => setS({ ...s, sound: !s.sound })}
+            onClick={() => {
+              if (s.sound) hush();
+              setS({ ...s, sound: !s.sound });
+            }}
             aria-label={s.sound ? "ปิดเสียง" : "เปิดเสียง"}
             aria-pressed={s.sound}
           >
@@ -407,6 +444,7 @@ export default function LotteryApp() {
             s={s}
             parsed={parsed}
             poolSize={pool.length}
+            voiceName={voiceName}
             update={setS}
             onClose={() => setSettingsOpen(false)}
           />

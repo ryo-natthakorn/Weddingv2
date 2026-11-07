@@ -755,6 +755,13 @@ input:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+.ld-row-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+
 .ld-spec {
   display: flex;
   gap: 10px;

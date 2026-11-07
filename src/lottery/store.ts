@@ -29,6 +29,7 @@ export type DrawState = {
   activeId: string;
   pending: Pending | null;
   sound: boolean;
+  voice: boolean; // announcer reads the numbers aloud
   log: LogEntry[];
 };
 
@@ -53,6 +54,7 @@ export function defaultState(): DrawState {
     activeId: DEFAULT_PRIZES[0].id,
     pending: null,
     sound: true,
+    voice: true,
     log: [],
   };
 }
@@ -89,6 +91,7 @@ export function loadState(): DrawState {
       activeId: prizes.some((p) => p.id === s.activeId) ? s.activeId : prizes[0].id,
       pending,
       sound: typeof s.sound === "boolean" ? s.sound : true,
+      voice: typeof s.voice === "boolean" ? s.voice : true,
       log: Array.isArray(s.log) ? s.log.slice(-500) : [],
     };
   } catch {

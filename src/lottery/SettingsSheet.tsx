@@ -3,11 +3,14 @@ import type { Dispatch, SetStateAction } from "react";
 import { motion } from "motion/react";
 import { Plus, Trash2, X } from "lucide-react";
 import { parseSpec, type DrawState, type LogEntry, type ParsedSpec } from "./store";
+import { say } from "./announcer";
+import { unlockAudio } from "./device";
 
 type Props = {
   s: DrawState;
   parsed: ParsedSpec;
   poolSize: number;
+  voiceName: string | null;
   update: Dispatch<SetStateAction<DrawState>>;
   onClose: () => void;
 };
@@ -30,7 +33,7 @@ function sharedPrefix(nums: string[]) {
   return i;
 }
 
-export function SettingsSheet({ s, parsed, poolSize, update, onClose }: Props) {
+export function SettingsSheet({ s, parsed, poolSize, voiceName, update, onClose }: Props) {
   const [draft, setDraft] = useState(s.spec);
   const draftParsed = useMemo(() => parseSpec(draft), [draft]);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -223,6 +226,42 @@ export function SettingsSheet({ s, parsed, poolSize, update, onClose }: Props) {
           <button className="ld-btn ld-btn-ghost ld-btn-sm" onClick={addPrize}>
             <Plus size={18} strokeWidth={2} /> เพิ่มรางวัล
           </button>
+        </section>
+
+        <section className="ld-sec">
+          <h3>ผู้ประกาศอ่านเลข</h3>
+          {voiceName ? (
+            <p className="ld-help">
+              อ่านทีละหลักแบบถ่ายทอดสดการออกสลาก ด้วยเสียง “{voiceName}” ของเครื่องนี้
+            </p>
+          ) : (
+            <p className="ld-help ld-error">เครื่องนี้ไม่มีเสียงอ่านภาษาไทย — จะออกรางวัลได้ตามปกติแต่ไม่มีเสียงพูด</p>
+          )}
+          <div className="ld-row-btns">
+            <button
+              className={`ld-btn ld-btn-sm ${s.voice ? "ld-btn-teal" : "ld-btn-ghost"}`}
+              role="switch"
+              aria-checked={s.voice}
+              disabled={!voiceName}
+              onClick={() => update((p) => ({ ...p, voice: !p.voice }))}
+            >
+              {s.voice ? "เปิดเสียงผู้ประกาศอยู่" : "ปิดเสียงผู้ประกาศอยู่"}
+            </button>
+            <button
+              className="ld-btn ld-btn-ghost ld-btn-sm"
+              disabled={!voiceName}
+              onClick={() => {
+                unlockAudio();
+                void say("หลักแสน, เลขเก้า");
+              }}
+            >
+              ทดลองเสียง
+            </button>
+          </div>
+          <p className="ld-help">
+            iPad: ดาวน์โหลดเสียง Kanya แบบคุณภาพสูง (Enhanced) จะฟังเป็นธรรมชาติขึ้นมาก — ตั้งค่า › การช่วยการเข้าถึง ›
+            เนื้อหาที่พูด › เสียง › ไทย
+          </p>
         </section>
 
         <section className="ld-sec">

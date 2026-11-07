@@ -7,7 +7,8 @@ import { positionName } from "./store";
    digit down a chute into a cup where it is shown to the room.
 
    The winning ticket is picked first (uniformly, in LotteryApp); the drums
-   are theatre that land on it. Each drum is a small 2D physics sim drawn on
+   are theatre that land on it, and LotteryApp paces the show — buzzer,
+   announcer, then each drop. Each drum is a small 2D physics sim drawn on
    its own canvas — gravity, an air jet and paddle kicks while spinning,
    ball/wall and ball/ball collisions — stepped from one shared rAF loop that
    stops once every drum has settled. */
@@ -492,16 +493,11 @@ function drawBall(ctx: CanvasRenderingContext2D, x: number, y: number, r: number
 
 /* ── React wrapper ─────────────────────────────────── */
 
-export type DrawHooks = {
-  onRelease?: (i: number) => void;
-  onLand?: (i: number, d: number) => void;
-  onClack?: (v: number) => void;
-  onBounce?: (v: number) => void;
-};
-
 export type DrumsHandle = {
-  /** Churn every drum and drop the balls for `target`, left to right. */
-  run(target: string, hooks: DrawHooks, reduced: boolean): Promise<void>;
+  /** Start every drum churning (balls in the cups go back in first). */
+  churn(reduced: boolean, sounds: { onClack?: (v: number) => void; onBounce?: (v: number) => void }): void;
+  /** Drum `i` drops the ball numbered `d`; resolves once it sits in the cup. */
+  drop(i: number, d: number): Promise<void>;
   /** Show a number in the cups (or empty cups for null) with no draw. */
   show(value: string | null): void;
 };
@@ -516,7 +512,6 @@ export const Drums = forwardRef<DrumsHandle, { digits: number; glow: boolean }>(
   const raf = useRef(0);
   const running = useRef(false);
   const last = useRef(0);
-  const timers = useRef<number[]>([]);
 
   function drawOne(i: number) {
     const c = canvases.current[i];
@@ -553,41 +548,21 @@ export const Drums = forwardRef<DrumsHandle, { digits: number; glow: boolean }>(
   }
 
   useImperativeHandle(ref, () => ({
-    run(target, hooks, reduced) {
-      const n = sims.current.length;
-      const t = target.padStart(n, "0").slice(-n);
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
+    churn(reduced, sounds) {
       sims.current.forEach((s) => {
-        s.onClack = hooks.onClack;
-        s.onBounce = hooks.onBounce;
+        s.onClack = sounds.onClack;
+        s.onBounce = sounds.onBounce;
         s.startSpin(reduced ? 0.6 : 1);
       });
       kick();
-      // Timings: the drums churn through the opening buzzer (~2.7s), then
-      // drop one ball a second; the last drum churns an extra second so the
-      // room can shout.
-      const first = reduced ? 900 : 3000;
-      const gap = reduced ? 400 : 1000;
-      const extra = reduced ? 0 : 1000;
-      return Promise.all(
-        sims.current.map(
-          (s, i) =>
-            new Promise<void>((resolve) => {
-              const at = first + gap * i + (i === n - 1 ? extra : 0);
-              timers.current.push(
-                window.setTimeout(() => {
-                  hooks.onRelease?.(i);
-                  s.release(Number(t[i]), () => {
-                    hooks.onLand?.(i, Number(t[i]));
-                    resolve();
-                  });
-                  kick();
-                }, at),
-              );
-            }),
-        ),
-      ).then(() => undefined);
+    },
+    drop(i, d) {
+      const s = sims.current[i];
+      if (!s) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        s.release(d, resolve);
+        kick();
+      });
     },
     show(value) {
       const n = sims.current.length;
@@ -620,7 +595,6 @@ export const Drums = forwardRef<DrumsHandle, { digits: number; glow: boolean }>(
       ro.disconnect();
       cancelAnimationFrame(raf.current);
       running.current = false;
-      timers.current.forEach(clearTimeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [digits]);
