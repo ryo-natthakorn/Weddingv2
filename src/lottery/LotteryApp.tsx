@@ -13,24 +13,30 @@ import {
   X,
 } from "lucide-react";
 import pnLogo from "../imports/Logo.svg";
-import { Reels, type ReelsHandle } from "./Reels";
+import { Drums, type DrumsHandle } from "./Drums";
 import { SettingsSheet } from "./SettingsSheet";
 import {
   drawPool,
   loadState,
   parseSpec,
   pickRandom,
+  positionName,
   saveState,
+  THAI_DIGITS,
   type DrawState,
 } from "./store";
 import {
+  buzzer,
   canFullscreen,
+  clack,
   fanfare,
   isFullscreen,
   keepAwake,
+  pok,
+  rumbleLevel,
+  rumbleStart,
+  rumbleStop,
   setSoundEnabled,
-  thunk,
-  tick,
   toggleFullscreen,
   unlockAudio,
 } from "./device";
@@ -63,7 +69,9 @@ export default function LotteryApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [fs, setFs] = useState(false);
-  const reels = useRef<ReelsHandle>(null);
+  const [caption, setCaption] = useState("");
+  const [clock, setClock] = useState("");
+  const drums = useRef<DrumsHandle>(null);
   const reduced = !!useReducedMotion();
 
   const parsed = useMemo(() => parseSpec(s.spec), [s.spec]);
@@ -81,12 +89,21 @@ export default function LotteryApp() {
     if (phase === "reveal" && !s.pending) setPhase("ready");
   }, [phase, s.pending]);
 
-  // Rest the wheels on whatever the screen is about: the number awaiting
-  // confirmation, this prize's confirmed winner, or "?" if it's still open.
+  // Rest the cups on whatever the screen is about: the number awaiting
+  // confirmation, this prize's confirmed winner, or empty if it's still open.
   useEffect(() => {
     if (phase === "spinning") return;
-    reels.current?.show(s.pending ? s.pending.n : active.winner);
+    drums.current?.show(s.pending ? s.pending.n : active.winner);
   }, [phase, s.pending, active.winner, parsed.width]);
+
+  // On-air clock in the LIVE badge.
+  useEffect(() => {
+    const fmt = () =>
+      setClock(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    fmt();
+    const id = window.setInterval(fmt, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // First touch anywhere: keep the iPad from dimming mid-reception.
   useEffect(() => {
@@ -113,12 +130,36 @@ export default function LotteryApp() {
         return;
       }
       const n = pickRandom(candidates);
-      // Saved before the wheels move: a reload mid-spin shows this same number.
+      const prize = base.prizes.find((p) => p.id === base.activeId);
+      // Saved before the drums turn: a reload mid-draw shows this same number.
       setS({ ...base, pending: { n, prizeId: base.activeId } });
       setPhase("spinning");
-      await reels.current?.spin(n, { onTick: tick, onReelStop: () => thunk() }, reduced);
+      setCaption(`เริ่มการออก${prize?.name ?? "รางวัล"}`);
+      buzzer(1.0);
+      rumbleStart();
+      let landed = 0;
+      await drums.current?.run(
+        n,
+        {
+          onRelease: (i) => {
+            buzzer(0.3);
+            setCaption(`ลุ้น${positionName(i, n.length)}…`);
+          },
+          onLand: (i, d) => {
+            landed++;
+            rumbleLevel((n.length - landed) / n.length);
+            setCaption(`${positionName(i, n.length)} ได้แก่ เลข ${d} · ${THAI_DIGITS[d]}`);
+          },
+          onClack: clack,
+          onBounce: pok,
+        },
+        reduced,
+      );
+      rumbleStop();
       setPhase("reveal");
-      fanfare();
+      buzzer(0.28, 0.25);
+      buzzer(0.28, 0.65);
+      fanfare(1.05);
       celebrate();
     },
     [reduced],
@@ -193,10 +234,16 @@ export default function LotteryApp() {
   return (
     <div className="ld-app">
       <header className="ld-top">
-        <img className="ld-logo" src={pnLogo} alt="Pantika & Natthakorn" />
+        <div className="ld-brand">
+          <img className="ld-logo" src={pnLogo} alt="Pantika & Natthakorn" />
+          <span className="ld-live">
+            <i aria-hidden /> LIVE <time>{clock}</time>
+          </span>
+        </div>
         <div className="ld-heading">
           <p className="ld-kicker">Wedding Lucky Draw</p>
-          <h1 className="ld-title">จับรางวัลผู้โชคดี</h1>
+          <h1 className="ld-title">การออกสลากกินแบ่งบ่าวสาว</h1>
+          <p className="ld-date">งวดประจำวันที่ 22 พฤศจิกายน 2569</p>
         </div>
         <div className="ld-tools">
           {anyWinner && (
@@ -249,14 +296,25 @@ export default function LotteryApp() {
           ))}
         </div>
 
-        <Reels ref={reels} digits={parsed.width} glow={phase === "reveal" || (!busy && !!active.winner)} />
+        <Drums ref={drums} digits={parsed.width} glow={phase === "reveal" || (!busy && !!active.winner)} />
 
         <div className="ld-action">
           <AnimatePresence mode="wait" initial={false}>
             {phase === "spinning" && (
-              <motion.p key="spinning" className="ld-spinning" {...swap}>
-                กำลังหมุนวงล้อ…
-              </motion.p>
+              <motion.div key="spinning" className="ld-lower" {...swap}>
+                <span className="ld-lower-tag">{active.name}</span>
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={caption}
+                    className="ld-lower-text"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: EASE } }}
+                    exit={{ opacity: 0, y: -10, transition: { duration: 0.15 } }}
+                  >
+                    {caption}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.div>
             )}
 
             {phase === "reveal" && s.pending && (
@@ -270,11 +328,11 @@ export default function LotteryApp() {
                     <Check size={22} strokeWidth={2.2} /> มีผู้มารับรางวัล
                   </button>
                   <button className="ld-btn ld-btn-ghost" onClick={redraw}>
-                    <RotateCcw size={20} strokeWidth={2} /> ไม่มีผู้มารับ · หมุนใหม่
+                    <RotateCcw size={20} strokeWidth={2} /> ไม่มีผู้มารับ · ออกรางวัลใหม่
                   </button>
                 </div>
                 <button className="ld-link" onClick={cancelDraw}>
-                  ยกเลิกครั้งนี้ (คืนสลากเข้าวงล้อ)
+                  ยกเลิกครั้งนี้ (ไม่นับผล)
                 </button>
               </motion.div>
             )}
@@ -306,14 +364,14 @@ export default function LotteryApp() {
                 {pool.length ? (
                   <>
                     <button className="ld-draw" onClick={draw}>
-                      <span className="ld-draw-th">หมุนวงล้อ</span>
+                      <span className="ld-draw-th">เริ่มออกรางวัล</span>
                       <span className="ld-draw-en">Draw</span>
                     </button>
-                    <p className="ld-hint">สุ่ม{active.name}จากสลาก {pool.length} ใบในวงล้อ</p>
+                    <p className="ld-hint">ออก{active.name} จากสลาก {pool.length} ใบที่ร่วมลุ้น</p>
                   </>
                 ) : (
                   <>
-                    <p className="ld-congrats">ไม่มีสลากเหลือในวงล้อ</p>
+                    <p className="ld-congrats">ไม่มีสลากเหลือให้ลุ้นแล้ว</p>
                     <button className="ld-btn ld-btn-ghost" onClick={() => setSettingsOpen(true)}>
                       <Settings size={20} strokeWidth={1.8} /> ตรวจสอบในการตั้งค่า
                     </button>
@@ -332,7 +390,7 @@ export default function LotteryApp() {
 
       <footer className="ld-foot">
         <span>
-          สลากในวงล้อ <b>{pool.length}</b> / {parsed.numbers.length} ใบ
+          สลากที่ร่วมลุ้น <b>{pool.length}</b> / {parsed.numbers.length} ใบ
         </span>
         <span aria-hidden>·</span>
         <span>Pantika &amp; Natthakorn · 22.11.2026</span>

@@ -107,8 +107,8 @@ export function saveState(s: DrawState) {
 /* ── Ticket numbers ──
    Accepts ranges and single numbers separated by commas, spaces or new lines:
    "999800-999999", "001-100, 150-200", "123456 654321". Every number is
-   zero-padded to the longest token, which is also how many reels the drum
-   shows. */
+   zero-padded to the longest token, which is also how many draw machines
+   the stage shows. */
 export type ParsedSpec = { numbers: string[]; width: number; error: string | null };
 
 const MAX_TICKETS = 5000;
@@ -163,3 +163,9 @@ export function pickRandom<T>(arr: T[]): T {
 }
 
 export const THAI_DIGITS = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+
+/* Thai lottery draws name each machine by its place value. */
+const PLACES = ["หน่วย", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน", "สิบล้าน", "ร้อยล้าน"];
+export function positionName(i: number, digits: number) {
+  return `หลัก${PLACES[digits - 1 - i] ?? ""}`;
+}

@@ -5,10 +5,10 @@
 let ctx: AudioContext | null = null;
 let out: GainNode | null = null;
 let enabled = true;
-let lastTick = 0;
 
 export function setSoundEnabled(on: boolean) {
   enabled = on;
+  if (!on) rumbleStop(0.1);
 }
 
 /* iOS only lets audio start inside a tap, so the Draw button calls this
@@ -57,28 +57,150 @@ function voice(
   o.stop(start + dur + 0.02);
 }
 
-/* Ratchet click as a digit passes the window. Throttled so six fast reels
-   don't turn into a buzz; as they slow down the clicks space out on their own. */
-export function tick() {
-  if (!enabled || !ctx) return;
-  const now = performance.now();
-  if (now - lastTick < 55) return;
-  lastTick = now;
-  voice("triangle", 2400, 1100, ctx.currentTime, 0.04, 0.08);
+let noiseBuf: AudioBuffer | null = null;
+function noise() {
+  if (!ctx) return null;
+  if (!noiseBuf) {
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
 }
 
-/* A reel locking into place. */
-export function thunk() {
+/* "แอ๊ด" — the draw-hall buzzer. Two slightly detuned square waves plus a
+   saw an octave up, darkened by a low-pass and rattled at 50 Hz (mains hum)
+   so it sounds like an old electric buzzer, not a clean beep. */
+export function buzzer(dur = 0.6, when = 0) {
+  if (!enabled || !ctx || !out) return;
+  const t = ctx.currentTime + 0.01 + when;
+  const end = t + dur;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(0.2, t + 0.015);
+  env.gain.setValueAtTime(0.2, end - 0.05);
+  env.gain.exponentialRampToValueAtTime(0.0001, end);
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 2400;
+  lp.Q.value = 1.2;
+  const rasp = ctx.createGain();
+  rasp.gain.value = 0.65;
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 50;
+  const lfoDepth = ctx.createGain();
+  lfoDepth.gain.value = 0.35;
+  lfo.connect(lfoDepth).connect(rasp.gain);
+  const parts: [number, OscillatorType, number][] = [
+    [415, "square", 0.45],
+    [418.5, "square", 0.45],
+    [830, "sawtooth", 0.18],
+  ];
+  for (const [f, type, lvl] of parts) {
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    g.gain.value = lvl;
+    o.connect(g).connect(lp);
+    o.start(t);
+    o.stop(end + 0.05);
+  }
+  lp.connect(rasp).connect(env).connect(out);
+  lfo.start(t);
+  lfo.stop(end + 0.05);
+}
+
+/* Motor hum + air roar while the drums churn. Level follows how many drums
+   are still turning. */
+let rumble: { src: AudioBufferSourceNode; osc: OscillatorNode; gain: GainNode } | null = null;
+
+export function rumbleStart() {
+  if (!enabled || !ctx || !out || rumble) return;
+  const buf = noise();
+  if (!buf) return;
+  const t = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 320;
+  bp.Q.value = 0.6;
+  const osc = ctx.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.value = 58;
+  const oscLp = ctx.createBiquadFilter();
+  oscLp.type = "lowpass";
+  oscLp.frequency.value = 180;
+  const oscG = ctx.createGain();
+  oscG.gain.value = 0.5;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.08, t + 0.6);
+  src.connect(bp).connect(gain);
+  osc.connect(oscLp).connect(oscG).connect(gain);
+  gain.connect(out);
+  src.start(t);
+  osc.start(t);
+  rumble = { src, osc, gain };
+}
+
+export function rumbleLevel(x: number) {
+  if (!rumble || !ctx) return;
+  const t = ctx.currentTime;
+  rumble.gain.gain.cancelScheduledValues(t);
+  rumble.gain.gain.setValueAtTime(Math.max(rumble.gain.gain.value, 0.0001), t);
+  rumble.gain.gain.exponentialRampToValueAtTime(Math.max(0.08 * x, 0.0001), t + 0.5);
+}
+
+export function rumbleStop(fade = 0.8) {
+  if (!rumble || !ctx) return;
+  const { src, osc, gain } = rumble;
+  rumble = null;
+  const t = ctx.currentTime;
+  gain.gain.cancelScheduledValues(t);
+  gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+  src.stop(t + fade + 0.05);
+  osc.stop(t + fade + 0.05);
+}
+
+/* Balls knocking into each other and the drum wall. */
+let lastClack = 0;
+export function clack(v: number) {
+  if (!enabled || !ctx || !out) return;
+  const now = performance.now();
+  if (now - lastClack < 30) return;
+  lastClack = now;
+  const buf = noise();
+  if (!buf) return;
+  const t = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 2600 + Math.random() * 2400;
+  bp.Q.value = 5;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(Math.min(0.06 + v * 0.025, 0.2), t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+  src.connect(bp).connect(g).connect(out);
+  src.start(t, Math.random() * 0.9, 0.04);
+}
+
+/* One ping-pong "pok" — the result ball bouncing in its cup. */
+export function pok(v = 1) {
   if (!enabled || !ctx) return;
   const t = ctx.currentTime;
-  voice("sine", 220, 70, t, 0.22, 0.35);
-  voice("triangle", 1500, 700, t, 0.05, 0.1);
+  voice("sine", 2100, 1500, t, 0.05, 0.22 * v);
+  voice("triangle", 4300, 3000, t, 0.015, 0.05 * v);
 }
 
 /* Winner chime — a rising major arpeggio with a soft bell on top. */
-export function fanfare() {
+export function fanfare(when = 0) {
   if (!enabled || !ctx) return;
-  const t = ctx.currentTime + 0.05;
+  const t = ctx.currentTime + 0.05 + when;
   const notes = [523.25, 659.25, 783.99, 1046.5];
   notes.forEach((f, i) => {
     voice("triangle", f, f, t + i * 0.12, 0.9, 0.16);

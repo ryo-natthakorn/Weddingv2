@@ -158,10 +158,10 @@ export function SettingsSheet({ s, parsed, poolSize, update, onClose }: Props) {
         <section className="ld-sec">
           <h3>สลากที่ไม่ได้แจก</h3>
           <p className="ld-help">
-            หลังปิดลงทะเบียน แตะเลขที่ยังติดอยู่บนบอร์ด (ไม่มีแขกหยิบไป) เพื่อเอาออกจากวงล้อ — แตะซ้ำเพื่อคืน
+            หลังปิดลงทะเบียน แตะเลขที่ยังติดอยู่บนบอร์ด (ไม่มีแขกหยิบไป) เพื่อไม่ให้เลขนั้นถูกออกรางวัล — แตะซ้ำเพื่อคืน
           </p>
           <div className="ld-legend">
-            <span><i data-status="in" /> ในวงล้อ {poolSize}</span>
+            <span><i data-status="in" /> ร่วมลุ้น {poolSize}</span>
             <span><i data-status="out" /> ไม่ได้แจก {counts.out}</span>
             <span><i data-status="void" /> ไม่มีผู้มารับ {counts.void}</span>
             <span><i data-status="won" /> ผู้โชคดี {won.size}</span>
@@ -176,7 +176,7 @@ export function SettingsSheet({ s, parsed, poolSize, update, onClose }: Props) {
           </div>
           {s.excluded.length > 0 && (
             <button className="ld-link" onClick={() => update((p) => ({ ...p, excluded: [] }))}>
-              คืนทุกใบเข้าวงล้อ
+              ให้ทุกใบกลับมาร่วมลุ้น
             </button>
           )}
         </section>
