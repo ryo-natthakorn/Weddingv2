@@ -27,7 +27,7 @@ v = ((xx - W/2)/(W*0.8))**2 + ((yy - H*0.45)/(H*0.75))**2
 bg *= (1 - 0.10*np.clip(v, 0, 1))[:, :, None]
 BG = Image.fromarray(bg.astype(np.uint8)).convert("RGBA")
 
-PHOTO = Image.open("/home/user/Weddingv2/story/venue_house.webp").convert("RGB")
+PHOTO = Image.open("story/venue_house.webp").convert("RGB")
 CW = 960; CH = round(PHOTO.height*CW/PHOTO.width); CX, CY = (W - CW)//2, 200
 card = PHOTO.resize((CW, CH), Image.LANCZOS).convert("RGBA")
 rm = Image.new("L", (CW, CH), 0); ImageDraw.Draw(rm).rounded_rectangle((0, 0, CW - 1, CH - 1), 26, fill=255)
@@ -67,7 +67,7 @@ L = {
   "see":  text_layer("See you tomorrow", en("Italic", 62), GOLD),
   "seeth":text_layer("แล้วพบกันพรุ่งนี้นะ", th(42, 400), BROWN),
 }
-NUMF = en("Light", 300)
+NUMF = ImageFont.truetype("story/fonts/BodoniModa-Regular.ttf", 290, layout_engine=ImageFont.Layout.RAQM)
 num_cache = {}
 def num_layer(n):
     if n not in num_cache: num_cache[n] = text_layer(str(n), NUMF, GOLD)
@@ -110,7 +110,7 @@ def frame_at(t):
         if t > 3.4:
             pulse = 1 + 0.015*math.sin((t - 3.4)*2*math.pi/1.96)
             im = im.resize((int(im.width*pulse), int(im.height*pulse)), Image.LANCZOS)
-        put(f, fade(im, ka), W/2, 1280, prog(t, 1.4, 0.6), 0)
+        put(f, fade(im, ka), W/2, 1255, prog(t, 1.4, 0.6), 0)
     if ka > 0:
         put(f, fade(L["day"], ka), W/2, 1460, prog(t, 3.4, 1.0))
         put(f, fade(L["th"], ka), W/2, 1535, prog(t, 4.2, 1.0))
