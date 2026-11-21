@@ -33,7 +33,7 @@ m = np.clip((np.arange(PH) - 640)/(PH - 640), 0, 1); m = 1 - m*m*(3 - 2*m)
 PMASK = Image.fromarray((np.repeat(m[:, None], W, 1)*255).astype(np.uint8))
 def photo_at(t):
     z = 1 + 0.08*(t/DUR)
-    bh = PHOTO.height/z; bw = bh*W/PH; cx = 1060 - 40*(t/DUR); cy = PHOTO.height/2 - 40
+    bh = PHOTO.height/z; bw = bh*W/PH; cx = 1060 - 40*(t/DUR); cy = bh/2 + (PHOTO.height - bh)*0.3
     box = (cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2)
     return PHOTO.resize((W, PH), Image.BICUBIC, box=box)
 logo = Image.open(S + "/logo.png")
