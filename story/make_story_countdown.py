@@ -39,12 +39,12 @@ CARD = Image.new("RGBA", sh.size, (0, 0, 0, 0)); CARD.alpha_composite(sh); CARD.
 logo = Image.open(S + "/logo.png")
 LW = 150; logo = logo.resize((LW, round(logo.height*LW/logo.width)), Image.LANCZOS)
 
-def text_layer(txt, font, fill, tracking=0.0):
+def text_layer(txt, font, fill, tracking=0.0, features=None):
     # render (optionally letter-spaced) text to its own RGBA image
     if tracking == 0:
-        l, t, r, b = font.getbbox(txt)
+        l, t, r, b = font.getbbox(txt, features=features)
         im = Image.new("RGBA", (r - l + 4, b - t + 4), (0, 0, 0, 0))
-        ImageDraw.Draw(im).text((2 - l, 2 - t), txt, font=font, fill=fill)
+        ImageDraw.Draw(im).text((2 - l, 2 - t), txt, font=font, fill=fill, features=features)
         return im
     sp = font.size * tracking
     widths = [font.getlength(ch) for ch in txt]
@@ -67,10 +67,10 @@ L = {
   "see":  text_layer("See you tomorrow", en("Italic", 62), GOLD),
   "seeth":text_layer("แล้วพบกันพรุ่งนี้นะ", th(42, 400), BROWN),
 }
-NUMF = ImageFont.truetype("story/fonts/BodoniModa-Regular.ttf", 290, layout_engine=ImageFont.Layout.RAQM)
+NUMF = ImageFont.truetype("story/fonts/PlayfairDisplay-Regular.ttf", 290, layout_engine=ImageFont.Layout.RAQM)
 num_cache = {}
 def num_layer(n):
-    if n not in num_cache: num_cache[n] = text_layer(str(n), NUMF, GOLD)
+    if n not in num_cache: num_cache[n] = text_layer(str(n), NUMF, GOLD, features=["lnum"])
     return num_cache[n]
 
 random.seed(7)
