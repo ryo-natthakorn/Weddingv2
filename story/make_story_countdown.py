@@ -27,8 +27,17 @@ v = ((xx - W/2)/(W*0.8))**2 + ((yy - H*0.45)/(H*0.75))**2
 bg *= (1 - 0.10*np.clip(v, 0, 1))[:, :, None]
 BG = Image.fromarray(bg.astype(np.uint8)).convert("RGBA")
 
+PHOTO = Image.open("/home/user/Weddingv2/story/venue_house.webp").convert("RGB")
+PH = 920
+m = np.clip((np.arange(PH) - 640)/(PH - 640), 0, 1); m = 1 - m*m*(3 - 2*m)
+PMASK = Image.fromarray((np.repeat(m[:, None], W, 1)*255).astype(np.uint8))
+def photo_at(t):
+    z = 1 + 0.08*(t/DUR)
+    bh = PHOTO.height/z; bw = bh*W/PH; cx = 1060 - 40*(t/DUR); cy = PHOTO.height/2 - 40
+    box = (cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2)
+    return PHOTO.resize((W, PH), Image.BICUBIC, box=box)
 logo = Image.open(S + "/logo.png")
-LW = 330; logo = logo.resize((LW, round(logo.height*LW/logo.width)), Image.LANCZOS)
+LW = 190; logo = logo.resize((LW, round(logo.height*LW/logo.width)), Image.LANCZOS)
 
 def text_layer(txt, font, fill, tracking=0.0):
     # render (optionally letter-spaced) text to its own RGBA image
@@ -58,7 +67,7 @@ L = {
   "see":  text_layer("See you tomorrow", en("Italic", 54), GOLD),
   "seeth":text_layer("แล้วพบกันพรุ่งนี้นะ", th(40, 400), BROWN),
 }
-NUMF = en("Light", 520)
+NUMF = en("Light", 320)
 num_cache = {}
 def num_layer(n):
     if n not in num_cache: num_cache[n] = text_layer(str(n), NUMF, GOLD)
@@ -77,15 +86,18 @@ def put(frame, im, cx, cy, p, rise=28):
 
 def frame_at(t):
     f = BG.copy()
+    ph = photo_at(t).convert("RGBA"); ph.putalpha(PMASK.point(lambda v: int(v*min(t/1.0, 1))))
+    f.alpha_composite(ph)
     dl = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(dl)
     fade_in = min(t/1.0, 1)
     for o in dots:
         y = (o["y"] - o["vy"]*t) % H; x = o["x"] + 14*math.sin(t*0.7 + o["ph"])
         a = int(255*o["a"]*fade_in*(0.6 + 0.4*math.sin(t*1.3 + o["ph"])))
+        if y < 800: continue
         d.ellipse((x - o["r"], y - o["r"], x + o["r"], y + o["r"]), fill=GOLD + (a,))
     f.alpha_composite(dl.filter(ImageFilter.GaussianBlur(1.2)))
 
-    put(f, logo, W/2, 360, prog(t, 0.2, 1.4), 36)
+    put(f, logo, W/2, 975, prog(t, 0.2, 1.4), 36)
     # rolling countdown 30 -> 1, lands at ~3.4s
     rp = prog(t, 1.4, 2.0)
     if t >= 1.4:
@@ -93,18 +105,18 @@ def frame_at(t):
         pulse = 1 + 0.015*math.sin(max(t - 3.4, 0)*2*math.pi/1.96) if t > 3.4 else 1
         im = num_layer(n)
         if pulse != 1: im = im.resize((int(im.width*pulse), int(im.height*pulse)), Image.LANCZOS)
-        put(f, im, W/2, 830, prog(t, 1.4, 0.6), 0)
-    put(f, L["day"], W/2, 1110, prog(t, 3.4, 1.0))
-    put(f, L["th"], W/2, 1190, prog(t, 4.2, 1.0))
+        put(f, im, W/2, 1185, prog(t, 1.4, 0.6), 0)
+    put(f, L["day"], W/2, 1335, prog(t, 3.4, 1.0))
+    put(f, L["th"], W/2, 1400, prog(t, 4.2, 1.0))
     lp = prog(t, 5.2, 1.0)
     if lp > 0:
         ln = ImageDraw.Draw(f); half = 70*lp
-        ln.line((W/2 - half, 1280, W/2 + half, 1280), fill=GOLD + (255,), width=2)
-        ln.ellipse((W/2 - 5, 1275, W/2 + 5, 1285), fill=GOLD + (int(255*lp),))
-    put(f, L["date"], W/2, 1350, prog(t, 5.9, 1.0))
-    put(f, L["ven"], W/2, 1412, prog(t, 6.6, 1.0))
-    put(f, L["see"], W/2, 1530, prog(t, 11.5, 1.4))
-    put(f, L["seeth"], W/2, 1598, prog(t, 12.3, 1.4))
+        ln.line((W/2 - half, 1465, W/2 + half, 1465), fill=GOLD + (255,), width=2)
+        ln.ellipse((W/2 - 5, 1460, W/2 + 5, 1470), fill=GOLD + (int(255*lp),))
+    put(f, L["date"], W/2, 1520, prog(t, 5.9, 1.0))
+    put(f, L["ven"], W/2, 1570, prog(t, 6.6, 1.0))
+    put(f, L["see"], W/2, 1645, prog(t, 11.5, 1.4))
+    put(f, L["seeth"], W/2, 1700, prog(t, 12.3, 1.4))
     end = min(max((t - (DUR - 1.2))/1.2, 0), 1)
     if end > 0:
         f = Image.blend(f, BG, end*0.85)
